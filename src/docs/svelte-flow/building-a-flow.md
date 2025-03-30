@@ -1,0 +1,258 @@
+# Building a Flow
+- (source: https://svelteflow.dev/learn/getting-started/building-a-flow)
+
+In the following section we will show you how to create a Svelte component that displays a simple flow. We assume that you’ve installed Svelte Flow and hope that you are ready to create your first component with Svelte Flow.
+
+## Getting Started
+Let’s add a SvelteFlow component with a Controls and a Background component. For this we import the components from the @xyflow/svelte package:
+
+```svelte
+import { SvelteFlow, Background, Controls } from '@xyflow/svelte';
+// 👇 always import the styles
+import '@xyflow/svelte/dist/style.css';
+```
+
+Now you can use them in your component like this:
+
+- Components:
+> App.svelte
+```svelte
+<script>
+  import { writable } from 'svelte/store';
+  import { SvelteFlow, Background, Controls } from '@xyflow/svelte';
+ 
+  import '@xyflow/svelte/dist/style.css';
+ 
+  const nodes = writable([]);
+  const edges = writable([]);
+</script>
+ 
+<main>
+  <SvelteFlow {nodes} {edges}>
+    <Background />
+    <Controls />
+  </SvelteFlow>
+</main>
+ 
+<style>
+  main {
+    height: 100vh;
+  }
+</style>
+```
+>index.html
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Svelte Flow Example</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
+```
+>index.ts
+```ts
+import App from './App.svelte';
+ 
+import './styles.css';
+ 
+const app = new App({
+  target: document.querySelector('#app'),
+});
+```
+>styles.css
+```css
+html,
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+ 
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+```
+
+You can now pan around by dragging the canvas, as well as zoom in and out by scrolling the mouse or using the control panel buttons.
+
+There are three important things to keep in mind here:
+
+You need to import the styles. Otherwise Svelte Flow looks weird and doesn’t work.
+The parent container needs a width and height, because Svelte Flow uses its parent dimensions.
+If you have multiple flows on one page, you need to pass a unique id prop to each component to make Svelte Flow work properly.
+
+## Adding nodes
+Now that the basics are set up, we can add a few nodes. For this, you need to create a writable store  with an array of [node objects](https://svelteflow.dev/api-reference/types/node) like this:
+
+```ts
+import { writable } from 'svelte/store';
+ 
+const nodes = writable([
+  {
+    id: '1', // required and needs to be a string
+    position: { x: 0, y: 0 }, // required
+    data: { label: 'hey' }, // required
+  },
+  {
+    id: '2',
+    position: { x: 100, y: 100 },
+    data: { label: 'world' },
+  },
+]);
+```
+
+If we add these nodes to our SvelteFlow component, we can see them on the screen:
+
+- Components:
+> App.svelte
+```svelte
+<script>
+  import { writable } from 'svelte/store';
+  import { SvelteFlow, Background, Controls } from '@xyflow/svelte';
+ 
+  import '@xyflow/svelte/dist/style.css';
+ 
+  const nodes = writable([
+    {
+      id: '1', // required and needs to be a string
+      position: { x: 0, y: 0 }, // required
+      data: { label: 'hey' } // required
+    },
+    {
+      id: '2',
+      position: { x: 100, y: 100 },
+      data: { label: 'world' }
+    }
+  ]);
+ 
+  const edges = writable([]);
+</script>
+ 
+<main>
+  <SvelteFlow {nodes} {edges}>
+    <Background />
+    <Controls />
+  </SvelteFlow>
+</main>
+ 
+<style>
+  main {
+    height: 100vh;
+  }
+</style>
+```
+
+There are lots of options to configure nodes. You can see the full list of options on the [node option site](https://svelteflow.dev/api-reference/types/node).
+
+This is a good start! You can already do a lot of things:
+
+- drag nodes around
+- select nodes by clicking on them
+- delete nodes by pressing the Backspace key
+- multi select nodes by holding down the Shift key create a selection box
+
+## Connecting nodes with an edge
+Now that we have two nodes, let’s connect them with an edge.
+
+To make an edge, we need to specify two attributes: the source node (edge start) and the target node (edge end). We use the id of the two nodes to specify this (in our example, our two nodes have ids of “1” and “2”). The edges are stored in a writable store, just like the nodes:
+
+```ts
+import { writable } from 'svelte/store';
+ 
+const edges = writable([{ id: '1-2', source: '1', target: '2' }]);
+```
+
+- Components:
+> App.svelte
+```svelte
+<script>
+  import { writable } from 'svelte/store';
+  import { SvelteFlow, Background, Controls } from '@xyflow/svelte';
+ 
+  import '@xyflow/svelte/dist/style.css';
+ 
+  const nodes = writable([
+    {
+      id: '1', // required and needs to be a string
+      position: { x: 0, y: 0 }, // required
+      data: { label: 'hey' } // required
+    },
+    {
+      id: '2',
+      position: { x: 100, y: 100 },
+      data: { label: 'world' }
+    }
+  ]);
+ 
+  const edges = writable([{ id: '1-2', source: '1', target: '2' }]);
+</script>
+ 
+<main>
+  <SvelteFlow {nodes} {edges}>
+    <Background />
+    <Controls />
+  </SvelteFlow>
+</main>
+ 
+<style>
+  main {
+    height: 100vh;
+  }
+</style>
+```
+
+Just like nodes, edges have a lot of options too. You can choose a type, define start and end markers, labels, and change the styling. You can see the full list of options on the [edge option site](https://svelteflow.dev/api-reference/types/edge).
+
+Fine-tuning the flow
+Now that we have a basic flow, let’s fine-tune it a bit. You can automatically fit all nodes into the viewport by using the fitView prop.
+
+If you want something besides a white background, you can easily adjust it by using the bgColor prop of the Background component. As you can see, we also used the patternColor prop to change the color of the background pattern. You can also change the pattern with the variant prop.
+
+By default the controls panel comes with a zoom-in, zoom-out, fit view and lock button. You can remove the lock button for example by setting showLock={false}.
+
+- Components:
+> App.svelte
+```svelte
+<script>
+  import { writable } from 'svelte/store';
+  import { SvelteFlow, Background, Controls } from '@xyflow/svelte';
+ 
+  import '@xyflow/svelte/dist/style.css';
+ 
+  const nodes = writable([
+    {
+      id: '1', // required and needs to be a string
+      position: { x: 0, y: 0 }, // required
+      data: { label: 'hey' } // required
+    },
+    {
+      id: '2',
+      position: { x: 100, y: 100 },
+      data: { label: 'world' }
+    }
+  ]);
+ 
+  const edges = writable([{ id: '1-2', source: '1', target: '2' }]);
+</script>
+ 
+<main>
+  <SvelteFlow {nodes} {edges} fitView>
+    <Background bgColor="rgba(126,159,219,0.5)" patternColor="white" />
+    <Controls showInteractive={false} />
+  </SvelteFlow>
+</main>
+ 
+<style>
+  main {
+    height: 100vh;
+  }
+</style>
+```
+
+There are way more things you can do! You can get a good overview by checking out the examples or the API reference.

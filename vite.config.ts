@@ -1,3 +1,4 @@
+import path from "path";
 import { crx } from "@crxjs/vite-plugin";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
@@ -15,4 +16,9 @@ export default defineConfig({
             clientPort: 5173,
         },
     },
+    resolve: {
+        alias: {
+          $lib: path.resolve("./src/lib"),
+        },
+      },
 });
