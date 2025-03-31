@@ -3,6 +3,7 @@
   import { notes } from "../../storage";
   import { format } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
+  import { onMount } from 'svelte';
   
   let { note, showActions = true } = $props<{ 
     note: Note; 
@@ -10,9 +11,31 @@
   }>();
   
   let isEditing = $state(false);
-  let editedContent = $state(note.content);
-  let editedTags = $state(note.tags.join(", "));
-  let editedColor = $state(note.color || "#f9fafb");
+  let editedContent = $state(note?.content || "");
+  let editedTags = $state((note?.tags || []).join(", "));
+  let editedColor = $state(note?.color || "#f9fafb");
+  let hasError = $state(false);
+  let errorMessage = $state("");
+  
+  onMount(() => {
+    // Verificar se a nota é válida
+    if (!note) {
+      console.error("NoteCard: nota inválida ou indefinida");
+      hasError = true;
+      errorMessage = "Nota inválida ou indefinida";
+      return;
+    }
+    
+    // Verificar se a nota tem as propriedades necessárias
+    if (!note.id || !note.content) {
+      console.error(`NoteCard: propriedades da nota ausentes - ID: ${note?.id}, content: ${note?.content?.substring(0, 30)}`);
+      hasError = true;
+      errorMessage = "Propriedades da nota ausentes";
+      return;
+    }
+    
+    console.log(`NoteCard montado para nota ${note.id}: ${note.content.substring(0, 30)}...`);
+  });
   
   // Lista de cores predefinidas para escolher
   const colorOptions = [
@@ -26,6 +49,7 @@
   ];
   
   function formatDate(timestamp: number) {
+    if (!timestamp) return "Data desconhecida";
     return format(new Date(timestamp), "PPp", { locale: ptBR });
   }
   
@@ -40,7 +64,7 @@
   function startEditing() {
     isEditing = true;
     editedContent = note.content;
-    editedTags = note.tags.join(", ");
+    editedTags = (note.tags || []).join(", ");
     editedColor = note.color || "#f9fafb";
   }
   
@@ -73,8 +97,12 @@
   }
 </script>
 
-<div class="note-card p-4 rounded-lg shadow-sm transition-all" style="background-color: {note.color || '#f9fafb'}">
-  {#if isEditing}
+<div class="note-card p-4 rounded-lg shadow-sm transition-all" style="background-color: {note?.color || '#f9fafb'}">
+  {#if hasError}
+    <div class="error-message p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-md">
+      <p>Erro ao renderizar nota: {errorMessage}</p>
+    </div>
+  {:else if isEditing}
     <div class="note-edit-form space-y-3">
       <div>
         <textarea 
@@ -127,9 +155,9 @@
     </div>
   {:else}
     <div class="note-content">
-      <div class="whitespace-pre-wrap mb-3">{note.content}</div>
+      <div class="whitespace-pre-wrap mb-3">{note?.content || "Sem conteúdo"}</div>
       
-      {#if note.tags.length > 0}
+      {#if note?.tags?.length > 0}
         <div class="note-tags flex flex-wrap gap-1 mb-3">
           {#each note.tags as tag}
             <span class="tag text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-full">
@@ -141,7 +169,7 @@
       
       <div class="note-meta flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <span>
-          Criada em {formatDate(note.dateCreated)}
+          Criada em {formatDate(note?.dateCreated)}
         </span>
         
         {#if showActions}

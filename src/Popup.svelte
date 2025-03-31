@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import SaveItemForm from './components/SaveItemForm.svelte';
-  import { notes, flashcards, savedItems } from './storage';
+  import { notes, flashcards, savedItems, fixReferences } from './storage';
   import type { Note, Flashcard } from './types';
   import PopupNoteCreator from './lib/components/PopupNoteCreator.svelte';
   import PopupFlashcardCreator from './lib/components/PopupFlashcardCreator.svelte';
@@ -22,6 +22,8 @@
   let notesViewMode = $state("create");
   let flashcardsViewMode = $state("create");
   let currentTitle = $state('');
+  let isFixingReferences = $state(false);
+  let fixResult = $state<any>(null);
   
   onMount(() => {
     console.log("Popup montado, obtendo informações da aba...");
@@ -116,6 +118,29 @@
   $effect(() => {
     chrome.storage.local.set({ popupActiveTab: activeTab });
   });
+
+  function runFixReferences() {
+    isFixingReferences = true;
+    setTimeout(() => {
+      try {
+        fixResult = fixReferences();
+        console.log("Resultado da correção:", fixResult);
+        
+        // Recarregar notas e flashcards após a correção
+        loadRecentNotes();
+        loadRecentFlashcards();
+        
+        // Limpar o resultado após 3 segundos
+        setTimeout(() => {
+          fixResult = null;
+        }, 3000);
+      } catch (error) {
+        console.error("Erro ao corrigir referências:", error);
+      } finally {
+        isFixingReferences = false;
+      }
+    }, 100);
+  }
 </script>
 
 <main class="popup-container w-full max-h-[600px] overflow-y-auto overflow-x-hidden">
@@ -352,7 +377,34 @@
   </div>
   
   <footer class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
-    <!-- Botão de Configurações removido -->
+    <!-- Botão para corrigir referências -->
+    <div class="flex justify-center">
+      {#if fixResult}
+        <div class="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded">
+          Referências corrigidas com sucesso!
+        </div>
+      {:else}
+        <button 
+          class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1 rounded border border-blue-200 dark:border-blue-800 flex items-center gap-1 transition-colors"
+          onclick={runFixReferences}
+          disabled={isFixingReferences}
+        >
+          {#if isFixingReferences}
+            <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Corrigindo...</span>
+          {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l1 1a1 1 0 01-1.414 1.414L10 5.414 8.707 6.707a1 1 0 01-1.414-1.414l1-1A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l1 1a1 1 0 01-1.414 1.414L10 5.414 8.707 6.707a1 1 0 01-1.414-1.414l1-1A1 1 0 0110 3zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span>Corrigir Referências</span>
+          {/if}
+        </button>
+      {/if}
+    </div>
   </footer>
 </main>
 

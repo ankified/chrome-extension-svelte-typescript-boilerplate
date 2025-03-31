@@ -6,7 +6,7 @@ Este documento descreve o estado atual da implementação da extensão de navega
 
 ## Estrutura do Projeto
 
-- **Tecnologias**: Svelte 5, TypeScript, TailwindCSS
+- **Tecnologias**: Svelte 5, TypeScript, TailwindCSS, shadcn-svelte
 - **Tema**: Suporte completo a tema claro e escuro (seguindo preferência do sistema)
 - **Interfaces**: Popup, Painel Lateral e Página de Opções
 
@@ -17,7 +17,7 @@ Este documento descreve o estado atual da implementação da extensão de navega
 Os principais componentes de interface do usuário foram atualizados para utilizar a nova sintaxe do Svelte 5:
 
 - **NoteCard**: Visualização e edição de notas individuais
-- **FlashcardCard**: Visualização e edição de flashcards com sistema de virar o cartão
+- **FlashcardCard**: Visualização e edição de flashcards com sistema de virar o cartão e diálogo de edição
 - **QuickNoteInput**: Formulário para criação rápida de notas
 - **FlashcardInput**: Formulário para criação de flashcards
 - **FlashcardStudySession**: Sistema de estudo de flashcards com algoritmo de repetição espaçada
@@ -28,6 +28,12 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **FlashcardsView**: Visualização de flashcards com filtros por tags
 - **SavedItemsView**: Visualização de itens salvos com filtros e ordenação
 - **SettingsView**: Configurações da extensão, incluindo backup/exportação de dados
+
+### Componentes UI Avançados
+
+- **Dialog**: Componente de diálogo modal para edição de flashcards e interações avançadas
+- **TagsInput**: Sistema avançado de gerenciamento de tags com sugestões de tags existentes
+- **ItemIndicator**: Indicador visual de item vinculado para flashcards e notas
 
 ## Features Implementadas
 
@@ -53,6 +59,21 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Personalizar flashcards com cores e tags
 - Sistema de estudo com algoritmo de repetição espaçada (SM-2)
 - Interface para estudar flashcards com avaliação de dificuldade
+- Edição de flashcards em diálogos modais com UI aprimorada
+
+### Sistema de Tags
+
+- Interface visual para gerenciamento de tags (chips)
+- Sugestões de tags existentes durante criação/edição
+- Remoção de tags com um clique
+- Normalização automática de tags para evitar duplicação
+
+### Referências entre Itens
+
+- Visualização do item vinculado em flashcards
+- Acesso rápido ao conteúdo original do item salvo
+- Ferramentas para corrigir referências quebradas entre itens
+- Indicadores visuais de vínculo incluindo favicon e título
 
 ### Configurações e Utilitários
 
@@ -70,40 +91,54 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Utilização de `$derived` em vez da sintaxe `$:`
 - Ajustes de tipagem para compatibilidade com TypeScript
 
+### Integração com shadcn-svelte
+
+- Implementação de componentes Dialog para edição modal
+- Uso de componentes modernos baseados em Radix UI
+- Estilização consistente com suporte a tema claro/escuro
+- Melhorias de acessibilidade em interações complexas
+
 ### Correção de Bugs
 
-- Correção na exibição de notas que não estavam aparecendo na visualização
+- Correção na exibição de notas e flashcards na página de opções
 - Implementação de modo de depuração para diagnóstico de problemas
-- Correção na vinculação entre notas e itens salvos
-- Tratamento adequado de notas sem vínculo válido
+- Correção na vinculação entre notas, flashcards e itens salvos
+- Tratamento adequado de itens sem vínculo válido
 
 ### Melhorias de UI/UX
 
-- Interface mais intuitiva para criação e edição de notas
-- Seletor de cores para personalização de notas e flashcards
+- Interface mais intuitiva para criação e edição de notas e flashcards
+- Seletor de cores aprimorado para personalização de itens
 - Visualização em grid para melhor aproveitamento do espaço
 - Design responsivo para adaptar a diferentes tamanhos de tela
+- Sistema avançado de gestão de tags com sugestões e chips visuais
 
-## Estado da Visualização de Notas
+## Estado da Visualização de Flashcards e Notas
 
-A visualização de notas foi significativamente melhorada para garantir que todas as notas sejam exibidas corretamente:
+A visualização de flashcards e notas foi significativamente melhorada:
 
-- Notas são agrupadas por item quando possuem um vínculo válido
-- Notas sem vínculo válido são exibidas em uma seção dedicada
-- Implementação de modo de depuração para ajudar a identificar problemas
-- Correção na lógica de filtro e agrupamento
+- Flashcards exibem claramente a cor selecionada pelo usuário
+- Interface de edição de flashcards migrada para Dialog modal
+- Sistema avançado de gerenciamento de tags com interface visual
+- Indicação clara do item ao qual flashcards estão vinculados
+- Notas e flashcards são agrupados por item quando possuem vínculo válido
+- Itens sem vínculo válido são exibidos em uma seção dedicada
 
 ## Próximos Passos e Melhorias Planejadas
 
+- Otimização de performance do popup e alternação entre abas
 - Implementação completa da visualização em fluxo para notas e flashcards
-- Aprimoramento do sistema de repetição espaçada com mais opções de configuração
-- Melhorias na sincronização entre dispositivos
-- Implementação de estatísticas de estudo para flashcards
-- Adição de suporte a rich text nas notas
-- Expansão das opções de personalização
+- Adicionar filtros por item vinculado
+- Migrar edição de notas para Dialog
+- Adicionar títulos às notas
+- Implementar o editor TipTap para conteúdo rich text
+- Aprimorar a sidebar com seção de ferramentas colapsável
+- Desenvolver visualização em KanBan para flashcards
+- Implementar anotações de texto selecionado e vídeos
+- Expandir dashboards de estatísticas e progresso
 
 ## Conclusão
 
-O projeto se encontra em estado funcional com todas as principais features implementadas e utilizando a moderna sintaxe do Svelte 5. Os componentes foram adaptados para oferecer uma experiência fluida tanto no popup da extensão quanto nas interfaces mais amplas do painel lateral e página de opções.
+O projeto encontra-se em estado funcional com todas as principais features implementadas e utilizando a moderna sintaxe do Svelte 5. As melhorias recentes nos componentes de UI, especialmente a migração para Dialogs modais e o sistema avançado de tags, proporcionam uma experiência mais intuitiva e agradável.
 
-As correções recentes garantem que as funcionalidades de notas e flashcards funcionem corretamente, com especial atenção ao vínculo entre itens e notas/flashcards, que é fundamental para a organização do conteúdo. 
+As correções realizadas garantem que as funcionalidades de notas e flashcards funcionem corretamente em todos os contextos, com especial atenção ao vínculo entre itens e à visualização de cores e informações associadas, que são fundamentais para a organização e utilidade da extensão. 

@@ -99,20 +99,36 @@ flashcards.subscribe(cards => {
   console.log(`[Storage Debug] flashcards atualizado: ${cards.length} flashcards`);
 });
 
-// Função para corrigir as referências cruzadas entre itens e notas
+// Função para corrigir as referências cruzadas entre itens, notas e flashcards
 export function fixReferences() {
-  console.log("[Storage] Iniciando correção de referências entre itens e notas");
+  console.log("[Storage] Iniciando correção de referências entre itens, notas e flashcards");
   
   // Obter os dados atuais
   let allItems: SavedItem[] = [];
   let allNotes: Note[] = [];
+  let allFlashcards: Flashcard[] = [];
   
   const unsubItemsTemp = savedItems.subscribe(items => { allItems = items; });
   const unsubNotesTemp = notes.subscribe(notesList => { allNotes = notesList; });
+  const unsubFlashcardsTemp = flashcards.subscribe(cardsList => { allFlashcards = cardsList; });
   unsubItemsTemp();
   unsubNotesTemp();
+  unsubFlashcardsTemp();
   
-  console.log(`[Storage] Encontrados ${allItems.length} itens e ${allNotes.length} notas`);
+  console.log(`[Storage] Encontrados ${allItems.length} itens, ${allNotes.length} notas e ${allFlashcards.length} flashcards`);
+  
+  // Logar detalhes das notas para depuração
+  console.log("[Storage] Detalhes das notas antes da correção:");
+  allNotes.forEach(note => {
+    console.log(`  - Nota ID: ${note.id}, ItemID: ${note.itemId || "nenhum"}, Conteúdo: ${note.content.substring(0, 30)}...`);
+    const item = note.itemId ? allItems.find(item => item.id === note.itemId) : null;
+    if (item) {
+      const isReferenced = item.noteIds && item.noteIds.includes(note.id);
+      console.log(`    Associada ao item: "${item.title}" (${isReferenced ? 'referenciada' : 'NÃO referenciada'} no item)`);
+    }
+  });
+  
+  // --- CORREÇÃO DE REFERÊNCIAS ENTRE ITENS E NOTAS ---
   
   // Verificar notas com itemId inválido
   const notesWithInvalidItem = allNotes.filter(note => 
@@ -143,40 +159,107 @@ export function fixReferences() {
     console.log(`[Storage] Encontradas ${notesNotReferencedInItems.length} notas não referenciadas nos itens`);
   }
   
-  // Corrigir as referências
-  // 1. Atualizar os itens para incluir referências a todas as notas
+  // --- CORREÇÃO DE REFERÊNCIAS ENTRE ITENS E FLASHCARDS ---
+  
+  // Verificar flashcards com itemId inválido
+  const flashcardsWithInvalidItem = allFlashcards.filter(card => 
+    !card.itemId || !allItems.some(item => item.id === card.itemId)
+  );
+  
+  if (flashcardsWithInvalidItem.length > 0) {
+    console.log(`[Storage] Encontrados ${flashcardsWithInvalidItem.length} flashcards com itemId inválido`);
+  }
+  
+  // Verificar itens com flashcardIds inválidos
+  const itemsWithInvalidFlashcards = allItems.filter(item => {
+    if (!item.flashcardIds) return false;
+    return item.flashcardIds.some(cardId => !allFlashcards.some(card => card.id === cardId));
+  });
+  
+  if (itemsWithInvalidFlashcards.length > 0) {
+    console.log(`[Storage] Encontrados ${itemsWithInvalidFlashcards.length} itens com flashcardIds inválidos`);
+  }
+  
+  // Verificar flashcards que não estão referenciados nos itens
+  const flashcardsNotReferencedInItems = allFlashcards.filter(card => {
+    const relatedItem = allItems.find(item => item.id === card.itemId);
+    return !relatedItem || !relatedItem.flashcardIds || !relatedItem.flashcardIds.includes(card.id);
+  });
+  
+  if (flashcardsNotReferencedInItems.length > 0) {
+    console.log(`[Storage] Encontrados ${flashcardsNotReferencedInItems.length} flashcards não referenciados nos itens`);
+  }
+  
+  // --- CORREÇÃO DAS REFERÊNCIAS ---
+  
   let itemsUpdated = false;
+  
+  // 1. Atualizar os itens para incluir referências a todas as notas e flashcards
   const correctedItems = allItems.map(item => {
+    let needsUpdate = false;
+    let updatedNoteIds = item.noteIds || [];
+    let updatedFlashcardIds = item.flashcardIds || [];
+    
     // Encontrar todas as notas deste item
     const itemNotes = allNotes.filter(note => note.itemId === item.id);
     
-    // Se não houver notas para este item, não é necessário atualizar
-    if (itemNotes.length === 0) return item;
-    
-    // Se o item já tiver todas as noteIds corretas, não é necessário atualizar
+    // Verificar se o item já tem todas as noteIds corretas
     const hasAllNoteIds = itemNotes.every(note => 
-      item.noteIds && item.noteIds.includes(note.id)
+      updatedNoteIds.includes(note.id)
     );
     
-    if (hasAllNoteIds) return item;
+    // Se não tiver todas as noteIds corretas, atualizar
+    if (!hasAllNoteIds && itemNotes.length > 0) {
+      updatedNoteIds = [...new Set([...updatedNoteIds, ...itemNotes.map(note => note.id)])];
+      needsUpdate = true;
+      console.log(`[Storage] Atualizando noteIds para o item ${item.id}`);
+    }
     
-    // Atualizar noteIds no item
-    itemsUpdated = true;
-    return {
-      ...item,
-      noteIds: itemNotes.map(note => note.id)
-    };
+    // Encontrar todos os flashcards deste item
+    const itemFlashcards = allFlashcards.filter(card => card.itemId === item.id);
+    
+    // Verificar se o item já tem todos os flashcardIds corretos
+    const hasAllFlashcardIds = itemFlashcards.every(card => 
+      updatedFlashcardIds.includes(card.id)
+    );
+    
+    // Se não tiver todos os flashcardIds corretos, atualizar
+    if (!hasAllFlashcardIds && itemFlashcards.length > 0) {
+      updatedFlashcardIds = [...new Set([...updatedFlashcardIds, ...itemFlashcards.map(card => card.id)])];
+      needsUpdate = true;
+      console.log(`[Storage] Atualizando flashcardIds para o item ${item.id}`);
+    }
+    
+    // Se precisar atualizar, retornar o item atualizado
+    if (needsUpdate) {
+      itemsUpdated = true;
+      return {
+        ...item,
+        noteIds: updatedNoteIds,
+        flashcardIds: updatedFlashcardIds
+      };
+    }
+    
+    // Se não precisar atualizar, retornar o item original
+    return item;
   });
   
+  // Aplicar as correções aos itens se necessário
   if (itemsUpdated) {
-    console.log("[Storage] Atualizando itens para corrigir referências a notas");
+    console.log("[Storage] Atualizando itens para corrigir referências");
     savedItems.set(correctedItems);
   }
   
-  // Correção de notas com itemId inválido
-  if (notesWithInvalidItem.length > 0) {
-    console.log("[Storage] As notas com itemId inválido serão exibidas como 'Notas sem página associada'");
-  }
+  // Logar detalhes das notas após a correção para depuração
+  console.log("[Storage] Detalhes das notas após a correção:");
+  allNotes.forEach(note => {
+    const item = note.itemId ? correctedItems.find(item => item.id === note.itemId) : null;
+    const isReferenced = item && item.noteIds && item.noteIds.includes(note.id);
+    console.log(`  - Nota ID: ${note.id}, ItemID: ${note.itemId || "nenhum"}, Conteúdo: ${note.content.substring(0, 30)}...`);
+    if (item) {
+      console.log(`    Associada ao item: "${item.title}" (${isReferenced ? 'referenciada' : 'NÃO referenciada'} no item)`);
+    }
+  });
   
   console.log("[Storage] Correção de referências concluída");
   
@@ -184,7 +267,10 @@ export function fixReferences() {
     itemsUpdated,
     notesWithInvalidItem: notesWithInvalidItem.length,
     itemsWithInvalidNotes: itemsWithInvalidNotes.length,
-    notesNotReferencedInItems: notesNotReferencedInItems.length
+    notesNotReferencedInItems: notesNotReferencedInItems.length,
+    flashcardsWithInvalidItem: flashcardsWithInvalidItem.length,
+    itemsWithInvalidFlashcards: itemsWithInvalidFlashcards.length,
+    flashcardsNotReferencedInItems: flashcardsNotReferencedInItems.length
   };
 }
 

@@ -3,6 +3,11 @@
   import { flashcards } from "../../storage";
   import { format } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
+  import { onMount } from 'svelte';
+
+  let { cards } = $props<{
+    cards: Flashcard[]
+  }>();
 
   // Estado da sessão de estudo
   let currentIndex = $state(0);
@@ -18,25 +23,62 @@
   // Lista de todas as tags disponíveis
   let allTags = $derived([...new Set($flashcards.flatMap(card => card.tags))]);
   
-  // Cartões disponíveis para estudo com base nos filtros
-  let availableCards = $derived($flashcards.filter(card => {
-    // Filtrar por tags selecionadas
-    if (selectedTags.length > 0) {
-      if (!card.tags.some(tag => selectedTags.includes(tag))) {
-        return false;
-      }
+  // Número de cartões disponíveis para a sessão
+  // Função auxiliar para contagem
+  function countAvailableCards(): number {
+    if (cards && cards.length > 0) {
+      return cards.filter((card: Flashcard) => {
+        if (selectedTags.length > 0) {
+          return card.tags.some((tag: string) => selectedTags.includes(tag));
+        }
+        return true;
+      }).length;
     }
     
-    // Aqui poderíamos adicionar mais filtros, como nível de dificuldade ou data da próxima revisão
-    return true;
-  }));
+    return $flashcards.filter((card: Flashcard) => {
+      if (selectedTags.length > 0) {
+        return card.tags.some((tag: string) => selectedTags.includes(tag));
+      }
+      return true;
+    }).length;
+  }
+  
+  // Variável derivada para contagem
+  let availableCardsCount = $derived(countAvailableCards());
+  
+  onMount(() => {
+    // Se cards for fornecido e não vazio, iniciar a sessão automaticamente
+    if (cards && cards.length > 0) {
+      console.log(`FlashcardStudySession: Recebido ${cards.length} cards via prop`);
+      startSession();
+    }
+  });
   
   // Inicia uma nova sessão de estudo
   function startSession() {
-    if (availableCards.length === 0) return;
+    const cardsToStudy = (() => {
+      if (cards && cards.length > 0) {
+        return cards.filter((card: Flashcard) => {
+          if (selectedTags.length > 0) {
+            return card.tags.some((tag: string) => selectedTags.includes(tag));
+          }
+          return true;
+        });
+      }
+      
+      return $flashcards.filter((card: Flashcard) => {
+        if (selectedTags.length > 0) {
+          return card.tags.some((tag: string) => selectedTags.includes(tag));
+        }
+        return true;
+      });
+    })();
+    
+    if (cardsToStudy.length === 0) return;
     
     // Embaralhar e selecionar os cartões
-    const shuffled = [...availableCards].sort(() => Math.random() - 0.5);
+    const shuffled = [...cardsToStudy];
+    shuffled.sort(() => Math.random() - 0.5);
     studyQueue = shuffled.slice(0, Math.min(maxCards, shuffled.length));
     completedCards = [];
     currentIndex = 0;
@@ -77,8 +119,8 @@
     completedCards = [...completedCards, card];
     
     // Atualizar a store de flashcards
-    flashcards.update(cards => 
-      cards.map(c => c.id === card.id ? card : c)
+    flashcards.update(allCards => 
+      allCards.map(c => c.id === card.id ? card : c)
     );
     
     // Avançar para o próximo cartão
@@ -149,22 +191,22 @@
       
       <div class="session-info mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded">
         <p class="text-sm">
-          Cartões disponíveis: <span class="font-semibold">{availableCards.length}</span>
+          Cartões disponíveis: <span class="font-semibold">{availableCardsCount}</span>
         </p>
         <p class="text-sm">
-          Serão estudados: <span class="font-semibold">{Math.min(maxCards, availableCards.length)}</span>
+          Serão estudados: <span class="font-semibold">{Math.min(maxCards, availableCardsCount)}</span>
         </p>
       </div>
       
       <button 
         onclick={startSession}
-        disabled={availableCards.length === 0}
+        disabled={availableCardsCount === 0}
         class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Iniciar Sessão de Estudo
       </button>
       
-      {#if availableCards.length === 0}
+      {#if availableCardsCount === 0}
         <p class="mt-2 text-center text-sm text-red-500">
           Não há cartões disponíveis com os filtros atuais.
         </p>
@@ -190,10 +232,10 @@
         </div>
       </div>
       
-      <div class="flashcard-display p-4 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="flashcard-display p-4 rounded border border-gray-300 dark:border-gray-700" style="background-color: {currentCard.color || '#20b2aa'}">
         <div class="mb-6">
           <h3 class="text-lg font-medium mb-4">Pergunta:</h3>
-          <div class="p-3 bg-white dark:bg-gray-900 rounded min-h-[100px] whitespace-pre-wrap">
+          <div class="p-3 rounded min-h-[100px] whitespace-pre-wrap">
             {currentCard.front}
           </div>
         </div>
@@ -201,7 +243,7 @@
         {#if showAnswer}
           <div class="mb-6">
             <h3 class="text-lg font-medium mb-4">Resposta:</h3>
-            <div class="p-3 bg-white dark:bg-gray-900 rounded min-h-[100px] whitespace-pre-wrap">
+            <div class="p-3 rounded min-h-[100px] whitespace-pre-wrap">
               {currentCard.back}
             </div>
           </div>

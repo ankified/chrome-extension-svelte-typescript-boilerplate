@@ -9,7 +9,7 @@
   let searchQuery = $state("");
   let selectedTags = $state<string[]>([]);
   let viewMode = $state("list"); // 'list' ou 'flow'
-  let debugMode = $state(false); // Para exibir informações de depuração
+  let debugMode = $state(true); // Iniciar com modo debug ativado para identificar problemas
   
   // Notas filtradas
   let filteredNotes = $derived($notes.filter(note => {
@@ -28,7 +28,7 @@
   // Todas as tags existentes
   let allTags = $derived([...new Set($notes.flatMap(note => note.tags))]);
   
-  // Agrupar por item relacionado
+  // Agrupar por item relacionado - Versão corrigida
   let notesByItem = $derived(() => {
     console.log("[NotesView] Agrupando notas por item. Total de notas:", filteredNotes.length);
     console.log("[NotesView] Total de savedItems:", $savedItems.length);
@@ -41,28 +41,32 @@
     
     const result: Record<string, Note[]> = {};
     
-    // CORREÇÃO: Primeiro organizar notas por itemId
+    // Verificar cada nota e organizar por itemId
     filteredNotes.forEach(note => {
-      // Considerar apenas notas com ItemId válido (que existe em savedItems)
-      const itemId = note.itemId;
-      const itemExists = itemId && $savedItems.some(item => item.id === itemId);
+      // Verificar se a nota tem um itemId válido
+      const itemExists = note.itemId && $savedItems.some(item => item.id === note.itemId);
       
       if (itemExists) {
-        if (!result[itemId]) {
-          result[itemId] = [];
+        // Criar o array para o itemId se não existir
+        if (!result[note.itemId]) {
+          result[note.itemId] = [];
         }
-        result[itemId].push(note);
-        console.log(`[NotesView] Nota ${note.id} associada ao item ${itemId}`);
+        
+        // Adicionar a nota ao array do itemId
+        result[note.itemId].push(note);
+        console.log(`[NotesView] Nota ${note.id} associada ao item ${note.itemId}`);
       } else {
-        console.log(`[NotesView] Nota ${note.id} não tem itemId válido`);
+        console.log(`[NotesView] Nota ${note.id} não associada a um item válido`);
       }
     });
     
     console.log("[NotesView] Agrupamento concluído, total de grupos:", Object.keys(result).length);
+    console.log("[NotesView] Grupos:", Object.keys(result));
+    
     return result;
   });
   
-  // Notas sem vínculo válido
+  // Notas sem vínculo válido - Versão corrigida
   let unlinkedNotes = $derived(() => {
     // Para cada nota filtrada, verificar se ela não tem um itemId válido
     console.log("[NotesView] Verificando notas sem vínculo válido");
@@ -81,6 +85,13 @@
     console.log("[NotesView] Componente montado");
     console.log(`[NotesView] Total de notas disponíveis: ${$notes.length}`);
     console.log(`[NotesView] Total de itens salvos: ${$savedItems.length}`);
+    
+    // Forçar a correção de referências ao montar o componente
+    import("../../storage").then(module => {
+      console.log("[NotesView] Executando correção de referências...");
+      const results = module.fixReferences();
+      console.log("[NotesView] Resultado da correção:", results);
+    });
     
     // Depuração: mapear as notas e seus itens associados
     $notes.forEach(note => {
@@ -161,16 +172,31 @@
       <p>Grupos de notas: {Object.keys(notesByItem).length}</p>
       <p>Notas sem vínculo válido: {unlinkedNotes.length}</p>
       
+      {#if $notes.length === 0}
+        <div class="mt-2 text-red-500">
+          ALERTA: Não há notas carregadas! Verifique o armazenamento.
+        </div>
+      {/if}
+      
       {#if unlinkedNotes.length > 0}
         <div class="mt-2">
           <p class="font-bold">Notas sem vínculo válido:</p>
           <ul class="list-disc pl-4">
-            {#each unlinkedNotes as note}
+            {#each unlinkedNotes as note (note.id)}
               <li>ID: {note.id}, ItemID: {note.itemId || "nenhum"}</li>
             {/each}
           </ul>
         </div>
       {/if}
+      
+      <div class="mt-2">
+        <p class="font-bold">Conteúdo de todas as notas:</p>
+        <ul class="list-disc pl-4">
+          {#each $notes as note (note.id)}
+            <li>ID: {note.id}, Conteúdo: {note.content.substring(0, 30)}...</li>
+          {/each}
+        </ul>
+      </div>
     </div>
   {/if}
   
@@ -198,45 +224,63 @@
         </div>
       </div>
     {:else}
-      <!-- Mostrar notas sem vínculo primeiro, se houver -->
-      {#if unlinkedNotes.length > 0}
+      <!-- Mostrar notas sem agrupamento, quando não há grupos nem notas sem vínculo -->
+      {#if Object.keys(notesByItem).length === 0 && unlinkedNotes.length === 0}
         <div class="item-notes-section mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded">
           <div class="item-header mb-4">
-            <h3 class="text-xl font-semibold mb-1">Notas sem página associada</h3>
+            <h3 class="text-xl font-semibold mb-1">Todas as notas</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              Estas notas não estão vinculadas a nenhuma página salva.
+              Exibindo todas as notas disponíveis
             </p>
           </div>
           
           <div class="notes-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {#each unlinkedNotes as note}
+            {#each filteredNotes as note}
               <NoteCard {note} />
             {/each}
           </div>
         </div>
-      {/if}
-      
-      <!-- Mostrar notas agrupadas por item, se houver -->
-      {#if Object.keys(notesByItem).length > 0}
-        {#each Object.entries(notesByItem) as [itemId, itemNotes]}
-          {@const item = $savedItems.find(i => i.id === itemId)}
-          {#if item && itemNotes.length > 0}
-            <div class="item-notes-section mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded">
-              <div class="item-header mb-4">
-                <h3 class="text-xl font-semibold mb-1">{item.title}</h3>
-                <a href={item.url} target="_blank" class="text-blue-600 dark:text-blue-400 text-sm block truncate">
-                  {item.url}
-                </a>
-              </div>
-              
-              <div class="notes-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {#each itemNotes as note}
-                  <NoteCard {note} />
-                {/each}
-              </div>
+      {:else}
+        <!-- Mostrar notas sem vínculo primeiro, se houver -->
+        {#if unlinkedNotes.length > 0}
+          <div class="item-notes-section mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded">
+            <div class="item-header mb-4">
+              <h3 class="text-xl font-semibold mb-1">Notas sem página associada</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Estas notas não estão vinculadas a nenhuma página salva.
+              </p>
             </div>
-          {/if}
-        {/each}
+            
+            <div class="notes-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {#each unlinkedNotes as note (note.id)}
+                <NoteCard {note} />
+              {/each}
+            </div>
+          </div>
+        {/if}
+        
+        <!-- Mostrar notas agrupadas por item, se houver -->
+        {#if Object.keys(notesByItem).length > 0}
+          {#each Object.entries(notesByItem) as [itemId, itemNotes]}
+            {@const item = $savedItems.find(i => i.id === itemId)}
+            {#if item && itemNotes.length > 0}
+              <div class="item-notes-section mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded">
+                <div class="item-header mb-4">
+                  <h3 class="text-xl font-semibold mb-1">{item.title}</h3>
+                  <a href={item.url} target="_blank" class="text-blue-600 dark:text-blue-400 text-sm block truncate">
+                    {item.url}
+                  </a>
+                </div>
+                
+                <div class="notes-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {#each itemNotes as note}
+                    <NoteCard {note} />
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          {/each}
+        {/if}
       {/if}
     {/if}
   {:else if viewMode === "flow"}

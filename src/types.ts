@@ -56,5 +56,6 @@ export interface Flashcard {
   easeFactor: number; // Fator de facilidade para algoritmo de repetição espaçada
   nextReviewDate?: number;
   tags: string[];
+  color?: string; // Cor de fundo do flashcard
   position?: { x: number, y: number }; // Para SvelteFlow
 } 

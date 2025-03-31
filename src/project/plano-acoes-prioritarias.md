@@ -4,24 +4,34 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Correções Críticas
 
-### 1. Problemas de Exibição na Página de Opções
+### ~~1. Problemas de Exibição na Página de Opções~~ (RESOLVIDO)
 
-- **Problema**: Notas não estão sendo exibidas na aba "Notas" da página de opções, enquanto são exibidas corretamente no popup.
-- **Ação**: Investigar a diferença de implementação entre o popup e a página de opções para entender por que as notas são exibidas em um contexto mas não no outro.
+- ~~**Problema**: Notas não estão sendo exibidas na aba "Notas" da página de opções, enquanto são exibidas corretamente no popup.~~
+- ~~**Ação**: Investigar a diferença de implementação entre o popup e a página de opções para entender por que as notas são exibidas em um contexto mas não no outro.~~
+- ~~**Hipóteses a verificar**:~~
+  - ~~Diferenças na forma como os dados são carregados~~
+  - ~~Possíveis erros na lógica de filtro ou agrupamento~~
+  - ~~Problemas de timing na inicialização dos componentes~~
+  - ~~Verificar se há diferenças na estrutura dos stores utilizados~~
+
+### ~~2. Flashcards Ausentes na Página de Opções~~ (RESOLVIDO)
+
+- ~~**Problema**: Flashcards são exibidos corretamente no popup quando a opção "Visualizar" está selecionada, mas não aparecem na aba Flashcards da página de opções.~~
+- ~~**Ação**: Similar ao problema das notas, investigar as diferenças de implementação entre os contextos.~~
+- ~~**Hipóteses a verificar**:~~
+  - ~~Comparar o código de carregamento de flashcards entre popup e página de opções~~
+  - ~~Verificar se existem condicionais que possam estar impedindo a exibição~~
+  - ~~Examinar os logs para possíveis erros silenciosos~~
+
+### 1. Problemas de Performance no Popup
+
+- **Problema**: Ao clicar na action que exibe o popup ele demora a ser exibido, além disso, a alternação entre abas e modos de visualização (criar/visualizar, favorito/ler depois) também demora.
+- **Ação**: Investigar problemas de performance e otimizar o carregamento e renderização dos componentes.
 - **Hipóteses a verificar**:
-  - Diferenças na forma como os dados são carregados
-  - Possíveis erros na lógica de filtro ou agrupamento
-  - Problemas de timing na inicialização dos componentes
-  - Verificar se há diferenças na estrutura dos stores utilizados
-
-### 2. Flashcards Ausentes na Página de Opções
-
-- **Problema**: Flashcards são exibidos corretamente no popup quando a opção "Visualizar" está selecionada, mas não aparecem na aba Flashcards da página de opções.
-- **Ação**: Similar ao problema das notas, investigar as diferenças de implementação entre os contextos.
-- **Hipóteses a verificar**:
-  - Comparar o código de carregamento de flashcards entre popup e página de opções
-  - Verificar se existem condicionais que possam estar impedindo a exibição
-  - Examinar os logs para possíveis erros silenciosos
+  - Excesso de operações síncronas que bloqueiam a UI
+  - Carregamento desnecessário de dados em componentes não visíveis
+  - Otimização de consultas ao storage
+  - Implementação de lazy loading para componentes pesados
 
 ## Melhorias de Experiência do Usuário
 
@@ -72,6 +82,54 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar lógica para filtrar apenas as notas/flashcards do item selecionado
   - Adição de controles para navegação entre múltiplos itens quando aplicável
 
+### 8. Filtro de Flashcards e Notas por Item Vinculado
+
+- **Melhoria**: Tornar possível filtrar os flashcards e as notas no painel de opções em função do item ao qual estão vinculados.
+- **Implementação**:
+  - Adicionar filtros por item na interface de visualização de flashcards e notas
+  - Criar uma barra de pesquisa que permita filtrar por título ou URL do item
+  - Implementar um dropdown com os itens mais recentes para facilitar a seleção
+
+### 9. Identificação de Item Vinculado em Notas
+
+- **Melhoria**: Adicionar a cada uma das notas a identificação do item ao qual ela está vinculada.
+- **Implementação**:
+  - Criar um componente visual similar ao já implementado nos flashcards
+  - Exibir favicon, título e link para o item vinculado
+  - Garantir visibilidade tanto no modo de visualização quanto de edição
+
+### 10. Ferramentas na Sidebar
+
+- **Melhoria**: Criar uma seção colapsável de ferramentas na sidebar e mover os botões "Corrigir Referências" e "Mostrar Debug" para lá.
+- **Implementação**:
+  - Implementar uma seção colapsável na sidebar usando componentes do shadcn-svelte
+  - Realocar botões de utilidades para esta seção
+  - Adicionar ícones apropriados e tooltip para melhor usabilidade
+
+### 11. Debug em Dialog
+
+- **Melhoria**: Fazer com que os dados exibidos ao clicar em "Mostrar Debug" sejam mostrados em um Dialog.
+- **Implementação**:
+  - Criar um Dialog específico para exibição de informações de debug
+  - Formatar os dados de debug em uma visualização clara e estruturada
+  - Adicionar opções para copiar as informações para a área de transferência
+
+### 12. Título para Notas
+
+- **Melhoria**: Fazer com que seja possível adicionar um título às Notas quando elas são criadas.
+- **Implementação**:
+  - Adicionar um campo de título no formulário de criação e edição de notas
+  - Atualizar o modelo de dados para incluir a propriedade de título
+  - Modificar a visualização de notas para exibir o título de forma destacada
+
+### 13. Edição de Notas em Dialog
+
+- **Melhoria**: Fazer com que a edição de Notas ocorra em um Dialog, similar aos flashcards.
+- **Implementação**:
+  - Criar um Dialog específico para edição de notas
+  - Adaptar a interface atual de edição para funcionar dentro do Dialog
+  - Garantir que todas as funcionalidades existentes sejam mantidas no novo formato
+
 ## Novas Implementações
 
 ### 1. Verificação de Duplicatas
@@ -117,11 +175,64 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Criar dashboards com estatísticas gerais de uso (total de itens, notas, flashcards, etc.)
   - Implementar gráficos de progresso de estudo com flashcards
 
+### 6. Visualização de Flashcards em KanBan
+
+- **Feature**: Adicionar ao switch de opções de exibição de flashcards a visualização em KanBan.
+- **Implementação**:
+  - Adaptar a implementação do KanBan de itens para os flashcards
+  - Criar opções para agrupar por dificuldade, tags ou datas de revisão
+  - Implementar funcionalidade para mover flashcards entre grupos (por exemplo, de "Para revisar" para "Revisados")
+
+### 7. Dashboard de Flashcards
+
+- **Feature**: Adicionar a visualização de atividade, desempenho, agendamento, etc., na aba de flashcards no painel de opções.
+- **Implementação**:
+  - Criar gráficos e visualizações para métricas de desempenho de estudo
+  - Implementar uma linha do tempo de revisões passadas e agendadas
+  - Adicionar estatísticas sobre retenção e progresso
+  - Criar um sistema visual para identificar flashcards que precisam de atenção
+
+### 8. Respostas a Notas
+
+- **Feature**: Adicionar a possibilidade de "responder" às notas.
+- **Implementação**:
+  - Expandir o modelo de dados para incluir respostas aninhadas
+  - Criar UI para exibir e criar respostas a notas existentes
+  - Implementar um sistema de notificações para novas respostas
+  - Adicionar funcionalidades para ordenar e filtrar respostas
+
+### 9. Anotações de Texto Selecionado
+
+- **Feature**: Adicionar a possibilidade de criar anotações relativas a trechos de texto selecionado em páginas da web (similar ao Hypothesis).
+- **Implementação**:
+  - Criar um sistema para capturar e armazenar seleções de texto
+  - Implementar um popup contextual quando texto é selecionado
+  - Desenvolver um mecanismo para destacar texto anotado quando a página é revisitada
+  - Criar uma visualização agregada de todas as anotações por página
+
+### 10. Anotações em Vídeos
+
+- **Feature**: Adicionar a possibilidade de adicionar anotações a vídeos (similar ao Annotate.tv).
+- **Implementação**:
+  - Criar sistema para capturar timestamps em vídeos
+  - Implementar interface para adicionar e visualizar anotações em pontos específicos
+  - Desenvolver funcionalidade para buscar e navegar entre anotações
+  - Adicionar suporte para exportar anotações de vídeo
+
+### 11. Editor Rich Text (TipTap)
+
+- **Feature**: Implementar o TipTap aos campos de criação e edição de Notas e Flashcards.
+- **Implementação**:
+  - Integrar a biblioteca TipTap nos componentes de edição
+  - Configurar as extensões relevantes (negrito, itálico, listas, links, etc.)
+  - Adaptar o armazenamento para suportar conteúdo formatado
+  - Garantir que a renderização preserve a formatação em todos os contextos
+
 ## Plano de Execução
 
 ### Fase 1: Correções Críticas (Prioridade Alta)
-- Focar na resolução dos problemas de exibição de notas e flashcards na página de opções
-- Estimar 3-5 dias para investigação e correção
+- Focar na resolução dos problemas de performance do popup
+- Estimar 3 dias para investigação e otimização
 
 ### Fase 2: Melhorias de UI/UX (Prioridade Média)
 - Implementar melhorias 1-4 (feedback de salvamento, dropdowns, cards de URL/título, sistema de tags)
@@ -131,15 +242,22 @@ Este documento registra as correções, melhorias e novas implementações que d
 - Implementar melhorias 5-7 (dimensões do popup, visualização embarcada, diálogos de conteúdo)
 - Estimar 4-6 dias para estas implementações
 
-### Fase 4: Novas Features (Prioridade Variável)
+### Fase 4: Melhorias de Organização e Usabilidade (Prioridade Média)
+- Implementar melhorias 8-13 (filtros, identificação, ferramentas, debug, títulos e edição em dialog)
+- Estimar 7-10 dias para estas implementações
+
+### Fase 5: Novas Features (Prioridade Variável)
 - Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
 - Implementar sidebar para painel de opções (Prioridade Média) - 3 dias
 - Implementar seletor de tema aprimorado (Prioridade Média) - 1 dia
 - Implementar visualização em Kanban (Prioridade Baixa) - 5-7 dias
 - Implementar dashboard de atividades (Prioridade Baixa) - 7-10 dias
+- Implementar recursos avançados (anotações de texto, vídeo, TipTap) - 15-20 dias
 
 ## Considerações Finais
 
 Este plano é flexível e pode ser ajustado conforme necessidades emergentes ou descobertas durante o desenvolvimento. A priorização foi feita considerando o impacto na experiência do usuário e a complexidade de implementação.
 
-As correções críticas devem ser abordadas primeiro, pois afetam diretamente a funcionalidade central da extensão. As melhorias de UI/UX vêm em seguida, pois melhoram significativamente a experiência do usuário sem exigir grandes refatorações de código. 
+As correções de performance devem ser abordadas primeiro, pois afetam diretamente a usabilidade da extensão. As melhorias de UI/UX e visualização vêm em seguida, pois melhoram significativamente a experiência do usuário sem exigir grandes refatorações de código. 
+
+As novas implementações mais complexas, como anotações em texto selecionado e vídeos, devem ser planejadas cuidadosamente e possivelmente divididas em fases menores para garantir uma integração tranquila com as funcionalidades existentes. 
