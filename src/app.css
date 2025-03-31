@@ -73,3 +73,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Correções para campos de texto no tema escuro */
+.dark input, 
+.dark textarea {
+  color: white !important;
+}
+
+input, 
+textarea {
+  color: black;
+}
+
+/* Melhorar a visualização do placeholder no tema escuro */
+.dark input::placeholder, 
+.dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+input::placeholder, 
+textarea::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* Garantir que os textos sejam visíveis */
+.dark .text-gray-500 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dark .text-gray-600, .dark .text-gray-700 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Melhorar contraste de bordas */
+.dark .border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}

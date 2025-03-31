@@ -1,6 +1,6 @@
 import { mount } from "svelte";
 import Overlay from "../components/Overlay.svelte";
-import { count } from "../storage";
+// import { count } from "../storage";
 
 // Content scripts
 // https://developer.chrome.com/docs/extensions/mv3/content_scripts/
@@ -9,7 +9,7 @@ import { count } from "../storage";
 // import "./styles.css";
 
 // Some JS on the page
-count.subscribe(console.log);
+// count.subscribe(console.log);
 
 // Some svelte component on the page
 // mount(Overlay, { target: document.body });

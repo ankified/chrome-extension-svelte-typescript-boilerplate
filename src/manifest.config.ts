@@ -12,8 +12,8 @@ const [major, minor, patch] = version
 
 export default defineManifest(async () => ({
     manifest_version: 3,
-    name: "Chrome Extension Svelte Typescript Boilerplate",
-    description: "Boilerplate for Chrome Extension Svelte Typescript project",
+    name: "Extensor de Navegador",
+    description: "Extensão para salvar páginas, fazer anotações e criar flashcards para revisar o conteúdo após a leitura",
     version: `${major}.${minor}.${patch}`,
     version_name: version,
     icons: {
@@ -24,7 +24,7 @@ export default defineManifest(async () => ({
     },
     content_scripts: [
         {
-            matches: ["https://*/*"],
+            matches: ["https://*/*", "http://*/*"],
             js: ["src/content/index.ts"],
         },
     ],
@@ -33,7 +33,7 @@ export default defineManifest(async () => ({
     },
     options_ui: {
         page: "src/options/options.html",
-        open_in_tab: false,
+        open_in_tab: true,
     },
     side_panel: {
         default_path: "src/sidepanel/sidepanel.html",
@@ -47,5 +47,13 @@ export default defineManifest(async () => ({
             "128": "src/assets/icons/icon-128.png",
         },
     },
-    permissions: ["storage", "sidePanel"] as chrome.runtime.ManifestPermissions[],
+    permissions: [
+        "storage", 
+        "tabs", 
+        "activeTab",
+        "notifications", 
+        "alarms", 
+        "sidePanel"
+    ] as chrome.runtime.ManifestPermissions[],
+    host_permissions: ["<all_urls>"],
 }));

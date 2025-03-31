@@ -1,0 +1,84 @@
+/* Estilos específicos para a página de opções */
+
+/* Forçar tema escuro */
+:root {
+  color-scheme: dark;
+}
+
+/* Configurações de dimensões e overflow */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: #111827;
+  color: white;
+  box-sizing: border-box;
+}
+
+/* Melhorar visualização de campos de texto */
+input, textarea, select {
+  color: white !important;
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Melhorar contraste de elementos de interface */
+.text-gray-500, .text-gray-600, .text-gray-700 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+label, h1, h2, h3, h4, h5, h6, p, span {
+  color: white !important;
+}
+
+/* Checkbox mais visível */
+input[type="checkbox"] {
+  accent-color: #1d4ed8;
+  width: 16px;
+  height: 16px;
+}
+
+/* Melhorar aparência de botões */
+button {
+  outline: none !important;
+}
+
+button:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Garantir que o tema escuro seja aplicado corretamente */
+.dark\:bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+.dark\:bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.dark\:bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+.dark\:text-gray-100 {
+  color: #f3f4f6 !important;
+}
+
+.dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+.dark\:border-gray-700 {
+  border-color: #374151 !important;
+} 

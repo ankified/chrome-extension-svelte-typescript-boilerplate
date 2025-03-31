@@ -1,0 +1,101 @@
+/* Estilos específicos para o popup */
+
+/* Forçar tema escuro */
+:root {
+  color-scheme: dark;
+}
+
+/* Configurações de dimensões e overflow */
+html, body {
+  width: 400px;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: #111827;
+  color: white;
+  box-sizing: border-box;
+}
+
+/* Popup Container */
+#app {
+  width: 100%;
+  max-width: 400px;
+  overflow-x: hidden;
+}
+
+/* Melhorar visualização de campos de texto */
+input, textarea, select {
+  color: white !important;
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Melhorar contraste de elementos de interface */
+.text-gray-500, .text-gray-600, .text-gray-700 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+label, h1, h2, h3, h4, h5, h6, p, span {
+  color: white !important;
+}
+
+/* Checkbox mais visível */
+input[type="checkbox"] {
+  accent-color: #1d4ed8;
+  width: 16px;
+  height: 16px;
+}
+
+/* Melhorar aparência de botões */
+button {
+  outline: none !important;
+}
+
+button:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Melhorar contraste para o texto de placeholders em área de texto */
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Bordas mais visíveis */
+.border {
+  border-color: #374151 !important;
+}
+
+.border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+/* Melhorar botões */
+.bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.bg-blue-600:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Conteúdo do formulário */
+.save-item-form {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1rem;
+}
+
+/* Correção para campos de input e texto */
+.form-group {
+  width: 100%;
+  box-sizing: border-box;
+} 
