@@ -23,15 +23,20 @@ Este documento registra as correções, melhorias e novas implementações que d
   - ~~Verificar se existem condicionais que possam estar impedindo a exibição~~
   - ~~Examinar os logs para possíveis erros silenciosos~~
 
-### 1. Problemas de Performance no Popup
+### ~~3. Problemas de Performance no Popup~~ (RESOLVIDO - 2025-04-01)
 
-- **Problema**: Ao clicar na action que exibe o popup ele demora a ser exibido, além disso, a alternação entre abas e modos de visualização (criar/visualizar, favorito/ler depois) também demora.
-- **Ação**: Investigar problemas de performance e otimizar o carregamento e renderização dos componentes.
-- **Hipóteses a verificar**:
-  - Excesso de operações síncronas que bloqueiam a UI
-  - Carregamento desnecessário de dados em componentes não visíveis
-  - Otimização de consultas ao storage
-  - Implementação de lazy loading para componentes pesados
+- ~~**Problema**: Ao clicar na action que exibe o popup ele demora a ser exibido, além disso, a alternação entre abas e modos de visualização (criar/visualizar, favorito/ler depois) também demora.~~
+- ~~**Ação**: Investigar problemas de performance e otimizar o carregamento e renderização dos componentes.~~
+- ~~**Hipóteses a verificar**:~~
+  - ~~Excesso de operações síncronas que bloqueiam a UI~~
+  - ~~Carregamento desnecessário de dados em componentes não visíveis~~
+  - ~~Otimização de consultas ao storage~~
+  - ~~Implementação de lazy loading para componentes pesados~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-01
+- **Solução implementada**: Aplicadas otimizações de performance usando carregamento seletivo de dados, redução de operações síncronas e melhorias na gestão do storage. Corrigidos problemas com efeitos reativos e referências a funções unsubscribe. Ver detalhes no diário de desenvolvimento (src/project/diario/2025-04-01.md).
+- **Resultado**: Performance do popup significativamente melhorada, com carregamento mais rápido e transição fluida entre abas. Corrigidos erros relacionados a estados reativos e loops infinitos.
 
 ## Melhorias de Experiência do Usuário
 
@@ -40,10 +45,15 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Melhoria**: Eliminar a janela de diálogo do navegador ao salvar uma nota.
 - **Implementação**: Substituir o alerta padrão do navegador por um toast ou snackbar personalizado usando o componente do shadcn-svelte.
 
-### 2. Aprimoramento de Interface de Seleção
+### ~~2. Aprimoramento de Interface de Seleção~~ (RESOLVIDO - 2025-04-01)
 
-- **Melhoria**: Usar um dropdown do shadcn-svelte no seletor de grupos na aba de salvar item no popup.
-- **Implementação**: Substituir o elemento select atual pelo componente Select do shadcn-svelte, mantendo a mesma funcionalidade mas com uma aparência mais moderna e consistente.
+- ~~**Melhoria**: Usar um dropdown do shadcn-svelte no seletor de grupos na aba de salvar item no popup.~~
+- ~~**Implementação**: Substituir o elemento select atual pelo componente Select do shadcn-svelte, mantendo a mesma funcionalidade mas com uma aparência mais moderna e consistente.~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-01
+- **Solução implementada**: Implementado o componente DropdownMenu do shadcn-svelte para selecionar grupos, com suporte a seleção múltipla usando CheckboxItems.
+- **Resultado**: Interface mais moderna, consistente e acessível para seleção de grupos.
 
 ### 3. Visualização Melhorada de URL e Título
 
@@ -53,13 +63,18 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar um modo de edição que seja ativado apenas quando o usuário clicar no card
   - Adicionar lógica para extrair e exibir o favicon da URL
 
-### 4. Sistema de Tags Aprimorado
+### ~~4. Sistema de Tags Aprimorado~~ (RESOLVIDO - 2025-04-01)
 
-- **Melhoria**: Permitir selecionar tags existentes nas abas Salvar, Notas e Flashcards do Popup, exibindo-as como tags visuais.
-- **Implementação**:
-  - Criar um componente de seleção de múltiplas tags que busque as tags existentes
-  - Implementar visualização de tags como elementos visuais distintos (chips/badges)
-  - Adicionar funcionalidade de autocompletar baseada nas tags já cadastradas
+- ~~**Melhoria**: Permitir selecionar tags existentes nas abas Salvar, Notas e Flashcards do Popup, exibindo-as como tags visuais.~~
+- ~~**Implementação**:~~
+  - ~~Criar um componente de seleção de múltiplas tags que busque as tags existentes~~
+  - ~~Implementar visualização de tags como elementos visuais distintos (chips/badges)~~
+  - ~~Adicionar funcionalidade de autocompletar baseada nas tags já cadastradas~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-01
+- **Solução implementada**: Desenvolvido um sistema avançado de seleção e visualização de tags, com sugestões baseadas em tags existentes, exibição como etiquetas visuais, e funcionalidade para adicionar e remover tags facilmente.
+- **Resultado**: Interface intuitiva para gerenciar tags, com melhor experiência do usuário e consistência visual.
 
 ### 5. Dimensões Consistentes do Popup
 
@@ -230,12 +245,13 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Plano de Execução
 
-### Fase 1: Correções Críticas (Prioridade Alta)
-- Focar na resolução dos problemas de performance do popup
-- Estimar 3 dias para investigação e otimização
+### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-01)
+- ~~Focar na resolução dos problemas de performance do popup~~
+- ~~Estimar 3 dias para investigação e otimização~~
 
 ### Fase 2: Melhorias de UI/UX (Prioridade Média)
-- Implementar melhorias 1-4 (feedback de salvamento, dropdowns, cards de URL/título, sistema de tags)
+- ~~Implementar melhorias 2 (dropdowns) e 4 (sistema de tags)~~ (CONCLUÍDA em 2025-04-01)
+- Implementar melhorias 1 (feedback de salvamento), 3 (cards de URL/título)
 - Estimar 5-7 dias para estas implementações
 
 ### Fase 3: Melhorias de Visualização (Prioridade Média-Baixa)
@@ -258,6 +274,6 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 Este plano é flexível e pode ser ajustado conforme necessidades emergentes ou descobertas durante o desenvolvimento. A priorização foi feita considerando o impacto na experiência do usuário e a complexidade de implementação.
 
-As correções de performance devem ser abordadas primeiro, pois afetam diretamente a usabilidade da extensão. As melhorias de UI/UX e visualização vêm em seguida, pois melhoram significativamente a experiência do usuário sem exigir grandes refatorações de código. 
+As correções de performance foram abordadas com sucesso, melhorando significativamente a experiência do usuário. A implementação de componentes modernos do shadcn-svelte e do sistema de tags aprimorado também representa um avanço importante para a usabilidade da extensão.
 
-As novas implementações mais complexas, como anotações em texto selecionado e vídeos, devem ser planejadas cuidadosamente e possivelmente divididas em fases menores para garantir uma integração tranquila com as funcionalidades existentes. 
+As próximas melhorias planejadas focam em melhorar ainda mais a experiência do usuário com feedback visual, organização aprimorada e recursos avançados como visualização em Kanban e editor rich text. 

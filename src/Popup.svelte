@@ -7,6 +7,10 @@
   import PopupFlashcardCreator from './lib/components/PopupFlashcardCreator.svelte';
   import { format } from 'date-fns/format';
   
+  // Importar componentes do Shadcn
+  import * as Tabs from "./lib/components/ui/tabs/index.js";
+  import * as ToggleGroup from "./lib/components/ui/toggle-group/index.js";
+  
   // Definição de abas
   const tabs = [
     { id: 'save', label: 'Salvar', icon: 'bookmark' },
@@ -24,75 +28,147 @@
   let currentTitle = $state('');
   let isFixingReferences = $state(false);
   let fixResult = $state<any>(null);
+  let isLoading = $state(true);
   
+  // Flags separadas para cada modo de visualização
+  let notesCreateLoaded = $state(false);
+  let notesViewLoaded = $state(false);
+  let flashcardsCreateLoaded = $state(false);
+  let flashcardsViewLoaded = $state(false);
+  
+  // Função para lidar com a mudança de abas (componente Tabs do Shadcn)
+  function handleTabChange(tabValue: string) {
+    activeTab = tabValue;
+  }
+  
+  // Recuperar a última aba ativa do armazenamento local
   onMount(() => {
-    console.log("Popup montado, obtendo informações da aba...");
+    // Restaurar a aba ativa salva anteriormente
+    chrome.storage.local.get('popupActiveTab', (result) => {
+      if (result.popupActiveTab) {
+        activeTab = result.popupActiveTab;
+      }
+    });
     
-    // Carregar notas recentes
-    loadRecentNotes();
+    // Obter URL e título assincronamente
+    getTabInfo();
     
-    // Carregar flashcards recentes
-    loadRecentFlashcards();
+    // Carregar dados iniciais
+    setTimeout(() => {
+      loadDataForActiveTab();
+      isLoading = false;
+    }, 100);
+  });
+  
+  // Carregar dados conforme necessário quando a aba mudar
+  $effect(() => {
+    loadDataForActiveTab();
     
+    // Salvar a aba ativa quando mudar
+    chrome.storage.local.set({ popupActiveTab: activeTab });
+  });
+  
+  // Monitorar mudanças nos modos de visualização para carregar dados quando necessário
+  $effect(() => {
+    if (activeTab === 'notes' && notesViewMode === 'view') {
+      // Primeiro marcar como não carregado para mostrar o spinner
+      notesViewLoaded = false;
+      // Usar setTimeout para permitir a renderização do spinner
+      setTimeout(() => {
+        loadRecentNotes();
+        notesViewLoaded = true;
+      }, 100);
+    }
+  });
+  
+  $effect(() => {
+    if (activeTab === 'flashcards' && flashcardsViewMode === 'view') {
+      // Primeiro marcar como não carregado para mostrar o spinner
+      flashcardsViewLoaded = false;
+      // Usar setTimeout para permitir a renderização do spinner
+      setTimeout(() => {
+        loadRecentFlashcards();
+        flashcardsViewLoaded = true;
+      }, 100);
+    }
+  });
+  
+  // Função para obter informações da aba atual de forma otimizada
+  function getTabInfo() {
     if (typeof chrome !== 'undefined' && chrome.tabs) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs && tabs[0]) {
           currentUrl = tabs[0].url || "";
           currentTitle = tabs[0].title || "";
-          console.log("URL obtida:", currentUrl);
-          console.log("Título obtido:", currentTitle);
-        } else {
-          console.error("Não foi possível obter a aba atual");
         }
       });
-    } else {
-      console.error("API chrome.tabs não disponível");
     }
-  });
+  }
   
-  // Carregar notas recentes da store
+  // Função melhorada para carregar dados de acordo com a aba e modo de visualização ativos
+  function loadDataForActiveTab() {
+    if (activeTab === 'notes') {
+      if (notesViewMode === 'view') {
+        // Primeiro marcar como não carregado para mostrar o spinner
+        notesViewLoaded = false;
+        // Usar setTimeout para permitir a renderização do spinner
+        setTimeout(() => {
+          loadRecentNotes();
+          notesViewLoaded = true;
+        }, 100);
+      } else if (notesViewMode === 'create' && !notesCreateLoaded) {
+        notesCreateLoaded = true;
+      }
+    } else if (activeTab === 'flashcards') {
+      if (flashcardsViewMode === 'view') {
+        // Primeiro marcar como não carregado para mostrar o spinner
+        flashcardsViewLoaded = false;
+        // Usar setTimeout para permitir a renderização do spinner
+        setTimeout(() => {
+          loadRecentFlashcards();
+          flashcardsViewLoaded = true;
+        }, 100);
+      } else if (flashcardsViewMode === 'create' && !flashcardsCreateLoaded) {
+        flashcardsCreateLoaded = true;
+      }
+    }
+  }
+  
+  // Carregar notas recentes da store - otimizado
   function loadRecentNotes() {
-    console.log("Carregando notas recentes...");
-    const allNotes = $notes;
-    console.log(`Total de notas encontradas: ${allNotes.length}`);
-    
+    let unsubscribe: () => void; // Definir tipo correto
+    unsubscribe = notes.subscribe(allNotes => {
     if (allNotes.length > 0) {
       // Ordenar por data de criação (mais recentes primeiro) e pegar as 5 primeiras
-      recentNotes = [...allNotes]
+        const sorted = allNotes
+          .slice(0)
         .sort((a, b) => b.dateCreated - a.dateCreated)
         .slice(0, 5);
-      console.log(`Notas recentes carregadas: ${recentNotes.length}`);
+        
+        recentNotes = sorted;
     }
+      // Cancelar inscrição após obter os dados
+      if (unsubscribe) unsubscribe();
+    });
   }
   
-  // Carregar flashcards recentes da store
+  // Carregar flashcards recentes da store - otimizado
   function loadRecentFlashcards() {
-    console.log("Carregando flashcards recentes...");
-    const allFlashcards = $flashcards;
-    console.log(`Total de flashcards encontrados: ${allFlashcards.length}`);
-    
+    let unsubscribe: () => void; // Definir tipo correto
+    unsubscribe = flashcards.subscribe(allFlashcards => {
     if (allFlashcards.length > 0) {
       // Ordenar por data de criação (mais recentes primeiro) e pegar os 5 primeiros
-      recentFlashcards = [...allFlashcards]
+        const sorted = allFlashcards
+          .slice(0)
         .sort((a, b) => b.dateCreated - a.dateCreated)
         .slice(0, 5);
-      console.log(`Flashcards recentes carregados: ${recentFlashcards.length}`);
-    }
+        
+        recentFlashcards = sorted;
+      }
+      // Cancelar inscrição após obter os dados
+      if (unsubscribe) unsubscribe();
+    });
   }
-  
-  // Adicionar efeito para atualizar as notas recentes quando a store é atualizada
-  $effect(() => {
-    if ($notes) {
-      loadRecentNotes();
-    }
-  });
-  
-  // Adicionar efeito para atualizar os flashcards recentes quando a store é atualizada
-  $effect(() => {
-    if ($flashcards) {
-      loadRecentFlashcards();
-    }
-  });
   
   function formatDate(timestamp: number): string {
     return format(new Date(timestamp), "dd/MM/yyyy");
@@ -114,21 +190,18 @@
       : text;
   }
 
-  // Salvar a aba ativa quando mudar
-  $effect(() => {
-    chrome.storage.local.set({ popupActiveTab: activeTab });
-  });
-
   function runFixReferences() {
     isFixingReferences = true;
     setTimeout(() => {
       try {
         fixResult = fixReferences();
-        console.log("Resultado da correção:", fixResult);
         
-        // Recarregar notas e flashcards após a correção
+        // Atualizar as notas e flashcards se estivermos na aba correspondente
+        if (activeTab === 'notes' && notesViewMode === 'view') {
         loadRecentNotes();
+        } else if (activeTab === 'flashcards' && flashcardsViewMode === 'view') {
         loadRecentFlashcards();
+        }
         
         // Limpar o resultado após 3 segundos
         setTimeout(() => {
@@ -144,66 +217,58 @@
 </script>
 
 <main class="popup-container w-full max-h-[600px] overflow-y-auto overflow-x-hidden">
-  <header class="mb-4">
-    <div class="tabs flex border-b border-gray-200 dark:border-gray-700">
-      {#each tabs as tab}
-        <button 
-          class="tab-button flex-1 py-2 px-3 text-center border-b-2 transition-colors"
-          class:border-blue-500={activeTab === tab.id}
-          class:border-transparent={activeTab !== tab.id}
-          class:text-blue-600={activeTab === tab.id}
-          class:dark:text-blue-400={activeTab === tab.id}
-          class:text-gray-500={activeTab !== tab.id}
-          onclick={() => activeTab = tab.id}
-        >
+  <!-- {#if isLoading}
+    <div class="flex justify-center items-center p-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div> -->
+  <!-- {:else} -->
+    <!-- Usando o componente Tabs do Shadcn-Svelte -->
+    <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="w-full">
+      <Tabs.List class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+        <Tabs.Trigger value="save" class="flex-1 py-2 px-3 transition-colors focus:outline-none">
           <div class="flex items-center justify-center">
-            {#if tab.icon === 'bookmark'}
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
               </svg>
-            {:else if tab.icon === 'note'}
+            <span>Salvar</span>
+          </div>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="notes" class="flex-1 py-2 px-3 transition-colors focus:outline-none">
+          <div class="flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
                 <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
               </svg>
-            {:else if tab.icon === 'school'}
+            <span>Notas</span>
+          </div>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="flashcards" class="flex-1 py-2 px-3 transition-colors focus:outline-none">
+          <div class="flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
               </svg>
-            {/if}
-            <span>{tab.label}</span>
+            <span>Flashcards</span>
           </div>
-        </button>
-      {/each}
-    </div>
-  </header>
-  
-  <div class="tab-content">
-    <!-- Aba de Salvar -->
-    {#if activeTab === 'save'}
-      <div class="save-tab">
+        </Tabs.Trigger>
+      </Tabs.List>
+      
+      <!-- Conteúdo de cada aba -->
+      <Tabs.Content value="save" class="focus:outline-none">
         <SaveItemForm initialUrl={currentUrl} initialTitle={currentTitle} />
-      </div>
+      </Tabs.Content>
     
-    <!-- Aba de Notas -->
-    {:else if activeTab === 'notes'}
+      <Tabs.Content value="notes" class="focus:outline-none">
       <div class="notes-tab">
         <div class="view-toggle flex justify-between items-center mb-4">
-          <div class="toggle-buttons flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-            <button 
-              class="px-3 py-1.5 text-sm transition-colors {notesViewMode === 'create' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}"
-              onclick={() => notesViewMode = 'create'}
-            >
+            <ToggleGroup.Root type="single" value={notesViewMode} onValueChange={(value: string | null) => value && (notesViewMode = value)} class="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+              <ToggleGroup.Item value="create" class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800">
               Criar
-            </button>
-            <button 
-              class="px-3 py-1.5 text-sm transition-colors {notesViewMode === 'view' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}"
-              onclick={() => notesViewMode = 'view'}
-            >
-              Visualizar
-            </button>
-          </div>
-          
+              </ToggleGroup.Item>
+              <ToggleGroup.Item value="view" class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800">
+                Visualizar
+              </ToggleGroup.Item>
+            </ToggleGroup.Root>
+            
           <button 
             class="text-sm rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center px-3 py-1.5"
             onclick={() => openOptions('notes')}
@@ -218,7 +283,11 @@
         {#if notesViewMode === 'create'}
           <PopupNoteCreator />
         {:else if notesViewMode === 'view'}
-          {#if recentNotes.length === 0}
+            {#if !notesViewLoaded}
+              <div class="flex justify-center items-center p-6">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              </div>
+            {:else if recentNotes.length === 0}
             <div class="empty-state py-8 text-center">
               <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -278,26 +347,20 @@
           {/if}
         {/if}
       </div>
+      </Tabs.Content>
     
-    <!-- Aba de Flashcards -->
-    {:else if activeTab === 'flashcards'}
+      <Tabs.Content value="flashcards" class="focus:outline-none">
       <div class="flashcards-tab">
         <div class="view-toggle flex justify-between items-center mb-4">
-          <div class="toggle-buttons flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-            <button 
-              class="px-3 py-1.5 text-sm transition-colors {flashcardsViewMode === 'create' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}"
-              onclick={() => flashcardsViewMode = 'create'}
-            >
+            <ToggleGroup.Root type="single" value={flashcardsViewMode} onValueChange={(value: string | null) => value && (flashcardsViewMode = value)} class="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+              <ToggleGroup.Item value="create" class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800">
               Criar
-            </button>
-            <button 
-              class="px-3 py-1.5 text-sm transition-colors {flashcardsViewMode === 'view' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}"
-              onclick={() => flashcardsViewMode = 'view'}
-            >
-              Visualizar
-            </button>
-          </div>
-          
+              </ToggleGroup.Item>
+              <ToggleGroup.Item value="view" class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800">
+                Visualizar
+              </ToggleGroup.Item>
+            </ToggleGroup.Root>
+            
           <button 
             class="text-sm rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center px-3 py-1.5"
             onclick={() => openOptions('flashcards')}
@@ -313,7 +376,11 @@
         {#if flashcardsViewMode === 'create'}
           <PopupFlashcardCreator />
         {:else if flashcardsViewMode === 'view'}
-          {#if recentFlashcards.length === 0}
+            {#if !flashcardsViewLoaded}
+              <div class="flex justify-center items-center p-6">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              </div>
+            {:else if recentFlashcards.length === 0}
             <div class="empty-state py-8 text-center">
               <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -373,39 +440,11 @@
           {/if}
         {/if}
       </div>
-    {/if}
-  </div>
-  
-  <footer class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
-    <!-- Botão para corrigir referências -->
-    <div class="flex justify-center">
-      {#if fixResult}
-        <div class="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded">
-          Referências corrigidas com sucesso!
-        </div>
-      {:else}
-        <button 
-          class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1 rounded border border-blue-200 dark:border-blue-800 flex items-center gap-1 transition-colors"
-          onclick={runFixReferences}
-          disabled={isFixingReferences}
-        >
-          {#if isFixingReferences}
-            <svg class="animate-spin h-4 w-4 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Corrigindo...</span>
-          {:else}
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l1 1a1 1 0 01-1.414 1.414L10 5.414 8.707 6.707a1 1 0 01-1.414-1.414l1-1A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l1 1a1 1 0 01-1.414 1.414L10 5.414 8.707 6.707a1 1 0 01-1.414-1.414l1-1A1 1 0 0110 3zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-            </svg>
-            <span>Corrigir Referências</span>
-          {/if}
-        </button>
-      {/if}
-    </div>
-  </footer>
+      </Tabs.Content>
+    </Tabs.Root>
+    
+    
+  <!-- {/if} -->
 </main>
 
 <style>
@@ -428,5 +467,10 @@
     width: 400px;
     box-sizing: border-box;
     padding: 16px;
+  }
+  
+  /* Estilização personalizada para o componente Tabs do Shadcn-Svelte */
+  :global(.tab-content) {
+    margin-top: 0; /* Ajustado para o layout do componente Tabs */
   }
 </style> 
