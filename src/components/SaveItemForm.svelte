@@ -3,6 +3,7 @@
   import type { SavedItem, Group } from "../types";
   import QuickNoteInput from "../lib/components/QuickNoteInput.svelte";
   import FlashcardInput from "../lib/components/FlashcardInput.svelte";
+  import PagePreviewCard from "../lib/components/PagePreviewCard.svelte";
   import * as Popover from "../lib/components/ui/popover/index.js";
   import * as ToggleGroup from "../lib/components/ui/toggle-group/index.js";
   import * as DropdownMenu from "../lib/components/ui/dropdown-menu/index.js";
@@ -217,6 +218,11 @@
     showNoteInput = false;
     showFlashcardInput = false;
   }
+  
+  // Função para atualizar o título quando o usuário editar através do PagePreviewCard
+  function handleTitleChange(newTitle: string) {
+    currentTitle = newTitle;
+  }
 </script>
 
 <div class="save-item-form box-border">
@@ -252,22 +258,14 @@
       </button>
     </div>
     
-    <div class="form-group mb-4">
-      <label class="block text-sm font-medium mb-1 text-white">Título</label>
-      <input 
-        type="text" 
-        bind:value={currentTitle} 
-        class="w-full p-2 rounded border border-gray-500 dark:border-gray-600 bg-gray-800 text-white"
-      />
-    </div>
-    
-    <div class="form-group mb-4">
-      <label class="block text-sm font-medium mb-1 text-white">URL</label>
-      <input 
-        type="text" 
-        bind:value={currentUrl} 
-        readonly
-        class="w-full p-2 rounded border border-gray-500 dark:border-gray-600 bg-gray-700 text-gray-300"
+    <!-- Substituímos os campos de entrada por um card de preview -->
+    <div class="mb-5">
+      <PagePreviewCard 
+        url={currentUrl} 
+        title={currentTitle} 
+        editable={true}
+        showFavicon={true}
+        on:titleChange={(e) => handleTitleChange(e.detail)}
       />
     </div>
     

@@ -55,13 +55,18 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Implementado o componente DropdownMenu do shadcn-svelte para selecionar grupos, com suporte a seleção múltipla usando CheckboxItems.
 - **Resultado**: Interface mais moderna, consistente e acessível para seleção de grupos.
 
-### 3. Visualização Melhorada de URL e Título
+### ~~3. Visualização Melhorada de URL e Título~~ (RESOLVIDO - 2025-04-01)
 
-- **Melhoria**: Tornar a exibição dos campos de título e URL da aba Salvar semelhantes a cards de social media, incluindo favicon.
-- **Implementação**: 
-  - Criar um componente de card que exiba o título, URL e favicon da página
-  - Implementar um modo de edição que seja ativado apenas quando o usuário clicar no card
-  - Adicionar lógica para extrair e exibir o favicon da URL
+- ~~**Melhoria**: Tornar a exibição dos campos de título e URL da aba Salvar semelhantes a cards de social media, incluindo favicon.~~
+- ~~**Implementação**:~~ 
+  - ~~Criar um componente de card que exiba o título, URL e favicon da página~~
+  - ~~Implementar um modo de edição que seja ativado apenas quando o usuário clicar no card~~
+  - ~~Adicionar lógica para extrair e exibir o favicon da URL~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-01
+- **Solução implementada**: Criado o componente PagePreviewCard para exibição de URLs e títulos no estilo de card, com suporte a exibição de favicon usando o serviço do Google, edição de título via popover usando o componente Popover do shadcn-svelte, e limitação de altura com truncamento de texto para consistência visual.
+- **Resultado**: Interface mais moderna e visual para exibição de URLs e títulos, semelhante a cards de mídia social, com uma experiência de usuário mais intuitiva para edição.
 
 ### ~~4. Sistema de Tags Aprimorado~~ (RESOLVIDO - 2025-04-01)
 
@@ -76,10 +81,15 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Desenvolvido um sistema avançado de seleção e visualização de tags, com sugestões baseadas em tags existentes, exibição como etiquetas visuais, e funcionalidade para adicionar e remover tags facilmente.
 - **Resultado**: Interface intuitiva para gerenciar tags, com melhor experiência do usuário e consistência visual.
 
-### 5. Dimensões Consistentes do Popup
+### ~~5. Dimensões Consistentes do Popup~~ (RESOLVIDO - 2025-04-01)
 
-- **Melhoria**: Padronizar o tamanho do popup para que não varie dependendo da aba ativa.
-- **Implementação**: Definir dimensões mínimas fixas para o popup e garantir que o conteúdo se adapte a essas dimensões sem causar redimensionamento da janela.
+- ~~**Melhoria**: Padronizar o tamanho do popup para que não varie dependendo da aba ativa.~~
+- ~~**Implementação**: Definir dimensões mínimas fixas para o popup e garantir que o conteúdo se adapte a essas dimensões sem causar redimensionamento da janela.~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-01
+- **Solução implementada**: Estabelecidas dimensões fixas de 400px × 500px para o popup, com regras CSS para garantir largura e altura adequadas, controle de overflow para evitar barras de rolagem desnecessárias e aplicação de layout flexbox para garantir dimensionamento consistente dos contêineres. Foi implementada uma classe `content-container` para padronizar o comportamento das abas.
+- **Resultado**: Popup com tamanho consistente entre todas as abas, melhorando a experiência do usuário ao eliminar redimensionamentos indesejados durante a navegação entre diferentes seções.
 
 ### 6. Visualização Embarcada de Links
 
@@ -251,11 +261,13 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ### Fase 2: Melhorias de UI/UX (Prioridade Média)
 - ~~Implementar melhorias 2 (dropdowns) e 4 (sistema de tags)~~ (CONCLUÍDA em 2025-04-01)
-- Implementar melhorias 1 (feedback de salvamento), 3 (cards de URL/título)
+- ~~Implementar melhoria 3 (cards de URL/título)~~ (CONCLUÍDA em 2025-04-01)
+- Implementar melhoria 1 (feedback de salvamento)
 - Estimar 5-7 dias para estas implementações
 
 ### Fase 3: Melhorias de Visualização (Prioridade Média-Baixa)
-- Implementar melhorias 5-7 (dimensões do popup, visualização embarcada, diálogos de conteúdo)
+- ~~Implementar melhoria 5 (dimensões do popup)~~ (CONCLUÍDA em 2025-04-01)
+- Implementar melhorias 6-7 (visualização embarcada, diálogos de conteúdo)
 - Estimar 4-6 dias para estas implementações
 
 ### Fase 4: Melhorias de Organização e Usabilidade (Prioridade Média)

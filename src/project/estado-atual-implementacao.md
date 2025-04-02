@@ -37,6 +37,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **Tabs**: Componente moderno de navegação por abas do shadcn-svelte
 - **ToggleGroup**: Componente para alternância entre opções do shadcn-svelte
 - **DropdownMenu**: Componente para seleção de itens em menu dropdown do shadcn-svelte
+- **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com favicon
 
 ## Features Implementadas
 
@@ -135,6 +136,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Sistema avançado de gestão de tags com sugestões e chips visuais
 - Navegação por abas moderna com o componente Tabs do shadcn-svelte
 - Seleção mais intuitiva com componentes ToggleGroup e DropdownMenu
+- Visualização aprimorada de URLs e títulos com cards no estilo de mídia social, incluindo favicons e edição via popover
 
 ## Estado da Visualização de Flashcards e Notas
 
