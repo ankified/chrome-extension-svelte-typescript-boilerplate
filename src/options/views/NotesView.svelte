@@ -25,7 +25,7 @@
     return matchesSearch && matchesTags;
   }));
   
-  // Todas as tags existentes
+  // Todas as tags existentes - Versão corrigida
   let allTags = $derived(() => {
     const tagsSet = new Set<string>();
     $notes.forEach(note => {

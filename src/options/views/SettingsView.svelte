@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { savedItems, notes, flashcards, groups } from '../../storage';
+  import { savedItems, notes, flashcards, groups, fixReferences, verifyAndFixGroupRelations } from '../../storage';
   import * as Dialog from "../../lib/components/ui/dialog/index.js";
   import type { SavedItem, Note, Flashcard, Group } from '../../types';
+  import { toast } from "svelte-sonner";
   
   let darkMode = false;
   let syncEnabled = false;
@@ -14,6 +15,10 @@
     flashcards: Flashcard[],
     groups: Group[]
   }>({ savedItems: [], notes: [], flashcards: [], groups: [] });
+  
+  let fixingReferences = $state(false);
+  let fixingGroupRelations = $state(false);
+  let lastFixResult = $state("");
   
   // Função para exportar todos os dados
   async function exportData() {
@@ -171,6 +176,76 @@
   function getObjectSize(obj: any): number {
     const json = JSON.stringify(obj);
     return (json.length * 2) / 1024; // Aproximação em KB
+  }
+
+  // Corrigir referências entre notas, flashcards e itens
+  async function fixItemReferences() {
+    fixingReferences = true;
+    
+    try {
+      const result = await fixReferences();
+      
+      if (result.itemsUpdated > 0 || result.notesUpdated > 0 || result.flashcardsUpdated > 0) {
+        lastFixResult = `Referências corrigidas: ${result.itemsUpdated} itens, ${result.notesUpdated} notas e ${result.flashcardsUpdated} flashcards atualizados.`;
+        
+        toast.success("Referências corrigidas com sucesso!", {
+          description: lastFixResult,
+          duration: 5000,
+        });
+      } else {
+        lastFixResult = "Todas as referências já estão corretas. Nenhuma alteração foi necessária.";
+        
+        toast.success("Verificação concluída", {
+          description: lastFixResult,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao corrigir referências:", error);
+      lastFixResult = "Ocorreu um erro ao corrigir as referências.";
+      
+      toast.error("Erro", {
+        description: "Ocorreu um erro ao processar os dados.",
+        duration: 5000,
+      });
+    } finally {
+      fixingReferences = false;
+    }
+  }
+  
+  // Corrigir relações entre grupos e itens salvos
+  async function fixGroupRelations() {
+    fixingGroupRelations = true;
+    
+    try {
+      const result = await verifyAndFixGroupRelations();
+      
+      if (result.success) {
+        lastFixResult = `Relações de grupos corrigidas com sucesso! ${result.itemsUpdated} itens e ${result.groupsUpdated} grupos foram atualizados.`;
+        
+        toast.success("Relações de grupos corrigidas!", {
+          description: `${result.itemsUpdated} itens e ${result.groupsUpdated} grupos foram atualizados.`,
+          duration: 5000,
+        });
+      } else {
+        lastFixResult = "Ocorreu um erro ao corrigir as relações de grupos.";
+        
+        toast.error("Erro ao corrigir relações de grupos", {
+          description: "Ocorreu um problema durante o processo. Por favor, tente novamente.",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao corrigir relações de grupos:", error);
+      lastFixResult = "Ocorreu um erro ao corrigir as relações de grupos.";
+      
+      toast.error("Erro ao corrigir relações de grupos", {
+        description: "Ocorreu um problema durante o processo. Por favor, tente novamente.",
+        duration: 5000,
+      });
+    } finally {
+      fixingGroupRelations = false;
+    }
   }
 </script>
 
@@ -469,6 +544,48 @@
           <p><a href="#" target="_blank" rel="noopener noreferrer">Reportar um Problema</a></p>
         </div>
       </div>
+    </section>
+
+    <!-- Manutenção de Dados -->
+    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8">
+      <h2 class="text-xl font-semibold mb-4">Manutenção de Dados</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Ferramentas para manutenção e correção de dados
+      </p>
+      
+      <div class="space-y-4">
+        <div>
+          <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+            Corrija referências entre notas, flashcards e itens salvos.
+          </p>
+          <button 
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onclick={() => fixItemReferences()}
+            disabled={fixingReferences || fixingGroupRelations}
+          >
+            {fixingReferences ? "Corrigindo..." : "Corrigir Referências"}
+          </button>
+        </div>
+        
+        <div class="border-t pt-4">
+          <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+            Corrija associações entre grupos e itens salvos.
+          </p>
+          <button 
+            class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            onclick={() => fixGroupRelations()}
+            disabled={fixingReferences || fixingGroupRelations}
+          >
+            {fixingGroupRelations ? "Corrigindo..." : "Corrigir Relações de Grupos"}
+          </button>
+        </div>
+      </div>
+      
+      {#if lastFixResult}
+        <div class="mt-4 p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
+          <p><strong>Resultado:</strong> {lastFixResult}</p>
+        </div>
+      {/if}
     </section>
   </div>
 </div> 

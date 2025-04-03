@@ -65,56 +65,98 @@ function createPersistentStore<T>(key: string, initialValue: T) {
     let updateScheduled = false;
     
     // Carregar dados do storage de forma otimizada (se existirem)
+    console.log(`[Storage] Inicializando store para "${key}"`);
     chrome.storage.local.get([key]).then((result) => {
+        console.log(`[Storage] Dados carregados do chrome.storage.local para "${key}":`, result[key]);
         if (result[key]) {
             store.set(result[key]);
         }
         isInitialized = true;
     }).catch(error => {
-        console.error(`Erro ao carregar dados para ${key}:`, error);
+        console.error(`[Storage] Erro ao carregar dados para ${key}:`, error);
         isInitialized = true; // Ainda consideramos inicializado para evitar bloqueios
     });
     
+    // Controlar número de operações de escrita
+    let lastSyncTime = 0;
+    const MIN_SYNC_INTERVAL = 5000; // 5 segundos entre sincronizações
+    
     // Inscrever-se para alterações e salvar no storage de forma otimizada
     store.subscribe((value) => {
-        if (!isInitialized || updateScheduled) return;
+        if (!isInitialized) {
+            console.log(`[Storage] Store "${key}" ainda não inicializada, adiando gravação`);
+            return;
+        }
         
-        // Utiliza requestIdleCallback para atrasar a escrita até que o navegador esteja ocioso
-        // Isso reduz o impacto de performance em operações frequentes
+        if (updateScheduled) {
+            console.log(`[Storage] Atualização já agendada para "${key}", ignorando`);
+            return;
+        }
+        
+        console.log(`[Storage] Atualizando store "${key}" com novo valor:`, value);
+        
+        // Utilizar uma abordagem mais direta para salvar os dados imediatamente
+        // para evitar problemas de sincronização
         updateScheduled = true;
         const update = () => {
-            chrome.storage.local.set({ [key]: value });
-            // Também salva na chrome.storage.sync para garantir sincronização entre instâncias
+            console.log(`[Storage] Gravando dados no chrome.storage.local para "${key}"`);
+            chrome.storage.local.set({ [key]: value }, () => {
+                const error = chrome.runtime.lastError;
+                if (error) {
+                    console.error(`[Storage] Erro ao salvar "${key}" no storage.local:`, error);
+                } else {
+                    console.log(`[Storage] Dados salvos com sucesso no storage.local para "${key}"`);
+                }
+            });
+            
+            // Sincronizar com storage.sync apenas com intervalo para evitar o erro de quota
+            const currentTime = Date.now();
             if (key === 'savedItems' || key === 'groups') {
-                chrome.storage.sync.set({ [key]: value }).catch(err => {
-                    console.warn(`Erro ao sincronizar ${key} com storage.sync:`, err);
-                });
+                // Verificar se passou tempo suficiente desde a última sincronização
+                if (currentTime - lastSyncTime > MIN_SYNC_INTERVAL) {
+                    console.log(`[Storage] Gravando dados no chrome.storage.sync para "${key}"`);
+                    chrome.storage.sync.set({ [key]: value }).then(() => {
+                        console.log(`[Storage] Dados salvos com sucesso no storage.sync para "${key}"`);
+                        lastSyncTime = currentTime;
+                    }).catch(err => {
+                        console.error(`[Storage] Erro ao sincronizar ${key} com storage.sync:`, err);
+                    });
+                } else {
+                    console.log(`[Storage] Ignorando sincronização com storage.sync para "${key}" (intervalo muito curto)`);
+                }
             }
+            
             updateScheduled = false;
         };
         
-        if (window.requestIdleCallback) {
-            window.requestIdleCallback(() => update(), { timeout: 1000 });
-        } else {
-            // Fallback para navegadores que não suportam requestIdleCallback
-            setTimeout(update, 100);
-        }
+        // Executar a atualização imediatamente para garantir persistência
+        update();
     });
     
     // Adicionar um método para forçar a sincronização imediata com o storage
     const forceSync = () => {
+        console.log(`[Storage] Forçando sincronização para "${key}"`);
         const value = get(store);
-        chrome.storage.local.set({ [key]: value });
-        if (key === 'savedItems' || key === 'groups') {
-            chrome.storage.sync.set({ [key]: value }).catch(err => {
-                console.warn(`Erro ao sincronizar ${key} com storage.sync:`, err);
+        
+        return new Promise<void>((resolve, reject) => {
+            // Sempre salvamos no storage.local
+            chrome.storage.local.set({ [key]: value }, () => {
+                const error = chrome.runtime.lastError;
+                if (error) {
+                    console.error(`[Storage] Erro ao forçar sincronização de "${key}" no storage.local:`, error);
+                    reject(error);
+                } else {
+                    console.log(`[Storage] Sincronização forçada concluída para "${key}" no storage.local`);
+                    resolve();
+                }
             });
-        }
+        });
     };
     
     // Adiciona listener para mudanças no storage
     chrome.storage.onChanged.addListener((changes) => {
         if (changes[key] && changes[key].newValue !== undefined) {
+            console.log(`[Storage] Detectada mudança externa em "${key}":`, changes[key].newValue);
             store.set(changes[key].newValue);
         }
     });
@@ -374,53 +416,186 @@ export const itemLinksUtils = {
 // Função para obter todas as tags únicas do sistema
 export function getAllTags(): Promise<string[]> {
   return new Promise((resolve) => {
-    Promise.all([
-      new Promise<string[]>(r => {
-        const unsub = savedItems.subscribe(items => {
-          const itemTags = items.flatMap(item => item.tags || []);
-          // Usar setTimeout para garantir que o callback complete antes de chamar unsub
-          setTimeout(() => {
-            unsub();
-            r(itemTags);
-          }, 0);
-        });
-      }),
-      new Promise<string[]>(r => {
-        const unsub = notes.subscribe(notesList => {
-          const noteTags = notesList.flatMap(note => note.tags || []);
-          // Usar setTimeout para garantir que o callback complete antes de chamar unsub
-          setTimeout(() => {
-            unsub();
-            r(noteTags);
-          }, 0);
-        });
-      }),
-      new Promise<string[]>(r => {
-        const unsub = flashcards.subscribe(cardsList => {
-          const cardTags = cardsList.flatMap(card => card.tags || []);
-          // Usar setTimeout para garantir que o callback complete antes de chamar unsub
-          setTimeout(() => {
-            unsub();
-            r(cardTags);
-          }, 0);
-        });
-      }),
-      // Obter tags diretamente do storage para garantir consistência
-      new Promise<string[]>(r => {
-        chrome.storage.local.get(['savedItems'], (result) => {
-          if (result.savedItems && Array.isArray(result.savedItems)) {
-            const storageTags = result.savedItems.flatMap(item => item.tags || []);
-            r(storageTags);
-          } else {
-            r([]);
-          }
-        });
-      })
-    ]).then(([itemTags, noteTags, cardTags, storageTags]) => {
-      // Combinar todas as tags e remover duplicatas
-      const allTags = [...itemTags, ...noteTags, ...cardTags, ...storageTags];
+    // Priorizar obter tags do storage local para maior consistência
+    chrome.storage.local.get(['savedItems', 'notes', 'flashcards'], (result) => {
+      let allTags: string[] = [];
+      
+      // Extrair tags dos itens salvos
+      if (result.savedItems && Array.isArray(result.savedItems)) {
+        const itemTags = result.savedItems
+          .flatMap(item => item.tags || [])
+          .filter(tag => typeof tag === 'string');
+        allTags = [...allTags, ...itemTags];
+      }
+      
+      // Extrair tags das notas
+      if (result.notes && Array.isArray(result.notes)) {
+        const noteTags = result.notes
+          .flatMap(note => note.tags || [])
+          .filter(tag => typeof tag === 'string');
+        allTags = [...allTags, ...noteTags];
+      }
+      
+      // Extrair tags dos flashcards
+      if (result.flashcards && Array.isArray(result.flashcards)) {
+        const cardTags = result.flashcards
+          .flatMap(card => card.tags || [])
+          .filter(tag => typeof tag === 'string');
+        allTags = [...allTags, ...cardTags];
+      }
+      
+      // Remover duplicatas e ordenar
       const uniqueTags = [...new Set(allTags)].sort();
       resolve(uniqueTags);
     });
+  });
+}
+
+// Função para verificar e corrigir a integridade das relações entre itens e grupos
+export function verifyAndFixGroupRelations() {
+  console.log("[Storage] Iniciando verificação e correção das relações entre itens e grupos");
+  
+  return new Promise<{ success: boolean, itemsUpdated: number, groupsUpdated: number }>(async (resolve) => {
+    // Obter todos os itens e grupos do armazenamento
+    const allItems: SavedItem[] = [];
+    const allGroups: Group[] = [];
+    
+    try {
+      // Buscar dados diretamente do storage para garantir dados atualizados
+      const itemsResult = await chrome.storage.local.get(['savedItems']);
+      if (itemsResult.savedItems) {
+        allItems.push(...itemsResult.savedItems);
+      }
+      
+      const groupsResult = await chrome.storage.local.get(['groups']);
+      if (groupsResult.groups) {
+        allGroups.push(...groupsResult.groups);
+      }
+      
+      console.log(`[Storage] Encontrados ${allItems.length} itens e ${allGroups.length} grupos para verificar`);
+      
+      let itemsUpdated = 0;
+      let groupsUpdated = 0;
+      let itemsModified = false;
+      let groupsModified = false;
+      
+      // 1. Verificar e corrigir grupos referenciados em itens que não existem
+      for (const item of allItems) {
+        if (!item.groupIds) {
+          item.groupIds = [];
+          itemsUpdated++;
+          itemsModified = true;
+          continue;
+        }
+        
+        // Garantir que groupIds seja um array
+        if (!Array.isArray(item.groupIds)) {
+          item.groupIds = [];
+          itemsUpdated++;
+          itemsModified = true;
+          continue;
+        }
+        
+        // Verificar se os grupos referenciados existem
+        const validGroupIds = item.groupIds.filter(groupId => 
+          allGroups.some(group => group.id === groupId)
+        );
+        
+        if (validGroupIds.length !== item.groupIds.length) {
+          item.groupIds = validGroupIds;
+          itemsUpdated++;
+          itemsModified = true;
+        }
+      }
+      
+      // 2. Verificar e corrigir itens referenciados em grupos que não existem
+      for (const group of allGroups) {
+        if (!group.itemIds) {
+          group.itemIds = [];
+          groupsUpdated++;
+          groupsModified = true;
+          continue;
+        }
+        
+        // Garantir que itemIds seja um array
+        if (!Array.isArray(group.itemIds)) {
+          group.itemIds = [];
+          groupsUpdated++;
+          groupsModified = true;
+          continue;
+        }
+        
+        // Verificar se os itens referenciados existem
+        const validItemIds = group.itemIds.filter(itemId => 
+          allItems.some(item => item.id === itemId)
+        );
+        
+        if (validItemIds.length !== group.itemIds.length) {
+          group.itemIds = validItemIds;
+          groupsUpdated++;
+          groupsModified = true;
+        }
+      }
+      
+      // 3. Verificar referências cruzadas: se um item está em um grupo, o grupo deve estar no item
+      for (const item of allItems) {
+        let itemUpdated = false;
+        
+        // Para cada grupo referenciado no item, verificar se o item está no grupo
+        for (const groupId of [...item.groupIds]) {
+          const group = allGroups.find(g => g.id === groupId);
+          if (group && !group.itemIds.includes(item.id)) {
+            // Adicionar o item ao grupo
+            group.itemIds.push(item.id);
+            groupsUpdated++;
+            groupsModified = true;
+          }
+        }
+        
+        // Verificar grupos que contêm este item mas não estão listados no item
+        for (const group of allGroups) {
+          if (group.itemIds.includes(item.id) && !item.groupIds.includes(group.id)) {
+            // Adicionar o grupo ao item
+            item.groupIds.push(group.id);
+            itemUpdated = true;
+            itemsModified = true;
+          }
+        }
+        
+        if (itemUpdated) {
+          itemsUpdated++;
+        }
+      }
+      
+      // Salvar as alterações apenas no chrome.storage.local se foram feitas
+      if (itemsModified) {
+        await chrome.storage.local.set({ savedItems: allItems });
+      }
+      
+      if (groupsModified) {
+        await chrome.storage.local.set({ groups: allGroups });
+      }
+      
+      // Atualizar as stores independentemente de modificações no storage
+      // Isso garante que o estado da UI será atualizado mesmo que os dados
+      // já estejam sincronizados no armazenamento
+      savedItems.set(allItems);
+      groups.set(allGroups);
+      
+      console.log(`[Storage] Correção concluída: ${itemsUpdated} itens e ${groupsUpdated} grupos atualizados`);
+      
+      resolve({ 
+        success: true, 
+        itemsUpdated, 
+        groupsUpdated 
+      });
+    } catch (error) {
+      console.error("[Storage] Erro ao verificar relações:", error);
+      resolve({ 
+        success: false, 
+        itemsUpdated: 0, 
+        groupsUpdated: 0 
+      });
+    }
   });
 }

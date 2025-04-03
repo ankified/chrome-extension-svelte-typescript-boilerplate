@@ -31,6 +31,7 @@
   let isFixingReferences = $state(false);
   let fixResult = $state<any>(null);
   let isLoading = $state(true);
+  let saveMode = $state("favorite"); // 'favorite' ou 'read_later'
   
   // Flags separadas para cada modo de visualização
   let notesCreateLoaded = $state(false);
@@ -194,14 +195,14 @@
 
   function runFixReferences() {
     isFixingReferences = true;
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const result = fixReferences();
+        const result = await fixReferences();
         
         // Exibir toast com o resultado
-        if (result && result.fixed) {
+        if (result && result.itemsUpdated > 0) {
           toast.success("Referências corrigidas com sucesso!", {
-            description: `${result.fixed} referências foram corrigidas.`,
+            description: `${result.itemsUpdated} itens foram atualizados.`,
             duration: 3000,
           });
         } else {
@@ -213,9 +214,9 @@
         
         // Atualizar as notas e flashcards se estivermos na aba correspondente
         if (activeTab === 'notes' && notesViewMode === 'view') {
-          loadRecentNotes();
+        loadRecentNotes();
         } else if (activeTab === 'flashcards' && flashcardsViewMode === 'view') {
-          loadRecentFlashcards();
+        loadRecentFlashcards();
         }
       } catch (error) {
         console.error("Erro ao corrigir referências:", error);
@@ -269,7 +270,48 @@
       <!-- Conteúdo de cada aba -->
       <Tabs.Content value="save" class="focus:outline-none tab-content flex-1">
         <div class="content-container">
-          <SaveItemForm initialUrl={currentUrl} initialTitle={currentTitle} />
+          <div class="flex justify-between items-center mb-4">
+            <ToggleGroup.Root type="single" value={saveMode} onValueChange={(value: string | null) => value && (saveMode = value)} class="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+              <ToggleGroup.Item 
+                value="favorite" 
+                class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800"
+                title="Favorito"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                  </svg>
+                  <span>Favorito</span>
+                </div>
+              </ToggleGroup.Item>
+              
+              <ToggleGroup.Item 
+                value="read_later" 
+                class="px-3 py-1.5 text-sm transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-700 data-[state=off]:dark:text-gray-300 data-[state=off]:hover:bg-gray-100 data-[state=off]:dark:hover:bg-gray-800"
+                title="Ler Depois"
+              >
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Ler Depois</span>
+                </div>
+              </ToggleGroup.Item>
+            </ToggleGroup.Root>
+            
+            <button 
+              class="text-sm rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center px-3 py-1.5"
+              onclick={() => openOptions('saved')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+              </svg>
+              Gerenciar
+            </button>
+          </div>
+          <div class="flex flex-col flex-1 overflow-auto">
+            <SaveItemForm initialUrl={currentUrl} initialTitle={currentTitle} saveMode={saveMode} />
+          </div>
         </div>
       </Tabs.Content>
     

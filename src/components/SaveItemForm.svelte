@@ -12,7 +12,15 @@
   import { toast } from "svelte-sonner";
   
   // Props do componente
-  let { initialUrl = "", initialTitle = "" } = $props<{ initialUrl?: string, initialTitle?: string }>();
+  let { 
+    initialUrl = "", 
+    initialTitle = "",
+    saveMode // Recebendo o saveMode como prop
+  } = $props<{ 
+    initialUrl?: string, 
+    initialTitle?: string,
+    saveMode: string
+  }>();
   
   // Obter URL e título da página atual
   let currentUrl = $state(initialUrl);
@@ -28,7 +36,6 @@
   let newGroupColor = $state("#3b82f6");
   let showNewGroupInput = $state(false);
   let showGroupsDropdown = $state(false);
-  let saveMode = $state("favorite"); // 'favorite' ou 'read_later'
   let scheduledDate = $state<string | null>(null);
   
   // Controle da UI
@@ -70,7 +77,9 @@
   // Carregar todas as tags disponíveis
   async function loadAllTags() {
     try {
-      allAvailableTags = await getAllTags();
+      const tags = await getAllTags();
+      // Garantir que todas as tags são strings válidas
+      allAvailableTags = tags.filter(tag => typeof tag === 'string');
     } catch (error) {
       console.error("Erro ao carregar tags:", error);
     }
@@ -107,6 +116,11 @@
   
   // Adicionar uma tag sugerida
   function addSuggestedTag(tag: string) {
+    if (typeof tag !== 'string') {
+      console.error("Tag não é uma string:", tag);
+      return;
+    }
+    
     if (!selectedTags.includes(tag)) {
       selectedTags = [...selectedTags, tag];
     }
@@ -121,6 +135,11 @@
   
   // Toggle uma tag existente
   function toggleExistingTag(tag: string) {
+    if (typeof tag !== 'string') {
+      console.error("Tag não é uma string:", tag);
+      return;
+    }
+    
     if (selectedTags.includes(tag)) {
       selectedTags = selectedTags.filter(t => t !== tag);
     } else {
@@ -172,7 +191,7 @@
       title: currentTitle,
       dateAdded: Date.now(),
       comments,
-      tags: selectedTags,
+      tags: selectedTags.filter(tag => typeof tag === 'string'), // Garantir que todas as tags são strings
       groupIds: selectedGroups,
       readLater: saveMode === "read_later",
       scheduledDate: saveMode === "read_later" && scheduledDate ? new Date(scheduledDate).getTime() : undefined,
@@ -180,43 +199,92 @@
       flashcardIds: []
     };
     
-    // Adicionar o item à lista de itens salvos
-    savedItems.update(items => [...items, newItem]);
+    // Console log para depuração
+    console.log(`[SaveItemForm] Salvando item com ${selectedGroups.length} grupos:`, selectedGroups);
+    console.log(`[SaveItemForm] Detalhes do item a ser salvo:`, newItem);
     
-    // Atualizar grupos selecionados para incluir o novo item
+    // Obter itens atuais diretamente do storage para evitar duplicação
+    chrome.storage.local.get(['savedItems'], (result) => {
+      const existingItems = result.savedItems || [];
+      
+      // Verificar se já existe um item com esta URL para evitar duplicação
+      const isDuplicate = existingItems.some(item => item.url === newItem.url);
+      
+      if (isDuplicate) {
+        console.log(`[SaveItemForm] Item já existe com esta URL: ${newItem.url}`);
+        toast.error("Item já existe", {
+          description: "Um item com esta URL já existe nos seus favoritos.",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      // Adicionar o novo item à lista
+      const updatedItems = [...existingItems, newItem];
+      console.log(`[SaveItemForm] Salvando no storage. Total: ${updatedItems.length}`);
+      
+      // Primeiro salvar apenas em storage.local para garantir persistência rápida
+      chrome.storage.local.set({ savedItems: updatedItems }, () => {
+        // Atualizar a store Svelte após confirmar o salvamento no storage local
+        savedItems.set(updatedItems);
+        
+        // Em seguida, atualizar grupos para incluir o novo item (apenas em storage.local)
     if (selectedGroups.length > 0) {
-      groups.update(existingGroups => {
-        return existingGroups.map(group => {
+          console.log("[SaveItemForm] Atualizando grupos com o novo item");
+          
+          chrome.storage.local.get(['groups'], (groupsResult) => {
+            const existingGroups = groupsResult.groups || [];
+            const updatedGroups = existingGroups.map(group => {
           if (selectedGroups.includes(group.id)) {
+                console.log(`[SaveItemForm] Adicionando item ao grupo: ${group.name}`);
+                // Certificar que o grupo tenha um array itemIds válido
+                const currentItemIds = Array.isArray(group.itemIds) ? [...group.itemIds] : [];
+                
             return {
               ...group,
-              itemIds: [...(group.itemIds || []), newItem.id]
+                  itemIds: [...currentItemIds, newItem.id]
             };
           }
           return group;
         });
+            
+            // Salvar grupos atualizados apenas em storage.local
+            chrome.storage.local.set({ groups: updatedGroups }, () => {
+              // Atualizar a store Svelte após confirmar o salvamento
+              groups.set(updatedGroups);
+              
+              // Exibir toast de sucesso após confirmar salvamento
+              console.log("[SaveItemForm] Salvamento completo");
+              toast.success(`"${currentTitle}" foi salvo com sucesso!`, {
+                description: saveMode === "read_later" ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
+                duration: 3000,
+              });
+              
+              // Recarregar todas as tags após um breve atraso para atualizar o popover
+              setTimeout(() => {
+                loadAllTags();
+                // Resetar o formulário
+                resetForm();
+              }, 500);
+            });
+          });
+        } else {
+          // Se não houver grupos para atualizar, exibir toast imediatamente
+          console.log("[SaveItemForm] Salvamento completo (sem grupos)");
+          toast.success(`"${currentTitle}" foi salvo com sucesso!`, {
+            description: saveMode === "read_later" ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
+            duration: 3000,
+          });
+          
+          // Recarregar todas as tags após um breve atraso para atualizar o popover
+          setTimeout(() => {
+            loadAllTags();
+            // Resetar o formulário
+            resetForm();
+          }, 500);
+        }
       });
-      
-      // Força a sincronização imediata dos grupos
-      (groups as any).forceSync?.();
-    }
-    
-    // Força a sincronização imediata dos itens salvos
-    (savedItems as any).forceSync?.();
-    
-    // Exibir toast de sucesso
-    toast.success(`"${currentTitle}" foi salvo com sucesso!`, {
-      description: saveMode === "read_later" ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
-      duration: 3000,
     });
-    
-    // Recarregar todas as tags para atualizar o popover
-    setTimeout(() => {
-      loadAllTags();
-    }, 500);
-    
-    // Resetar o formulário diretamente ao invés de mostrar a tela adicional
-    resetForm();
   }
   
   function toggleNoteInput() {
@@ -276,6 +344,7 @@
   {#if selectedTags.length > 0}
     <div class="flex flex-wrap gap-1 mb-4">
           {#each selectedTags as tag}
+            {#if typeof tag === 'string'}
             <div class="tag flex items-center bg-blue-600/20 text-blue-400 text-xs rounded-full px-2 py-1">
               <span>{tag}</span>
               <button
@@ -288,6 +357,7 @@
                 </svg>
               </button>
             </div>
+            {/if}
           {/each}
         </div>
   {/if}
@@ -376,18 +446,20 @@
                   {:else}
                     <div class="flex flex-wrap gap-1 p-1">
                       {#each allAvailableTags as tag}
-                        <button 
-                          type="button" 
-                          class="tag text-xs px-2 py-1 rounded-full flex items-center gap-1 {selectedTags.includes(tag) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}"
-                          onclick={() => toggleExistingTag(tag)}
-                        >
-                          {#if selectedTags.includes(tag)}
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                          {/if}
-                          <span>{tag}</span>
-                        </button>
+                        {#if typeof tag === 'string'}
+                          <button 
+                            type="button" 
+                            class="tag text-xs px-2 py-1 rounded-full flex items-center gap-1 {selectedTags.includes(tag) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}"
+                            onclick={() => toggleExistingTag(tag)}
+                          >
+                            {#if selectedTags.includes(tag)}
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            {/if}
+                            <span>{tag}</span>
+                          </button>
+                        {/if}
                       {/each}
                     </div>
                   {/if}
@@ -494,29 +566,8 @@
           </div>
         {/if}
       </div>
-      
-      <!-- Toggle Favorito/Ler Depois -->
-      <ToggleGroup.Root type="single" value={saveMode} onValueChange={(value: string | null) => value && (saveMode = value)} class="flex rounded-lg overflow-hidden border border-gray-600">
-        <ToggleGroup.Item 
-          value="favorite" 
-          class="p-2 transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-300 data-[state=off]:hover:bg-gray-700"
-          title="Favorito"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-          </svg>
-        </ToggleGroup.Item>
         
-        <ToggleGroup.Item 
-          value="read_later" 
-          class="p-2 transition-colors data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=off]:bg-transparent data-[state=off]:text-gray-300 data-[state=off]:hover:bg-gray-700"
-          title="Ler Depois"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-          </svg>
-        </ToggleGroup.Item>
-      </ToggleGroup.Root>
+      <!-- Espaço vazio onde antes estava o Toggle Favorito/Ler Depois -->
     </div>
           </div>
         

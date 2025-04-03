@@ -18,11 +18,10 @@
     const matchesSearch = !searchQuery || 
       card.front.toLowerCase().includes(searchQuery.toLowerCase()) ||
       card.back.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      card.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      searchMatchesTag(searchQuery, card);
     
     // Filtro por tags selecionadas
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.every(tag => card.tags.includes(tag));
+    const matchesTags = cardHasSelectedTags(card, selectedTags);
     
     return matchesSearch && matchesTags;
   }));
@@ -81,7 +80,15 @@
   });
   
   // Todas as tags existentes
-  let allTags = $derived([...new Set($flashcards.flatMap(card => card.tags))]);
+  let allTags = $derived(() => {
+    const tagsSet = new Set<string>();
+    $flashcards.forEach(card => {
+      if (card.tags && Array.isArray(card.tags)) {
+        card.tags.forEach(tag => tagsSet.add(tag));
+      }
+    });
+    return Array.from(tagsSet);
+  });
   
   onMount(() => {
     console.log("[FlashcardsView] Componente montado");
@@ -123,6 +130,25 @@
   let dueCards = $derived(sortedFlashcards.filter(card => 
     card.nextReviewDate && card.nextReviewDate <= Date.now()
   ));
+
+  // Verificar se card.tags é um array antes de usar métodos array
+  function searchMatchesTag(query, card) {
+    if (!card.tags || !Array.isArray(card.tags)) {
+      return false;
+    }
+    return card.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
+  }
+
+  // Verificar tags selecionadas
+  function cardHasSelectedTags(card, selectedTags) {
+    if (selectedTags.length === 0) {
+      return true;
+    }
+    if (!card.tags || !Array.isArray(card.tags)) {
+      return false;
+    }
+    return selectedTags.every(tag => card.tags.includes(tag));
+  }
 </script>
 
 <div class="flashcards-view">

@@ -4,7 +4,7 @@
   import FlashcardsView from './views/FlashcardsView.svelte';
   import SettingsView from './views/SettingsView.svelte';
   import SavedItemsView from './views/SavedItemsView.svelte';
-  import { fixReferences } from '../storage';
+  import { fixReferences, verifyAndFixGroupRelations } from '../storage';
   import { toast } from "svelte-sonner";
   import { Toaster } from "../lib/components/ui/sonner/index.js";
   
@@ -16,10 +16,12 @@
     { id: 'settings', label: 'Configurações', icon: 'settings' }
   ];
   
-  // Usando let para variáveis de estado em vez de $state
-  let activeTab = 'saved';
-  let isFixingReferences = false;
-  let fixResults = null;
+  // Usando $state para variáveis de estado em vez de let
+  let activeTab = $state('saved');
+  let isFixingReferences = $state(false);
+  let fixResults = $state(null);
+  let fixingGroupRelations = $state(false);
+  let lastFixResult = $state(null);
   
   onMount(() => {
     // Tratamento para o erro "Extension context invalidated"
@@ -35,13 +37,13 @@
     
     // Verificar se há uma aba específica para abrir
     try {
-      chrome.storage.local.get(['activeOptionsTab'], (result) => {
-        if (result.activeOptionsTab && tabs.find(tab => tab.id === result.activeOptionsTab)) {
-          activeTab = result.activeOptionsTab;
-          // Limpar a preferência para não influenciar aberturas futuras
-          chrome.storage.local.remove(['activeOptionsTab']);
-        }
-      });
+    chrome.storage.local.get(['activeOptionsTab'], (result) => {
+      if (result.activeOptionsTab && tabs.find(tab => tab.id === result.activeOptionsTab)) {
+        activeTab = result.activeOptionsTab;
+        // Limpar a preferência para não influenciar aberturas futuras
+        chrome.storage.local.remove(['activeOptionsTab']);
+      }
+    });
     } catch (error) {
       console.error('Erro ao acessar storage:', error);
     }
@@ -75,6 +77,49 @@
         isFixingReferences = false;
       }
     }, 100);
+  }
+  
+  function changeTab(tabId) {
+    console.log(`Alterando para a aba: ${tabId}`);
+    activeTab = tabId;
+  }
+  
+  // Função para corrigir as relações entre grupos e itens
+  async function fixGroupRelations() {
+    fixingGroupRelations = true;
+    
+    try {
+      const result = await verifyAndFixGroupRelations();
+      
+      if (result.success) {
+        lastFixResult = `Relações de grupos corrigidas com sucesso! ${result.itemsUpdated} itens e ${result.groupsUpdated} grupos foram atualizados.`;
+        
+        // Exibir toast de sucesso
+        toast.success("Relações de grupos corrigidas!", {
+          description: `${result.itemsUpdated} itens e ${result.groupsUpdated} grupos foram atualizados.`,
+          duration: 5000,
+        });
+      } else {
+        lastFixResult = "Ocorreu um erro ao corrigir as relações de grupos.";
+        
+        // Exibir toast de erro
+        toast.error("Erro ao corrigir relações de grupos", {
+          description: "Ocorreu um problema durante o processo. Por favor, tente novamente.",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao corrigir relações de grupos:", error);
+      lastFixResult = "Ocorreu um erro ao corrigir as relações de grupos.";
+      
+      // Exibir toast de erro
+      toast.error("Erro ao corrigir relações de grupos", {
+        description: "Ocorreu um problema durante o processo. Por favor, tente novamente.",
+        duration: 5000,
+      });
+    } finally {
+      fixingGroupRelations = false;
+    }
   }
 </script>
 
@@ -116,7 +161,7 @@
                 class:dark:bg-gray-700={activeTab === tab.id}
                 class:text-blue-600={activeTab === tab.id}
                 class:dark:text-blue-400={activeTab === tab.id}
-                onclick={() => activeTab = tab.id}
+                onclick={() => changeTab(tab.id)}
               >
                 {#if tab.icon === 'bookmark'}
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
