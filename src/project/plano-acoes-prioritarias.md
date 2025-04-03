@@ -4,7 +4,7 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Correções Críticas
 
-### ~~1. Problemas de Exibição na Página de Opções~~ (RESOLVIDO)
+### ~~1. Problemas de Exibição na Página de Opções~~ (RESOLVIDO - 2025-04-02)
 
 - ~~**Problema**: Notas não estão sendo exibidas na aba "Notas" da página de opções, enquanto são exibidas corretamente no popup.~~
 - ~~**Ação**: Investigar a diferença de implementação entre o popup e a página de opções para entender por que as notas são exibidas em um contexto mas não no outro.~~
@@ -14,7 +14,12 @@ Este documento registra as correções, melhorias e novas implementações que d
   - ~~Problemas de timing na inicialização dos componentes~~
   - ~~Verificar se há diferenças na estrutura dos stores utilizados~~
 
-### ~~2. Flashcards Ausentes na Página de Opções~~ (RESOLVIDO)
+**Detalhes da Resolução:**
+- **Data**: 2025-04-02
+- **Solução implementada**: Corrigida a navegação entre abas na página de opções substituindo a implementação com `$state activeTab` por uma abordagem mais estável usando estado local padrão do componente. Adicionado tratamento para o erro "Extension context invalidated" com reload automático da página. Migrados todos os blocos reativos `$:` para `$derived` no componente `NotesView.svelte` e corrigido o acesso a variáveis reativas nos templates.
+- **Resultado**: Agora todas as abas na página de opções (Itens Salvos, Notas, Flashcards, Configurações) são exibidas corretamente ao clicar nelas. Os erros de tipo relacionados a arrays e operações join/forEach foram corrigidos.
+
+### ~~2. Flashcards Ausentes na Página de Opções~~ (RESOLVIDO - 2025-04-02)
 
 - ~~**Problema**: Flashcards são exibidos corretamente no popup quando a opção "Visualizar" está selecionada, mas não aparecem na aba Flashcards da página de opções.~~
 - ~~**Ação**: Similar ao problema das notas, investigar as diferenças de implementação entre os contextos.~~
@@ -22,6 +27,11 @@ Este documento registra as correções, melhorias e novas implementações que d
   - ~~Comparar o código de carregamento de flashcards entre popup e página de opções~~
   - ~~Verificar se existem condicionais que possam estar impedindo a exibição~~
   - ~~Examinar os logs para possíveis erros silenciosos~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-02
+- **Solução implementada**: Corrigida a navegação entre abas na página de opções conforme descrito na solução anterior. Adicionalmente, foram corrigidos problemas de tipo e acesso a variáveis reativas em todos os componentes de visualização, assegurando que os arrays de tags e outros dados sejam tratados corretamente.
+- **Resultado**: Flashcards agora são exibidos corretamente na aba correspondente da página de opções, com suas tags, cores e vínculos a itens funcionando conforme esperado.
 
 ### ~~3. Problemas de Performance no Popup~~ (RESOLVIDO - 2025-04-01)
 
@@ -38,12 +48,26 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Aplicadas otimizações de performance usando carregamento seletivo de dados, redução de operações síncronas e melhorias na gestão do storage. Corrigidos problemas com efeitos reativos e referências a funções unsubscribe. Ver detalhes no diário de desenvolvimento (src/project/diario/2025-04-01.md).
 - **Resultado**: Performance do popup significativamente melhorada, com carregamento mais rápido e transição fluida entre abas. Corrigidos erros relacionados a estados reativos e loops infinitos.
 
+### 4. Problemas de Sincronização entre Storage Local e Storage Sync
+
+- **Problema**: Itens recém-salvos não aparecem imediatamente na lista de itens salvos, e tags recém-criadas não aparecem nas sugestões.
+- **Ação**: Revisar e aprimorar o mecanismo de sincronização entre chrome.storage.local e chrome.storage.sync.
+- **Hipóteses a verificar**:
+  - Tempos de sincronização entre os dois sistemas de armazenamento
+  - Possíveis conflitos ou sobreposições de dados
+  - Mecanismos para forçar a sincronização quando necessário
+
 ## Melhorias de Experiência do Usuário
 
-### 1. Feedback de Salvamento
+### ~~1. Feedback de Salvamento~~ (RESOLVIDO - 2025-04-02)
 
-- **Melhoria**: Eliminar a janela de diálogo do navegador ao salvar uma nota.
-- **Implementação**: Substituir o alerta padrão do navegador por um toast ou snackbar personalizado usando o componente do shadcn-svelte.
+- ~~**Melhoria**: Eliminar a janela de diálogo do navegador ao salvar uma nota.~~
+- ~~**Implementação**: Substituir o alerta padrão do navegador por um toast ou snackbar personalizado usando o componente do shadcn-svelte.~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-02
+- **Solução implementada**: Substituídos todos os alertas do navegador por toast notifications usando o componente Toaster do shadcn-svelte. Adicionado `event.preventDefault()` aos manipuladores de eventos para evitar o comportamento padrão. Simplificada a interface após o salvamento, removendo a caixa verde de sucesso e botões redundantes.
+- **Resultado**: Feedback de usuário mais moderno e consistente em todas as operações de salvamento, com menor intrusividade na interface.
 
 ### ~~2. Aprimoramento de Interface de Seleção~~ (RESOLVIDO - 2025-04-01)
 
@@ -55,7 +79,7 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Implementado o componente DropdownMenu do shadcn-svelte para selecionar grupos, com suporte a seleção múltipla usando CheckboxItems.
 - **Resultado**: Interface mais moderna, consistente e acessível para seleção de grupos.
 
-### ~~3. Visualização Melhorada de URL e Título~~ (RESOLVIDO - 2025-04-01)
+### ~~3. Visualização Melhorada de URL e Título~~ (RESOLVIDO - 2025-04-01/02)
 
 - ~~**Melhoria**: Tornar a exibição dos campos de título e URL da aba Salvar semelhantes a cards de social media, incluindo favicon.~~
 - ~~**Implementação**:~~ 
@@ -64,8 +88,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - ~~Adicionar lógica para extrair e exibir o favicon da URL~~
 
 **Detalhes da Resolução:**
-- **Data**: 2025-04-01
-- **Solução implementada**: Criado o componente PagePreviewCard para exibição de URLs e títulos no estilo de card, com suporte a exibição de favicon usando o serviço do Google, edição de título via popover usando o componente Popover do shadcn-svelte, e limitação de altura com truncamento de texto para consistência visual.
+- **Data**: 2025-04-01, refinado em 2025-04-02
+- **Solução implementada**: Criado o componente PagePreviewCard para exibição de URLs e títulos no estilo de card, com suporte a exibição de favicon usando o serviço do Google, edição de título via popover usando o componente Popover do shadcn-svelte, e limitação de altura com truncamento de texto para consistência visual. Em 2025-04-02, reformulado o layout para usar duas colunas mais limpas, com favicon à esquerda e informações à direita.
 - **Resultado**: Interface mais moderna e visual para exibição de URLs e títulos, semelhante a cards de mídia social, com uma experiência de usuário mais intuitiva para edição.
 
 ### ~~4. Sistema de Tags Aprimorado~~ (RESOLVIDO - 2025-04-01)
@@ -255,18 +279,19 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Plano de Execução
 
-### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-01)
-- ~~Focar na resolução dos problemas de performance do popup~~
+### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-02)
+- ~~Focar na resolução dos problemas de performance do popup~~ (CONCLUÍDO em 2025-04-01)
+- ~~Corrigir problemas de exibição na página de opções~~ (CONCLUÍDO em 2025-04-02)
 - ~~Estimar 3 dias para investigação e otimização~~
 
 ### Fase 2: Melhorias de UI/UX (Prioridade Média)
 - ~~Implementar melhorias 2 (dropdowns) e 4 (sistema de tags)~~ (CONCLUÍDA em 2025-04-01)
-- ~~Implementar melhoria 3 (cards de URL/título)~~ (CONCLUÍDA em 2025-04-01)
-- Implementar melhoria 1 (feedback de salvamento)
+- ~~Implementar melhoria 3 (cards de URL/título)~~ (CONCLUÍDA em 2025-04-01/02)
+- ~~Implementar melhoria 1 (feedback de salvamento)~~ (CONCLUÍDA em 2025-04-02)
+- ~~Implementar melhoria 5 (dimensões do popup)~~ (CONCLUÍDA em 2025-04-01)
 - Estimar 5-7 dias para estas implementações
 
 ### Fase 3: Melhorias de Visualização (Prioridade Média-Baixa)
-- ~~Implementar melhoria 5 (dimensões do popup)~~ (CONCLUÍDA em 2025-04-01)
 - Implementar melhorias 6-7 (visualização embarcada, diálogos de conteúdo)
 - Estimar 4-6 dias para estas implementações
 
@@ -276,6 +301,7 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ### Fase 5: Novas Features (Prioridade Variável)
 - Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
+- Implementar correções de sincronização de armazenamento (Prioridade Alta) - 3 dias
 - Implementar sidebar para painel de opções (Prioridade Média) - 3 dias
 - Implementar seletor de tema aprimorado (Prioridade Média) - 1 dia
 - Implementar visualização em Kanban (Prioridade Baixa) - 5-7 dias
@@ -288,4 +314,6 @@ Este plano é flexível e pode ser ajustado conforme necessidades emergentes ou 
 
 As correções de performance foram abordadas com sucesso, melhorando significativamente a experiência do usuário. A implementação de componentes modernos do shadcn-svelte e do sistema de tags aprimorado também representa um avanço importante para a usabilidade da extensão.
 
-As próximas melhorias planejadas focam em melhorar ainda mais a experiência do usuário com feedback visual, organização aprimorada e recursos avançados como visualização em Kanban e editor rich text. 
+As correções na página de opções e a migração para a sintaxe moderna do Svelte 5 resolveram problemas críticos que impediam a navegação e visualização correta de conteúdo. O uso de toast notifications e a padronização dos componentes visuais contribuíram para uma experiência mais coesa e agradável.
+
+Os próximos passos se concentrarão em melhorar ainda mais a experiência do usuário com feedback visual, organização aprimorada e recursos avançados como visualização em Kanban e editor rich text. Também será dada especial atenção à otimização do armazenamento e sincronização de dados para garantir que todas as informações sejam preservadas corretamente. 

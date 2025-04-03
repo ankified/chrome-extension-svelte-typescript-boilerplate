@@ -6,10 +6,12 @@
   import PopupNoteCreator from './lib/components/PopupNoteCreator.svelte';
   import PopupFlashcardCreator from './lib/components/PopupFlashcardCreator.svelte';
   import { format } from 'date-fns/format';
+  import { toast } from "svelte-sonner";
   
   // Importar componentes do Shadcn
   import * as Tabs from "./lib/components/ui/tabs/index.js";
   import * as ToggleGroup from "./lib/components/ui/toggle-group/index.js";
+  import { Toaster } from "./lib/components/ui/sonner/index.js";
   
   // Definição de abas
   const tabs = [
@@ -194,21 +196,33 @@
     isFixingReferences = true;
     setTimeout(() => {
       try {
-        fixResult = fixReferences();
+        const result = fixReferences();
+        
+        // Exibir toast com o resultado
+        if (result && result.fixed) {
+          toast.success("Referências corrigidas com sucesso!", {
+            description: `${result.fixed} referências foram corrigidas.`,
+            duration: 3000,
+          });
+        } else {
+          toast.info("Verificação concluída", {
+            description: "Nenhuma referência precisou ser corrigida.",
+            duration: 3000,
+          });
+        }
         
         // Atualizar as notas e flashcards se estivermos na aba correspondente
         if (activeTab === 'notes' && notesViewMode === 'view') {
-        loadRecentNotes();
+          loadRecentNotes();
         } else if (activeTab === 'flashcards' && flashcardsViewMode === 'view') {
-        loadRecentFlashcards();
+          loadRecentFlashcards();
         }
-        
-        // Limpar o resultado após 3 segundos
-        setTimeout(() => {
-          fixResult = null;
-        }, 3000);
       } catch (error) {
         console.error("Erro ao corrigir referências:", error);
+        toast.error("Erro ao corrigir referências", {
+          description: error instanceof Error ? error.message : "Ocorreu um erro desconhecido",
+          duration: 5000,
+        });
       } finally {
         isFixingReferences = false;
       }
@@ -451,6 +465,9 @@
     
     
   <!-- {/if} -->
+  
+  <!-- Componente Toaster para exibir notificações -->
+  <Toaster richColors position="top-right" />
 </main>
 
 <style>

@@ -53,7 +53,9 @@
   function getAllTags(items: SavedItem[]) {
     const tagsSet = new Set<string>();
     items.forEach(item => {
-      item.tags.forEach(tag => tagsSet.add(tag.toLowerCase()));
+      if (item.tags && Array.isArray(item.tags)) {
+        item.tags.forEach(tag => tagsSet.add(tag.toLowerCase()));
+      }
     });
     return Array.from(tagsSet).sort();
   }

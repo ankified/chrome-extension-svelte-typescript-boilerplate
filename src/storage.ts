@@ -83,7 +83,13 @@ function createPersistentStore<T>(key: string, initialValue: T) {
         // Isso reduz o impacto de performance em operações frequentes
         updateScheduled = true;
         const update = () => {
-        chrome.storage.local.set({ [key]: value });
+            chrome.storage.local.set({ [key]: value });
+            // Também salva na chrome.storage.sync para garantir sincronização entre instâncias
+            if (key === 'savedItems' || key === 'groups') {
+                chrome.storage.sync.set({ [key]: value }).catch(err => {
+                    console.warn(`Erro ao sincronizar ${key} com storage.sync:`, err);
+                });
+            }
             updateScheduled = false;
         };
         
@@ -95,7 +101,38 @@ function createPersistentStore<T>(key: string, initialValue: T) {
         }
     });
     
-    return store;
+    // Adicionar um método para forçar a sincronização imediata com o storage
+    const forceSync = () => {
+        const value = get(store);
+        chrome.storage.local.set({ [key]: value });
+        if (key === 'savedItems' || key === 'groups') {
+            chrome.storage.sync.set({ [key]: value }).catch(err => {
+                console.warn(`Erro ao sincronizar ${key} com storage.sync:`, err);
+            });
+        }
+    };
+    
+    // Adiciona listener para mudanças no storage
+    chrome.storage.onChanged.addListener((changes) => {
+        if (changes[key] && changes[key].newValue !== undefined) {
+            store.set(changes[key].newValue);
+        }
+    });
+    
+    return {
+        ...store,
+        forceSync
+    };
+}
+
+// Função auxiliar para obter valor atual de uma store
+function get<T>(store: { subscribe: (callback: (value: T) => void) => any }): T {
+    let value: T;
+    const unsubscribe = store.subscribe(($value) => {
+        value = $value;
+    });
+    unsubscribe();
+    return value!;
 }
 
 // Criar stores para cada tipo de dado
@@ -367,10 +404,21 @@ export function getAllTags(): Promise<string[]> {
             r(cardTags);
           }, 0);
         });
+      }),
+      // Obter tags diretamente do storage para garantir consistência
+      new Promise<string[]>(r => {
+        chrome.storage.local.get(['savedItems'], (result) => {
+          if (result.savedItems && Array.isArray(result.savedItems)) {
+            const storageTags = result.savedItems.flatMap(item => item.tags || []);
+            r(storageTags);
+          } else {
+            r([]);
+          }
+        });
       })
-    ]).then(([itemTags, noteTags, cardTags]) => {
+    ]).then(([itemTags, noteTags, cardTags, storageTags]) => {
       // Combinar todas as tags e remover duplicatas
-      const allTags = [...itemTags, ...noteTags, ...cardTags];
+      const allTags = [...itemTags, ...noteTags, ...cardTags, ...storageTags];
       const uniqueTags = [...new Set(allTags)].sort();
       resolve(uniqueTags);
     });

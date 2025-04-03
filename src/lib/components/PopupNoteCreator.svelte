@@ -2,6 +2,7 @@
   import { notes, savedItems, getAllTags } from "../../storage";
   import type { Note, SavedItem } from "../../types";
   import { onMount } from 'svelte';
+  import { toast } from "svelte-sonner";
   
   let content = $state("");
   let tagInput = $state("");
@@ -91,7 +92,10 @@
   function saveNote() {
     // Validação básica
     if (!content.trim()) {
-      alert("O conteúdo da nota não pode estar vazio.");
+      toast.error("Erro ao salvar nota", {
+        description: "O conteúdo da nota não pode estar vazio.",
+        duration: 3000,
+      });
       return;
     }
     
@@ -165,8 +169,11 @@
     tagInput = "";
     color = "#2563eb";
 
-    // Feedback visual
-    alert("Nota adicionada com sucesso!");
+    // Feedback visual com toast
+    toast.success("Nota criada com sucesso!", {
+      description: currentItem ? `Nota adicionada a "${currentItem.title}"` : "Nota independente criada",
+      duration: 3000,
+    });
   }
 </script>
 
@@ -251,7 +258,10 @@
   <div class="actions">
     <button 
       class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-      onclick={saveNote}
+      onclick={(event) => {
+        event.preventDefault();
+        saveNote();
+      }}
       disabled={!content.trim()}
     >
       Salvar Nota

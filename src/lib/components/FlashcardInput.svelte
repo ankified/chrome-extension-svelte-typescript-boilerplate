@@ -3,6 +3,7 @@
   import { flashcards, savedItems } from "../../storage";
   import { format } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
+  import { toast } from "svelte-sonner";
 
   let { item } = $props<{ item: SavedItem }>();
   
@@ -56,6 +57,12 @@
           : i
       )
     );
+
+    // Exibir toast de sucesso
+    toast.success("Flashcard criado com sucesso!", {
+      description: `Flashcard adicionado a "${item.title}"`,
+      duration: 3000,
+    });
 
     // Limpar o formulário após salvar
     front = "";
@@ -126,7 +133,10 @@
   </div>
   
   <button 
-    onclick={saveFlashcard} 
+    onclick={(event) => {
+      event.preventDefault();
+      saveFlashcard();
+    }} 
     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
     disabled={!front.trim() || !back.trim()}
   >

@@ -2,6 +2,7 @@
   import { flashcards, savedItems, getAllTags } from "../../storage";
   import type { Flashcard } from "../../types";
   import { onMount } from 'svelte';
+  import { toast } from "svelte-sonner";
   
   let front = $state("");
   let back = $state("");
@@ -81,7 +82,10 @@
   function saveFlashcard() {
     // Validação básica
     if (!front.trim() || !back.trim()) {
-      alert("Frente e verso do flashcard não podem estar vazios.");
+      toast.error("Erro ao salvar flashcard", {
+        description: "Frente e verso do flashcard não podem estar vazios.",
+        duration: 3000,
+      });
       return;
     }
     
@@ -160,8 +164,11 @@
     selectedTags = [];
     tagInput = "";
     
-    // Feedback visual
-    alert("Flashcard adicionado com sucesso!");
+    // Feedback visual com toast
+    toast.success("Flashcard criado com sucesso!", {
+      description: `Flashcard adicionado a "${pageTitle}"`,
+      duration: 3000,
+    });
   }
 </script>
 
@@ -242,7 +249,10 @@
   <div class="actions">
     <button 
       class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-      onclick={saveFlashcard}
+      onclick={(event) => {
+        event.preventDefault();
+        saveFlashcard();
+      }}
       disabled={!front.trim() || !back.trim()}
     >
       Salvar Flashcard

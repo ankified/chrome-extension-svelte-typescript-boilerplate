@@ -3,6 +3,7 @@
   import { notes, savedItems } from "../../storage";
   import { format } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
+  import { toast } from "svelte-sonner";
 
   let { item } = $props<{ item: SavedItem }>();
   let content = $state("");
@@ -52,6 +53,12 @@
           : i
       )
     );
+
+    // Exibir toast de sucesso
+    toast.success("Nota criada com sucesso!", {
+      description: `Nota adicionada a "${item.title}"`,
+      duration: 3000,
+    });
 
     // Limpar o formulário após salvar
     content = "";
@@ -107,7 +114,10 @@
   </div>
   
   <button 
-    onclick={saveNote} 
+    onclick={(event) => {
+      event.preventDefault();
+      saveNote();
+    }} 
     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
     disabled={!content.trim()}
   >

@@ -86,71 +86,80 @@
 </script>
 
 <div class="page-preview-card bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
-  <div class="px-4 pt-4 pb-5 max-h-28 overflow-hidden">
-    <!-- Título com popover para edição -->
-    <div class="flex justify-between items-start">
-      <h2 class="text-md font-semibold text-gray-900 dark:text-white line-clamp-2">{title}</h2>
-      
-      {#if editable}
-        <Popover.Root open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
-          <Popover.Trigger>
-            <button 
-              class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </button>
-          </Popover.Trigger>
-          
-          <Popover.Content class="w-72 p-4 bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-200 dark:border-gray-700">
-            <div class="mb-3">
-              <label for="edit-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Editar título
-              </label>
-              <input 
-                id="edit-title"
-                type="text" 
-                bind:value={editableTitle} 
-                class="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                onkeydown={handleKeyDown}
-                autofocus
-              />
-            </div>
-            
-            <div class="flex justify-end space-x-2">
-              <Popover.Close>
-                <button 
-                  class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm"
-                >
-                  Cancelar
-                </button>
-              </Popover.Close>
-              
-              <button 
-                class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                onclick={saveTitle}
-              >
-                Salvar
-              </button>
-            </div>
-          </Popover.Content>
-        </Popover.Root>
-      {/if}
-    </div>
-    
-    <!-- URL com favicon -->
-    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-3 truncate">
-      {#if faviconUrl && showFavicon}
+  <div class="p-4 flex">
+    <!-- Favicon na coluna da esquerda -->
+    {#if faviconUrl && showFavicon}
+      <div class="flex-shrink-0 mr-3 flex items-center">
         <img 
           src={faviconUrl} 
-          class="w-4 h-4 mr-2 flex-shrink-0" 
+          class="w-12 h-12 flex-shrink-0" 
           alt="Site favicon" 
           onerror={handleImageError}
         />
-      {/if}
-      <span class="truncate">{formatUrlForDisplay(url)}</span>
+      </div>
+    {/if}
+    
+    <!-- Título e URL na coluna da direita -->
+    <div class="flex-1 flex flex-col justify-between min-w-0">
+      <!-- Título com popover para edição -->
+      <div class="flex justify-between items-start mb-2">
+        <h2 class="text-md font-semibold text-gray-900 dark:text-white line-clamp-2">
+          <span>{title}</span>
+        </h2>
+        
+        {#if editable}
+          <Popover.Root open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
+            <Popover.Trigger>
+              <button 
+                class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0 ml-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+            </Popover.Trigger>
+            
+            <Popover.Content class="w-72 p-4 bg-white dark:bg-gray-800 rounded-md shadow-md border border-gray-200 dark:border-gray-700">
+              <div class="mb-3">
+                <label for="edit-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Editar título
+                </label>
+                <input 
+                  id="edit-title"
+                  type="text" 
+                  bind:value={editableTitle} 
+                  class="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  onkeydown={handleKeyDown}
+                  autofocus
+                />
+              </div>
+              
+              <div class="flex justify-end space-x-2">
+                <Popover.Close>
+                  <button 
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </Popover.Close>
+                
+                <button 
+                  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                  onclick={saveTitle}
+                >
+                  Salvar
+                </button>
+              </div>
+            </Popover.Content>
+          </Popover.Root>
+        {/if}
+      </div>
+      
+      <!-- URL -->
+      <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+        <span class="truncate underline">{formatUrlForDisplay(url)}</span>
+      </div>
     </div>
   </div>
 </div> 

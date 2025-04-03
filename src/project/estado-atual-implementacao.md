@@ -21,6 +21,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **QuickNoteInput**: Formulário para criação rápida de notas
 - **FlashcardInput**: Formulário para criação de flashcards
 - **FlashcardStudySession**: Sistema de estudo de flashcards com algoritmo de repetição espaçada
+- **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com layout de duas colunas - favicon único em tamanho grande na esquerda e informações textuais (título e URL) na direita
 
 ### Componentes de Visualização
 
@@ -37,7 +38,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **Tabs**: Componente moderno de navegação por abas do shadcn-svelte
 - **ToggleGroup**: Componente para alternância entre opções do shadcn-svelte
 - **DropdownMenu**: Componente para seleção de itens em menu dropdown do shadcn-svelte
-- **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com favicon
+- **Toaster**: Componente para exibição de notificações toast em substituição aos alertas nativos do navegador
 
 ## Features Implementadas
 
@@ -88,6 +89,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Exportação e importação de dados
 - Visualização de dados armazenados para diagnóstico
 - Ferramenta para corrigir referências entre notas e itens
+- Notificações toast para feedback de ações (salvamento, erros, etc.)
 
 ## Ajustes e Melhorias Recentes
 
@@ -97,6 +99,9 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Substituição de reatividade com `let` por `$state`
 - Utilização de `$derived` em vez da sintaxe `$:`
 - Ajustes de tipagem para compatibilidade com TypeScript
+- Correção de problemas na página de opções relacionados à exibição do conteúdo correto
+- Migração completa de blocos reativos `$:` para `$derived(() => {})` em componentes complexos
+- Correção de acesso a variáveis reativas nos templates (remoção de notação de função)
 
 ### Integração com shadcn-svelte
 
@@ -106,6 +111,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Implementação de DropdownMenu para seleção de grupos
 - Estilização consistente com suporte a tema claro/escuro
 - Melhorias de acessibilidade em interações complexas
+- Implementação de Toaster para exibição de notificações toast
 
 ### Otimizações de Performance
 
@@ -126,6 +132,9 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Correção do erro "Maximum update depth exceeded" nos efeitos reativos
 - Resolução de problemas com referências a funções unsubscribe no storage
 - Correção de problemas ao registrar e exibir tags nos vários componentes
+- Tratamento de erro específico para "Extension context invalidated"
+- Correção de tipos para evitar erros em operações como `tags.forEach` e `tags.join`
+- Correção de problemas de navegação entre abas na página de opções
 
 ### Melhorias de UI/UX
 
@@ -137,6 +146,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Navegação por abas moderna com o componente Tabs do shadcn-svelte
 - Seleção mais intuitiva com componentes ToggleGroup e DropdownMenu
 - Visualização aprimorada de URLs e títulos com cards no estilo de mídia social, incluindo favicons e edição via popover
+- Feedback de salvamento moderno usando toast notifications, eliminando alertas nativos do navegador
+- Fluxo de salvamento simplificado com resetamento automático de formulários após a conclusão
 
 ## Estado da Visualização de Flashcards e Notas
 
@@ -148,6 +159,16 @@ A visualização de flashcards e notas foi significativamente melhorada:
 - Indicação clara do item ao qual flashcards estão vinculados
 - Notas e flashcards são agrupados por item quando possuem vínculo válido
 - Itens sem vínculo válido são exibidos em uma seção dedicada
+- Correção de problemas de tipo e renderização na página de opções
+- Aprimoramento do acesso a variáveis reativas nos templates para maior estabilidade
+
+## Problemas Resolvidos Recentemente
+
+- **Problemas de performance no Popup**: Otimizações implementadas para reduzir o tempo de carregamento e melhorar a responsividade
+- **Navegação entre abas na página de opções**: Correção da implementação para garantir que todas as abas sejam acessíveis e exibam o conteúdo correto
+- **Erro "Extension context invalidated"**: Adicionado tratamento específico com reload automático da página
+- **Erros de tipo em operações com arrays**: Implementação de verificações de tipo e tratamento defensivo em operações como forEach e join
+- **Incompatibilidade com Svelte 5**: Migração completa de blocos reativos ($:) para o novo padrão ($derived) e ajustes no acesso a variáveis reativas nos templates
 
 ## Próximos Passos e Melhorias Planejadas
 
@@ -160,11 +181,12 @@ A visualização de flashcards e notas foi significativamente melhorada:
 - Desenvolver visualização em KanBan para flashcards
 - Implementar anotações de texto selecionado e vídeos
 - Expandir dashboards de estatísticas e progresso
+- Otimizar sincronização entre chrome.storage.local e chrome.storage.sync
 
 ## Conclusão
 
-O projeto encontra-se em estado funcional com todas as principais features implementadas e utilizando a moderna sintaxe do Svelte 5. As melhorias recentes nos componentes de UI, especialmente a migração para os componentes shadcn-svelte (Tabs, ToggleGroup e DropdownMenu), proporcionam uma experiência mais intuitiva e agradável.
+O projeto encontra-se em estado funcional com todas as principais features implementadas e utilizando a moderna sintaxe do Svelte 5. As melhorias recentes nos componentes de UI, especialmente a migração para os componentes shadcn-svelte (Tabs, ToggleGroup, DropdownMenu e Toaster), proporcionam uma experiência mais intuitiva e agradável.
 
 As otimizações de performance implementadas resolveram com sucesso os problemas de lentidão no popup, garantindo carregamento e alternância entre abas mais rápidos. O sistema avançado de tags agora oferece uma experiência mais fluida e visual para os usuários, com sugestões baseadas em tags existentes e exibição como etiquetas visuais.
 
-As correções realizadas garantem que as funcionalidades de notas e flashcards funcionem corretamente em todos os contextos, com especial atenção ao vínculo entre itens e à visualização de cores e informações associadas, que são fundamentais para a organização e utilidade da extensão. 
+As correções realizadas garantem que as funcionalidades de notas e flashcards funcionem corretamente em todos os contextos, com especial atenção ao vínculo entre itens e à visualização de cores e informações associadas, que são fundamentais para a organização e utilidade da extensão. A migração completa para Svelte 5 foi concluída com sucesso, incluindo a substituição de todas as expressões reativas antigas pelo novo padrão, resultando em um código mais robusto e compatível com as versões mais recentes do framework. 

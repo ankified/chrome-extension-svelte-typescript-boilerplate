@@ -16,17 +16,25 @@
     // Filtro por pesquisa
     const matchesSearch = !searchQuery || 
       note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      (note.tags && Array.isArray(note.tags) && note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     
     // Filtro por tags selecionadas
     const matchesTags = selectedTags.length === 0 || 
-      selectedTags.every(tag => note.tags.includes(tag));
+      (note.tags && Array.isArray(note.tags) && selectedTags.every(tag => note.tags.includes(tag)));
     
     return matchesSearch && matchesTags;
   }));
   
   // Todas as tags existentes
-  let allTags = $derived([...new Set($notes.flatMap(note => note.tags))]);
+  let allTags = $derived(() => {
+    const tagsSet = new Set<string>();
+    $notes.forEach(note => {
+      if (note.tags && Array.isArray(note.tags)) {
+        note.tags.forEach(tag => tagsSet.add(tag));
+      }
+    });
+    return Array.from(tagsSet);
+  });
   
   // Agrupar por item relacionado - Versão corrigida
   let notesByItem = $derived(() => {

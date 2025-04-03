@@ -5,6 +5,8 @@
   import SettingsView from './views/SettingsView.svelte';
   import SavedItemsView from './views/SavedItemsView.svelte';
   import { fixReferences } from '../storage';
+  import { toast } from "svelte-sonner";
+  import { Toaster } from "../lib/components/ui/sonner/index.js";
   
   // Definição das abas de navegação
   const tabs = [
@@ -14,31 +16,61 @@
     { id: 'settings', label: 'Configurações', icon: 'settings' }
   ];
   
-  let activeTab = $state('saved');
-  let isFixingReferences = $state(false);
-  let fixResults = $state<any>(null);
+  // Usando let para variáveis de estado em vez de $state
+  let activeTab = 'saved';
+  let isFixingReferences = false;
+  let fixResults = null;
   
   onMount(() => {
-    // Verificar se há uma aba específica para abrir
-    chrome.storage.local.get(['activeOptionsTab'], (result) => {
-      if (result.activeOptionsTab && tabs.find(tab => tab.id === result.activeOptionsTab)) {
-        activeTab = result.activeOptionsTab;
-        // Limpar a preferência para não influenciar aberturas futuras
-        chrome.storage.local.remove(['activeOptionsTab']);
+    // Tratamento para o erro "Extension context invalidated"
+    window.addEventListener('error', (event) => {
+      if (event.message.includes('Extension context invalidated')) {
+        console.warn('Contexto da extensão invalidado. Recarregando a página...');
+        // Recarregar a página após um pequeno delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     });
+    
+    // Verificar se há uma aba específica para abrir
+    try {
+      chrome.storage.local.get(['activeOptionsTab'], (result) => {
+        if (result.activeOptionsTab && tabs.find(tab => tab.id === result.activeOptionsTab)) {
+          activeTab = result.activeOptionsTab;
+          // Limpar a preferência para não influenciar aberturas futuras
+          chrome.storage.local.remove(['activeOptionsTab']);
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao acessar storage:', error);
+    }
   });
   
   function runFixReferences() {
     isFixingReferences = true;
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        fixResults = fixReferences();
-        setTimeout(() => {
-          fixResults = null;
-        }, 5000); // Esconder o resultado após 5 segundos
+        const result = await fixReferences();
+        
+        // Exibir toast com o resultado
+        if (result && result.itemsUpdated) {
+          toast.success("Referências corrigidas com sucesso!", {
+            description: `Referências foram corrigidas nos itens.`,
+            duration: 3000,
+          });
+        } else {
+          toast.info("Verificação concluída", {
+            description: "Nenhuma referência precisou ser corrigida.",
+            duration: 3000,
+          });
+        }
       } catch (error) {
         console.error("Erro ao consertar referências:", error);
+        toast.error("Erro ao corrigir referências", {
+          description: error instanceof Error ? error.message : "Ocorreu um erro desconhecido",
+          duration: 5000,
+        });
       } finally {
         isFixingReferences = false;
       }
@@ -51,12 +83,6 @@
     <h1 class="text-2xl font-bold">Extensor de Navegador</h1>
     
     <div class="actions flex gap-2">
-      {#if fixResults}
-        <div class="text-sm px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-md">
-          Referências corrigidas
-        </div>
-      {/if}
-      
       <button 
         class="text-sm px-3 py-1 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors flex items-center gap-1"
         onclick={runFixReferences}
@@ -131,6 +157,9 @@
       {/if}
     </div>
   </div>
+  
+  <!-- Componente Toaster para exibir notificações -->
+  <Toaster richColors position="top-right" />
 </main>
 
 <style>
