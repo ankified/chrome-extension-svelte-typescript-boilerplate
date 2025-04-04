@@ -4,7 +4,8 @@
   import * as AlertDialog from "../../lib/components/ui/alert-dialog/index.js";
   import { Button } from "../../lib/components/ui/button/index.js";
   import * as Tooltip from "../../lib/components/ui/tooltip/index.js";
-  import { Info } from "@lucide/svelte";
+  import * as DropdownMenu from "../../lib/components/ui/dropdown-menu/index.js";
+  import { Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, X } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import { onMount } from "svelte";
   import chroma from 'chroma-js';
@@ -132,7 +133,7 @@
     }
   }
   
-  function formatDate(timestamp: number) {
+  function formatDate(timestamp: number): string {
     return new Date(timestamp).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -407,6 +408,91 @@
       return '#000000'; // Preto em caso de erro
     }
   }
+
+  // Nova função helper para formatar data/hora relativa de agendamento
+  function formatRelativeScheduledDate(timestamp: number | undefined): string {
+    if (!timestamp) return '';
+
+    const scheduledDate = new Date(timestamp);
+    const now = new Date();
+
+    // Format time part (e.g., "14:30h")
+    const timeFormatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const timeString = timeFormatter.format(scheduledDate) + 'h';
+
+    // Normalize dates to midnight for day comparison
+    const scheduledDay = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffTime = scheduledDay.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // Difference in days
+
+    let dayString: string;
+
+    if (diffDays === 0) {
+      dayString = "Hoje";
+    } else if (diffDays === 1) {
+      dayString = "Amanhã";
+    } else if (diffDays > 1) {
+      dayString = `Em ${diffDays} dias`;
+    } else if (diffDays === -1) {
+      dayString = "Ontem";
+    } else { // diffDays < -1
+      dayString = `Há ${Math.abs(diffDays)} dias`;
+    }
+
+    return `${dayString}, às ${timeString}`;
+  }
+
+  // Atualizar função para formatar Data e Hora
+  function formatDateTime(timestamp: number): string {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    // Formato: DD/MM/YYYY, às HH:mmh
+    return `${dateFormatter.format(date)}, às ${timeFormatter.format(date)}h`; 
+  }
+
+  // Nova função para remover item de um grupo específico
+  function removeItemFromGroup(itemId: string, groupId: string) {
+    groups.update(currentGroups => {
+      return currentGroups.map(group => {
+        if (group.id === groupId) {
+          // Remove o itemId do array itemIds do grupo
+          const newItemIds = group.itemIds.filter(id => id !== itemId);
+          return { ...group, itemIds: newItemIds };
+        }
+        return group;
+      });
+    });
+
+    // Também remove o groupId do array groupIds do item
+    savedItems.update(currentItems => {
+      return currentItems.map(item => {
+        if (item.id === itemId) {
+          const newGroupIds = item.groupIds?.filter(id => id !== groupId);
+          return { ...item, groupIds: newGroupIds };
+        }
+        return item;
+      });
+    });
+
+    // Forçar sync para persistência imediata (opcional, dependendo da store)
+    setTimeout(() => {
+      (groups as any).forceSync?.();
+      (savedItems as any).forceSync?.();
+    }, 100);
+    
+    toast.success(`Item removido do grupo.`);
+  }
 </script>
 
 <div class="saved-items-view">
@@ -577,7 +663,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {#each sortedItems as item}
           <div class="saved-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden flex flex-col">
-            <div class="p-4 flex-grow">
+            <div class="p-4 flex-grow flex flex-col">
               <!-- Nova estrutura com Favicon grande à esquerda -->
               <div class="flex items-start gap-4 mb-3">
                 <!-- Coluna do Favicon -->
@@ -619,21 +705,117 @@
                      <h3 class="font-semibold text-base truncate mb-1" title={item.title}>
                        {item.title}
                      </h3>
-                     <div class="dropdown relative flex-shrink-0 ml-2">
-                        <!-- {/* Botão de opções (ellipsis) */} -->
-                        <button class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
-                        </button>
-                        <!-- {/* Menu aqui */} -->
-                     </div>
+                      <!-- Dropdown Menu Trigger -->
+                     <DropdownMenu.Root>
+                       <DropdownMenu.Trigger>
+                         <Button variant="ghost" size="icon" class="-mr-2 h-7 w-7 flex-shrink-0">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                           </svg>
+                           <span class="sr-only">Opções</span>
+                         </Button>
+                       </DropdownMenu.Trigger>
+                       <DropdownMenu.Content>
+                         <!-- {/* <DropdownMenu.Label>Ações</DropdownMenu.Label> */}
+                         <!-- {/* <DropdownMenu.Separator /> */} -->
+                         <DropdownMenu.Item onclick={() => {/* TODO: Implementar lógica de edição */ toast.info('Função Editar ainda não implementada.')}}>
+                            <Edit class="mr-2 h-4 w-4" />
+                           <span>Editar</span>
+                         </DropdownMenu.Item>
+                         <DropdownMenu.Separator />
+                         <DropdownMenu.Item 
+                           onclick={() => deleteItem(item.id)} 
+                           class="text-red-600 focus:bg-red-100 dark:text-red-400 dark:focus:bg-red-900/50 dark:focus:text-red-400"
+                           >
+                            <Trash2 class="mr-2 h-4 w-4" />
+                           <span>Excluir</span>
+                         </DropdownMenu.Item>
+                       </DropdownMenu.Content>
+                     </DropdownMenu.Root>
                    </div>
                    <div class="url text-xs text-gray-500 dark:text-gray-400 truncate">
-                    <button onclick={() => openURL(item.url)} class="hover:underline focus:outline-none">
+                    <button onclick={() => openURL(item.url)} class="hover:underline focus:outline-none w-full text-left truncate">
                       {item.url}
                     </button>
                    </div>
                  </div>
               </div>
+              
+              <!-- Grupos -->
+              {#if item.groupIds && item.groupIds.length > 0}
+                <div class="groups-display flex flex-wrap gap-1 mb-2">
+                  {#each item.groupIds as groupId}
+                    {#each $groups.filter(g => g.id === groupId) as group}
+                      {@const bgColor = group.color || '#e5e7eb'}
+                      {@const textColor = getContrastingTextColor(bgColor)}
+                      <span 
+                        class="group-chip relative text-xs py-0.5 pl-2 pr-1 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
+                        style={`background-color: ${bgColor}; color: ${textColor};`}
+                      >
+                        <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
+                        <span class="mr-1 flex-shrink-0">{group.name}</span>
+                        <button 
+                          class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
+                          onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, group.id); }}
+                          title="Remover do grupo"
+                        >
+                          <X class="h-3 w-3" style={`stroke: ${textColor};`} />
+                        </button>
+                      </span>
+                    {/each}
+                  {/each}
+                </div>
+              {/if}
+
+              <!-- Etiquetas (com ícone) -->
+              {#if item.tags && Array.isArray(item.tags) && item.tags.length > 0}
+                <div class="tags flex flex-wrap gap-1 mb-3">
+                  {#each item.tags as tag}
+                    {#if typeof tag === 'string'}
+                      <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden">
+                        {#if editingTagItem?.id === item.id && editTagInput === tag}
+                           <!-- Input de edição -->
+                           <input 
+                             type="text" 
+                             bind:value={editTagInput}
+                             class="bg-transparent border-b border-gray-400 dark:border-gray-500 w-16 focus:outline-none focus:border-blue-500 px-1 py-0 text-xs"
+                             onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
+                             onblur={() => setTimeout(cancelEditTag, 150)}
+                             autofocus
+                           />
+                           <button 
+                             class="ml-1 text-green-500 hover:text-green-600 dark:text-green-400"
+                             onclick={() => saveEditedTag(item, tag)}
+                             title="Salvar"
+                           >
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                           </button>
+                           <button 
+                             class="ml-1 text-gray-500 hover:text-gray-600 dark:text-gray-400"
+                             onclick={cancelEditTag}
+                             title="Cancelar"
+                           >
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                           </button>
+                        {:else}
+                           <!-- Exibição normal -->
+                           <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                           <span>{tag}</span>
+                           <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
+                             <button 
+                               class="text-red-500 hover:text-red-600 dark:text-red-400 px-1"
+                               onclick={() => removeTagFromItem(item, tag)}
+                               title="Remover tag"
+                             >
+                               <X class="h-3 w-3" />
+                             </button>
+                           </div>
+                        {/if}
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
               
               {#if item.comments}
                  <div class="comments text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -641,199 +823,158 @@
                  </div>
               {/if}
               
-              <!-- Metadados (sem data de adição aqui) -->
-              <div class="meta flex justify-end items-center mt-2 text-xs text-gray-500">
+              <!-- Metadados (com pill "Ler mais tarde" alinhada abaixo) -->
+              <div class="flex-grow"></div>
+
+              <div class="meta flex justify-start items-center mt-auto text-xs text-gray-500 dark:text-gray-400 pt-2">
                  {#if item.readLater}
-                  <span class="read-later text-amber-600 dark:text-amber-400 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>
-                    Ler mais tarde {item.scheduledDate ? `em ${formatDate(item.scheduledDate)}` : ''}
-                  </span>
+                   <span class="read-later-pill inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">
+                     <CalendarClock class="h-3 w-3" />
+                     <span>
+                       {formatRelativeScheduledDate(item.scheduledDate)}
+                     </span>
+                   </span>
                  {/if}
               </div>
               
-              <!-- === CÓDIGO DAS TAGS RESTAURADO === -->
-              {#if item.tags && Array.isArray(item.tags) && item.tags.length > 0}
-                <div class="tags flex flex-wrap gap-1 mt-3">
-                  {#each item.tags as tag}
-                    {#if typeof tag === 'string'}
-                      <div class="tag text-xs py-0.5 px-2 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group">
-                        {#if editingTagItem?.id === item.id && editTagInput === tag}
-                          <!-- Input de edição de tag -->
-                          <input 
-                            type="text" 
-                            bind:value={editTagInput}
-                            class="bg-transparent border-b border-gray-400 dark:border-gray-500 w-16 focus:outline-none focus:border-blue-500 px-1 py-0 text-xs"
-                            onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
-                            onblur={() => setTimeout(cancelEditTag, 150)}
-                            autofocus
-                          />
-                          <button 
-                            class="ml-1 text-green-500 hover:text-green-600 dark:text-green-400"
-                            onclick={() => saveEditedTag(item, tag)}
-                            title="Salvar"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                          </button>
-                          <button 
-                            class="ml-1 text-gray-500 hover:text-gray-600 dark:text-gray-400"
-                            onclick={cancelEditTag}
-                            title="Cancelar"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                          </button>
-                        {:else}
-                          <!-- Exibição normal da tag com botões de ação no hover -->
-                          <span>{tag}</span>
-                          <div class="hidden group-hover:flex items-center ml-1">
-                            <button 
-                              class="text-blue-500 hover:text-blue-600 dark:text-blue-400 p-0.5"
-                              onclick={() => editTag(item, tag)}
-                              title="Editar tag"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-                            </button>
-                            <button 
-                              class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
-                              onclick={() => removeTagFromItem(item, tag)}
-                              title="Remover tag"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                            </button>
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-                  {/each}
-                  
-                  <!-- Botão para adicionar nova tag (sempre visível se não estiver adicionando) -->
-                  {#if addingTagItem?.id !== item.id}
-                    <button 
-                      class="add-tag-btn text-xs py-0.5 px-2 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400"
-                      onclick={() => startAddingTag(item)}
-                      title="Adicionar tag"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                    </button>
-                  {/if}
-                </div>
-              {:else}
-                 <!-- Apenas o botão de adicionar se não houver tags -->
-                 <div class="tags flex flex-wrap gap-1 mt-3">
-                   {#if addingTagItem?.id !== item.id}
-                    <button 
-                      class="add-tag-btn text-xs py-0.5 px-2 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400"
-                      onclick={() => startAddingTag(item)}
-                      title="Adicionar tag"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                      <span>Adicionar tag</span>
-                    </button>
-                  {/if}
-                 </div>
-              {/if}
-              
               <!-- Formulário para adicionar nova tag -->
               {#if addingTagItem?.id === item.id}
-                <div class="add-tag-form flex items-center mt-2">
-                  <input 
-                    type="text" 
-                    bind:value={newTagInput}
-                    class="flex-1 bg-gray-100 dark:bg-gray-700 border-b border-gray-400 dark:border-gray-500 focus:outline-none focus:border-blue-500 px-2 py-1 text-xs rounded-l-md"
-                    placeholder="Nova tag..."
-                    onkeydown={(e) => e.key === 'Enter' && saveNewTag(item)}
-                    onblur={() => setTimeout(cancelAddTag, 150)}
-                    autofocus
-                  />
-                  <button 
-                    class="text-white bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 p-1 rounded-r-md"
-                    onclick={() => saveNewTag(item)}
-                    title="Salvar"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                  </button>
-                  <button 
-                    class="text-white bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 p-1 ml-1 rounded-md"
-                    onclick={cancelAddTag}
-                    title="Cancelar"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                  </button>
-                </div>
-              {/if}
-              
-              <!-- === CÓDIGO DOS CONTADORES RESTAURADO === -->
-              <div class="item-counters flex gap-4 mt-3 text-xs text-gray-600 dark:text-gray-400">
-                {#if item.noteIds && item.noteIds.length > 0}
-                  <div class="note-count flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>
-                    {item.noteIds.length} {item.noteIds.length === 1 ? 'nota' : 'notas'}
-                  </div>
-                {/if}
-                
-                {#if item.flashcardIds && item.flashcardIds.length > 0}
-                  <div class="flashcard-count flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
-                    {item.flashcardIds.length} {item.flashcardIds.length === 1 ? 'flashcard' : 'flashcards'}
-                  </div>
-                {/if}
-              </div>
-              
-              <!-- Grupos (com cor corrigida) -->
-               {#if item.groupIds && item.groupIds.length > 0}
-                <div class="groups-display flex flex-wrap gap-1 mt-3">
-                  {#each item.groupIds as groupId}
-                    {#each $groups.filter(g => g.id === groupId) as group}
-                      {@const bgColor = group.color || '#e5e7eb'} <!-- Cor padrão cinza claro -->
-                      {@const textColor = getContrastingTextColor(bgColor)}
-                      <span 
-                        class="group-chip text-xs py-0.5 px-2 rounded-full flex items-center"
-                        style={`background-color: ${bgColor}; color: ${textColor};`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 opacity-75" viewBox="0 0 20 20" fill="currentColor" style={`fill: ${textColor};`}>
-                          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                        </svg>
-                        {group.name}
-                      </span>
-                    {/each}
-                  {/each}
-                </div>
+                 <div class="add-tag-form flex items-center mt-2">
+                   <input 
+                     type="text" 
+                     bind:value={newTagInput}
+                     class="flex-1 bg-gray-100 dark:bg-gray-700 border-b border-gray-400 dark:border-gray-500 focus:outline-none focus:border-blue-500 px-2 py-1 text-xs rounded-l-md"
+                     placeholder="Nova tag..."
+                     onkeydown={(e) => e.key === 'Enter' && saveNewTag(item)}
+                     onblur={() => setTimeout(cancelAddTag, 150)}
+                     autofocus
+                   />
+                   <button 
+                     class="text-white bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 p-1 rounded-r-md"
+                     onclick={() => saveNewTag(item)}
+                     title="Salvar"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                   </button>
+                   <button 
+                     class="text-white bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 p-1 ml-1 rounded-md"
+                     onclick={cancelAddTag}
+                     title="Cancelar"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                   </button>
+                 </div>
               {/if}
 
             </div>
 
-            <!-- Rodapé Fixo com Ações e Info (com linter fixes) -->
+            <!-- Rodapé Fixo com Ações e Info -->
             <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center gap-2">
-               <!-- Botão de Informação (Data Adição) à Esquerda -->
-              <Tooltip.Provider delayDuration={150}>
-                <Tooltip.Root>
-                  <Tooltip.Trigger>
-                    <Button variant="ghost" size="icon" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 w-7 h-7">
-                      <Info class="w-4 h-4" />
-                      <span class="sr-only">Informações do item</span>
-                    </Button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="top" class="text-xs">
-                    <p>Adicionado em: {formatDate(item.dateAdded)}</p>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              </Tooltip.Provider>
-               <!-- Botões Editar e Excluir à Direita -->
-               <div class="flex gap-2">
-                 <Button 
-                   variant="outline" 
-                   size="sm" 
-                   onclick={() => {/* TODO: Implementar lógica de edição */ toast.info('Função Editar ainda não implementada.')}}
-                 >
-                   Editar
-                 </Button>
-                 <Button 
-                   variant="destructive"
-                   size="sm" 
-                   onclick={() => deleteItem(item.id)}
-                 >
-                   Excluir
-                 </Button>
-              </div>
+               <!-- Botão Info -->
+               <Tooltip.Provider delayDuration={150}>
+                 <Tooltip.Root>
+                   <Tooltip.Trigger> 
+                     <Button variant="ghost" size="icon" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 w-7 h-7">
+                       <Info class="w-4 h-4" />
+                       <span class="sr-only">Informações do item</span>
+                     </Button>
+                   </Tooltip.Trigger>
+                   <Tooltip.Content side="top" class="text-xs">
+                    <p>Adicionado em: {formatDateTime(item.dateAdded)}</p>
+                   </Tooltip.Content>
+                 </Tooltip.Root>
+               </Tooltip.Provider>
+
+               <!-- Container para Novos Botões de Ação à Direita -->
+               <div class="flex items-center gap-1">
+                 <!-- Botão Gerenciar Grupos (Ícone Atualizado) -->
+                 <Tooltip.Provider delayDuration={150}>
+                   <Tooltip.Root>
+                     <Tooltip.Trigger>
+                       <Button variant="ghost" size="icon" class="w-7 h-7" onclick={() => toast.info('Gerenciar Grupos (TODO)')}>
+                         <Folder class="w-4 h-4" />
+                         <span class="sr-only">Gerenciar Grupos</span>
+                       </Button>
+                     </Tooltip.Trigger>
+                     <Tooltip.Content side="top" class="text-xs">
+                       <p>Gerenciar Grupos</p>
+                     </Tooltip.Content>
+                   </Tooltip.Root>
+                 </Tooltip.Provider>
+                 
+                 <!-- Botão Etiquetas -->
+                 <Tooltip.Provider delayDuration={150}>
+                   <Tooltip.Root>
+                     <Tooltip.Trigger>
+                       <Button variant="ghost" size="icon" class="w-7 h-7" onclick={() => toast.info('Gerenciar Etiquetas (TODO)')}>
+                         <Tags class="w-4 h-4" />
+                         <span class="sr-only">Gerenciar Etiquetas</span>
+                       </Button>
+                     </Tooltip.Trigger>
+                     <Tooltip.Content side="top" class="text-xs">
+                       <p>Gerenciar Etiquetas</p>
+                     </Tooltip.Content>
+                   </Tooltip.Root>
+                 </Tooltip.Provider>
+
+                 <!-- Botão Notas -->
+                 <Tooltip.Provider delayDuration={150}>
+                   <Tooltip.Root>
+                     <Tooltip.Trigger>
+                       <Button variant="ghost" size="icon" class="w-7 h-7 relative" onclick={() => toast.info('Gerenciar Notas (TODO)')}>
+                         <FileText class="w-4 h-4" />
+                         {#if item.noteIds && item.noteIds.length > 0}
+                           <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[10px]">
+                             {item.noteIds.length}
+                           </span>
+                         {/if}
+                         <span class="sr-only">Gerenciar Notas</span>
+                       </Button>
+                     </Tooltip.Trigger>
+                     <Tooltip.Content side="top" class="text-xs">
+                       <p>Gerenciar Notas</p>
+                     </Tooltip.Content>
+                   </Tooltip.Root>
+                 </Tooltip.Provider>
+
+                 <!-- Botão Flashcards -->
+                 <Tooltip.Provider delayDuration={150}>
+                   <Tooltip.Root>
+                     <Tooltip.Trigger>
+                       <Button variant="ghost" size="icon" class="w-7 h-7 relative" onclick={() => toast.info('Gerenciar Flashcards (TODO)')}>
+                         <Layers class="w-4 h-4" />
+                         {#if item.flashcardIds && item.flashcardIds.length > 0}
+                           <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[10px]">
+                             {item.flashcardIds.length}
+                           </span>
+                         {/if}
+                         <span class="sr-only">Gerenciar Flashcards</span>
+                       </Button>
+                     </Tooltip.Trigger>
+                     <Tooltip.Content side="top" class="text-xs">
+                       <p>Gerenciar Flashcards</p>
+                     </Tooltip.Content>
+                   </Tooltip.Root>
+                 </Tooltip.Provider>
+
+                 <!-- Botão Agendamento (Bloco Restaurado e Completo) -->
+                 {#if item.readLater}
+                  <Tooltip.Provider delayDuration={150}>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        <Button variant="ghost" size="icon" class="w-7 h-7 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300" onclick={() => toast.info('Gerenciar Agendamento (TODO)')}>
+                          <CalendarClock class="w-4 h-4" />
+                          <span class="sr-only">Gerenciar Agendamento</span>
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="top" class="text-xs">
+                        <p>Gerenciar Agendamento</p>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  </Tooltip.Provider>
+                 {/if}
+                 
+               </div>
             </div>
           </div>
         {/each}

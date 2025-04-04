@@ -37,8 +37,8 @@ Registre a modificação recém-implementada no diário do projeto. Para isso:
 
 1. Execute os comandos do PowerShell para obter a data e hora atuais:
    ```powershell
-   $dataAtual = Get-Date -Format "yyyy-MM-dd"
-   $horaAtual = Get-Date -Format "HH:mm:ss"
+   Get-Date -Format "yyyy-MM-dd"
+   Get-Date -Format "HH:mm:ss"
    ```
 
 2. Verifique se já existe um arquivo de diário para a data atual em `src/project/diario/`. O nome do arquivo deve ser `$dataAtual.md` (ex: `2024-07-27.md`).
