@@ -99,34 +99,47 @@ function createPersistentStore<T>(key: string, initialValue: T) {
         // para evitar problemas de sincronização
         updateScheduled = true;
         const update = () => {
-            console.log(`[Storage] Gravando dados no chrome.storage.local para "${key}"`);
-            chrome.storage.local.set({ [key]: value }, () => {
+            console.log(`[Storage] Gravando dados no chrome.storage.local para \"${key}\"`);
+            // Guardar o valor atual para usar no callback
+            const currentValue = get(store); 
+            chrome.storage.local.set({ [key]: currentValue }, () => {
                 const error = chrome.runtime.lastError;
                 if (error) {
-                    console.error(`[Storage] Erro ao salvar "${key}" no storage.local:`, error);
+                    console.error(`[Storage] Erro ao salvar \"${key}\" no storage.local:`, error);
                 } else {
-                    console.log(`[Storage] Dados salvos com sucesso no storage.local para "${key}"`);
+                    console.log(`[Storage] Dados salvos com sucesso no storage.local para \"${key}\"`);
+                    // Forçar notificação aos subscribers APÓS a escrita ser confirmada
+                    // Isso garante que qualquer leitura subsequente veja o estado mais recente
+                    // que foi efetivamente salvo.
+                    // Nota: Isso pode causar uma notificação extra se o listener onChanged também disparar,
+                    // mas garante consistência imediata.
+                    store.set(currentValue); 
                 }
+                
+                // Manter a lógica de sincronização com storage.sync (se aplicável)
+                const currentTime = Date.now();
+                if (key === 'savedItems' || key === 'groups') {
+                    // Verificar se passou tempo suficiente desde a última sincronização
+                    if (currentTime - lastSyncTime > MIN_SYNC_INTERVAL) {
+                        console.log(`[Storage] Gravando dados no chrome.storage.sync para \"${key}\"`);
+                        // Usar currentValue aqui também para garantir que estamos sincronizando o que foi salvo
+                        chrome.storage.sync.set({ [key]: currentValue }).then(() => {
+                            console.log(`[Storage] Dados salvos com sucesso no storage.sync para \"${key}\"`);
+                            lastSyncTime = currentTime;
+                        }).catch(err => {
+                            console.error(`[Storage] Erro ao sincronizar ${key} com storage.sync:`, err);
+                        });
+                    } else {
+                        console.log(`[Storage] Ignorando sincronização com storage.sync para \"${key}\" (intervalo muito curto)`);
+                    }
+                }
+                
+                // Liberar o agendamento apenas após todas as operações (local e sync) terem sido iniciadas/concluídas
+                updateScheduled = false; 
             });
             
-            // Sincronizar com storage.sync apenas com intervalo para evitar o erro de quota
-            const currentTime = Date.now();
-            if (key === 'savedItems' || key === 'groups') {
-                // Verificar se passou tempo suficiente desde a última sincronização
-                if (currentTime - lastSyncTime > MIN_SYNC_INTERVAL) {
-                    console.log(`[Storage] Gravando dados no chrome.storage.sync para "${key}"`);
-                    chrome.storage.sync.set({ [key]: value }).then(() => {
-                        console.log(`[Storage] Dados salvos com sucesso no storage.sync para "${key}"`);
-                        lastSyncTime = currentTime;
-                    }).catch(err => {
-                        console.error(`[Storage] Erro ao sincronizar ${key} com storage.sync:`, err);
-                    });
-                } else {
-                    console.log(`[Storage] Ignorando sincronização com storage.sync para "${key}" (intervalo muito curto)`);
-                }
-            }
-            
-            updateScheduled = false;
+            // Remover a linha abaixo, pois updateScheduled é resetado no callback de set
+            // updateScheduled = false; 
         };
         
         // Executar a atualização imediatamente para garantir persistência
@@ -145,7 +158,7 @@ function createPersistentStore<T>(key: string, initialValue: T) {
                 if (error) {
                     console.error(`[Storage] Erro ao forçar sincronização de "${key}" no storage.local:`, error);
                     reject(error);
-                } else {
+        } else {
                     console.log(`[Storage] Sincronização forçada concluída para "${key}" no storage.local`);
                     resolve();
                 }
@@ -153,11 +166,23 @@ function createPersistentStore<T>(key: string, initialValue: T) {
         });
     };
     
-    // Adiciona listener para mudanças no storage
-    chrome.storage.onChanged.addListener((changes) => {
+    // Adiciona listener para mudanças no storage (local e sync)
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        // Verificar se a mudança ocorreu para a chave desta store
         if (changes[key] && changes[key].newValue !== undefined) {
-            console.log(`[Storage] Detectada mudança externa em "${key}":`, changes[key].newValue);
-            store.set(changes[key].newValue);
+            console.log(`[Storage] Detectada mudança externa em \"${key}\" na área \"${areaName}\":`, changes[key].newValue);
+            
+            // Obter o valor atual da store Svelte
+            const currentValue = get(store);
+            
+            // Comparar JSON stringified para evitar atualizações desnecessárias se o valor for o mesmo
+            // Isso previne loops de atualização se a própria escrita da store disparar o onChanged
+            if (JSON.stringify(changes[key].newValue) !== JSON.stringify(currentValue)) {
+                console.log(`[Storage] Atualizando store \"${key}\" com valor externo da área \"${areaName}\".`);
+                store.set(changes[key].newValue);
+            } else {
+                console.log(`[Storage] Mudança externa em \"${key}\" na área \"${areaName}\" ignorada (valor idêntico ao atual).`);
+            }
         }
     });
     
