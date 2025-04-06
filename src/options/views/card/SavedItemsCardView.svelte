@@ -1,4 +1,3 @@
-<!-- src/options/views/card/SavedItemsCardView.svelte -->
 <script lang="ts">
   import { savedItems, groups } from "../../../storage"; // Import 'savedItems' para as funções de tag/grupo
   import type { SavedItem, Group } from "../../../types";
@@ -9,7 +8,7 @@
   import { Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, X } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import chroma from 'chroma-js';
-  import { formatDistanceToNowStrict } from 'date-fns';
+  import { formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, differenceInDays, format as formatDateFn } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
 
   // Props recebidos de SavedItemsView
@@ -57,6 +56,58 @@
     } catch (e) {
       return "Data inválida";
     }
+  }
+  
+  // Função original para tooltip de data de adição
+  function formatDateAddedTooltip(timestamp: number): string {
+    if (!timestamp) return "Data não definida";
+    try {
+      return new Date(timestamp).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+      }) + 'h';
+    } catch (e) {
+      return "Data inválida";
+    }
+  }
+
+  // Nova função para tooltip de agendamento
+  function formatScheduleTooltip(timestamp: number): string {
+    if (!timestamp) return "Não agendado";
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      let relativePart = "";
+      const diffDays = differenceInDays(date, now);
+
+      if (isToday(date)) {
+        relativePart = "Hoje";
+      } else if (isTomorrow(date)) {
+        relativePart = "Amanhã";
+      } else if (isYesterday(date)) {
+        relativePart = "Ontem";
+      } else if (diffDays > 0) {
+        relativePart = `Em ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+      } else { // diffDays < 0 e não é Ontem
+        relativePart = `Há ${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''}`;
+      }
+
+      const timePart = formatDateFn(date, 'HH:mm') + 'h';
+      return `${relativePart}, às ${timePart}`;
+    } catch (e) {
+      console.error("Erro ao formatar data de agendamento:", e);
+      return "Data inválida";
+    }
+  }
+
+  // Placeholder para função de edição de agendamento
+  function editSchedule(item: SavedItem) {
+    toast.info("Edição de agendamento ainda não implementada.", {
+        description: `Item: ${item.title}`
+    });
   }
   
   // Funções de ação (precisam acessar savedItems store)
@@ -297,69 +348,86 @@
 
           <!-- Seção Inferior: Ler Mais Tarde / Adicionado em -->
           <div class="mt-auto pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            {#if item.readLater && item.scheduledDate}
+            <!-- Ícone de Info (Adicionado em) - Apenas se NÃO estiver agendado -->
+            {#if !(item.readLater && item.scheduledDate)}
               <Tooltip.Provider>
                 <Tooltip.Root>
-                  <Tooltip.Trigger class="flex items-center cursor-default">
-                    <CalendarClock class="h-3.5 w-3.5 mr-1 text-orange-500" />
-                    <span>{formatDateRelative(item.scheduledDate)}</span>
+                  <Tooltip.Trigger class="flex items-center cursor-default p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <Info class="h-3.5 w-3.5" />
                   </Tooltip.Trigger>
                   <Tooltip.Content>
-                    Ler mais tarde: {formatDate(item.scheduledDate)}
+                    Adicionado em: {formatDateAddedTooltip(item.dateAdded)}
                   </Tooltip.Content>
                 </Tooltip.Root>
               </Tooltip.Provider>
             {:else}
-              <Tooltip.Provider>
-                <Tooltip.Root>
-                  <Tooltip.Trigger class="flex items-center cursor-default p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <Info class="h-3.5 w-3.5" />
-                </Tooltip.Trigger>
-                <Tooltip.Content>
-                  Adicionado em: {formatDate(item.dateAdded)}
-                </Tooltip.Content>
-              </Tooltip.Root>
-              </Tooltip.Provider>
+              <!-- Espaço reservado para manter o justify-between funcionando -->
+              <div></div>
             {/if}
             
-            <!-- Botão Dropdown de Ações -->
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <Button variant="ghost" size="icon" class="h-6 w-6">
-                  <Edit class="h-4 w-4" />
-                  <span class="sr-only">Ações</span>
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end">
-                <DropdownMenu.Label>Ações do Item</DropdownMenu.Label>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item onclick={() => openURL(item.url)}>Abrir Link</DropdownMenu.Item>
-                <DropdownMenu.Item onclick={() => { /* Lógica para Editar Item */ toast.info('Edição de item ainda não implementada.'); }}>Editar Detalhes</DropdownMenu.Item>
-                <DropdownMenu.Sub>
-                  <DropdownMenu.SubTrigger>
-                    <Tags class="mr-2 h-4 w-4" />
-                    <span>Gerenciar Tags</span>
-                  </DropdownMenu.SubTrigger>
-                  <DropdownMenu.SubContent>
-                    <DropdownMenu.Label>Tags</DropdownMenu.Label>
-                     {#if item.tags && item.tags.length > 0}
-                       {#each item.tags as tag}
-                         <DropdownMenu.Item onclick={() => removeTagFromItem(item, tag)}>Remover "{tag}"</DropdownMenu.Item>
-                       {/each}
-                       <DropdownMenu.Separator />
-                     {/if}
-                     <DropdownMenu.Item onclick={() => startAddingTag(item)}>Adicionar Nova Tag...</DropdownMenu.Item>
-                  </DropdownMenu.SubContent>
-                </DropdownMenu.Sub>
-                <DropdownMenu.Item onclick={() => { /* Lógica para Gerenciar Grupos */ toast.info('Gerenciamento de grupos ainda não implementado aqui.'); }}>Gerenciar Grupos</DropdownMenu.Item>
-                 <DropdownMenu.Item onclick={() => { /* Lógica para Agendar */ toast.info('Agendamento ainda não implementado aqui.'); }}>Agendar Leitura</DropdownMenu.Item>
-                 <DropdownMenu.Separator />
-                 <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:bg-red-100 dark:focus:bg-red-900/50 focus:text-red-700 dark:focus:text-red-400" onclick={() => deleteItem(item.id)}>
-                   <Trash2 class="mr-2 h-4 w-4" />
-                   Excluir Item
-                 </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <!-- Ícones da direita: Agendamento (se houver) e Ações -->
+            <div class="flex items-center space-x-1">
+              <!-- Ícone de Agendamento (Ler Mais Tarde) - Apenas se estiver agendado -->
+              {#if item.readLater && item.scheduledDate}
+                <Tooltip.Provider>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300" 
+                        onclick={() => editSchedule(item)}
+                        aria-label="Editar agendamento"
+                      >
+                        <CalendarClock class="h-4 w-4" />
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      {formatScheduleTooltip(item.scheduledDate)}
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              {/if}
+
+              <!-- Botão Dropdown de Ações -->
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  <Button variant="ghost" size="icon" class="h-6 w-6">
+                    <Edit class="h-4 w-4" />
+                    <span class="sr-only">Ações</span>
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="end">
+                  <DropdownMenu.Label>Ações do Item</DropdownMenu.Label>
+                  <DropdownMenu.Separator />
+                  <DropdownMenu.Item onclick={() => openURL(item.url)}>Abrir Link</DropdownMenu.Item>
+                  <DropdownMenu.Item onclick={() => { /* Lógica para Editar Item */ toast.info('Edição de item ainda não implementada.'); }}>Editar Detalhes</DropdownMenu.Item>
+                  <DropdownMenu.Sub>
+                    <DropdownMenu.SubTrigger>
+                      <Tags class="mr-2 h-4 w-4" />
+                      <span>Gerenciar Tags</span>
+                    </DropdownMenu.SubTrigger>
+                    <DropdownMenu.SubContent>
+                      <DropdownMenu.Label>Tags</DropdownMenu.Label>
+                       {#if item.tags && item.tags.length > 0}
+                         {#each item.tags as tag}
+                           <DropdownMenu.Item onclick={() => removeTagFromItem(item, tag)}>Remover "{tag}"</DropdownMenu.Item>
+                         {/each}
+                         <DropdownMenu.Separator />
+                       {/if}
+                       <DropdownMenu.Item onclick={() => startAddingTag(item)}>Adicionar Nova Tag...</DropdownMenu.Item>
+                    </DropdownMenu.SubContent>
+                  </DropdownMenu.Sub>
+                  <DropdownMenu.Item onclick={() => { /* Lógica para Gerenciar Grupos */ toast.info('Gerenciamento de grupos ainda não implementado aqui.'); }}>Gerenciar Grupos</DropdownMenu.Item>
+                   <DropdownMenu.Item onclick={() => { /* Lógica para Agendar */ toast.info('Agendamento ainda não implementado aqui.'); }}>Agendar Leitura</DropdownMenu.Item>
+                   <DropdownMenu.Separator />
+                   <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:bg-red-100 dark:focus:bg-red-900/50 focus:text-red-700 dark:focus:text-red-400" onclick={() => deleteItem(item.id)}>
+                     <Trash2 class="mr-2 h-4 w-4" />
+                     Excluir Item
+                   </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
           </div>
           
           <!-- Input para adicionar nova tag (aparece condicionalmente) -->
