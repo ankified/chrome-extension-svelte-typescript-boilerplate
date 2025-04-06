@@ -348,22 +348,17 @@
 
           <!-- Seção Inferior: Ler Mais Tarde / Adicionado em -->
           <div class="mt-auto pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <!-- Ícone de Info (Adicionado em) - Apenas se NÃO estiver agendado -->
-            {#if !(item.readLater && item.scheduledDate)}
-              <Tooltip.Provider>
-                <Tooltip.Root>
-                  <Tooltip.Trigger class="flex items-center cursor-default p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <Info class="h-3.5 w-3.5" />
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>
-                    Adicionado em: {formatDateAddedTooltip(item.dateAdded)}
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              </Tooltip.Provider>
-            {:else}
-              <!-- Espaço reservado para manter o justify-between funcionando -->
-              <div></div>
-            {/if}
+            <!-- Ícone de Info (Adicionado em) - Sempre visível -->
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger class="flex items-center cursor-default p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Info class="h-3.5 w-3.5" />
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  Adicionado em: {formatDateAddedTooltip(item.dateAdded)}
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </Tooltip.Provider>
             
             <!-- Ícones da direita: Agendamento (se houver) e Ações -->
             <div class="flex items-center space-x-1">
@@ -377,6 +372,7 @@
                         size="icon" 
                         class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300" 
                         onclick={() => editSchedule(item)}
+                        
                         aria-label="Editar agendamento"
                       >
                         <CalendarClock class="h-4 w-4" />
@@ -392,7 +388,7 @@
               <!-- Botão Dropdown de Ações -->
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <Button variant="ghost" size="icon" class="h-6 w-6">
+                  <Button variant="ghost" size="icon" class="h-6 w-6" >
                     <Edit class="h-4 w-4" />
                     <span class="sr-only">Ações</span>
                   </Button>

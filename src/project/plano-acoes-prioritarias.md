@@ -184,15 +184,20 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Adaptar a interface atual de edição para funcionar dentro do Dialog
   - Garantir que todas as funcionalidades existentes sejam mantidas no novo formato
 
-### 14. Refinamento do Indicador "Ler Mais Tarde" nos Cards
+### ~~14. Refinamento do Indicador "Ler Mais Tarde" nos Cards~~ (RESOLVIDO - 2025-04-06)
 
-- **Melhoria**: Aprimorar a exibição e interatividade do indicador de agendamento nos cards de itens salvos.
-- **Implementação**:
-    - No card (`SavedItemsCardView`), exibir apenas o ícone `<CalendarClock>` quando um item estiver agendado.
-    - Implementar lógica de formatação específica para o *tooltip* do ícone `<CalendarClock>` (Hoje/Amanhã/Em X dias/Ontem/Há X dias, às HH:mmh).
-    - Posicionar o ícone/botão `<CalendarClock>` no rodapé do card, à direita, próximo ao botão de Ações/Editar.
-    - O ícone `<Info>` (data de adição) deve permanecer na posição atual para itens não agendados.
-    - Transformar o ícone `<CalendarClock>` em um botão clicável para editar o agendamento.
+- ~~**Melhoria**: Aprimorar a exibição e interatividade do indicador de agendamento nos cards de itens salvos.~~
+- ~~**Implementação**:~~
+    - ~~No card (`SavedItemsCardView`), exibir apenas o ícone `<CalendarClock>` quando um item estiver agendado.~~
+    - ~~Implementar lógica de formatação específica para o *tooltip* do ícone `<CalendarClock>` (Hoje/Amanhã/Em X dias/Ontem/Há X dias, às HH:mmh).~~
+    - ~~Posicionar o ícone/botão `<CalendarClock>` no rodapé do card, à direita, próximo ao botão de Ações/Editar.~~
+    - ~~O ícone `<Info>` (data de adição) deve permanecer na posição atual para itens não agendados.~~
+    - ~~Transformar o ícone `<CalendarClock>` em um botão clicável para editar o agendamento.~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-06
+- **Solução implementada**: Refinado o indicador de agendamento nos cards (`SavedItemsCardView.svelte`). O ícone `<Info>` agora é sempre visível à esquerda. O ícone `<CalendarClock>` aparece apenas para itens agendados, à direita, como um botão clicável (chama `editSchedule` placeholder) com tooltip formatado (ex: "Hoje, às 15:30h").
+- **Resultado**: Exibição clara e consistente da data de adição e do status de agendamento, com interação preparada para edição futura.
 
 ## Novas Implementações
 
@@ -329,9 +334,9 @@ Este documento registra as correções, melhorias e novas implementações que d
 ### Fase 4: Melhorias de Visualização e Organização (Prioridade Média-Baixa)
 - Implementar melhorias 6-7 (visualização embarcada, diálogos de conteúdo)
 - Implementar melhorias 8-13 (filtros, identificação, ferramentas, debug, títulos e edição em dialog)
-- Implementar melhoria 14 (Refinamento Indicador "Ler Mais Tarde")
+- ~~Implementar melhoria 14 (Refinamento Indicador "Ler Mais Tarde")~~ (CONCLUÍDO em 2025-04-06)
 - *Reorganizada para focar em melhorias gerais após as visualizações principais.*
-- Estimar 11-16 dias para estas implementações (adicionado ~1 dia para MU#14)
+- Estimar ~~11-16 dias~~ 10-15 dias para estas implementações (removido ~1 dia para MU#14)
 
 ### Fase 5: Novas Features e Refinamentos (Prioridade Variável)
 - Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
