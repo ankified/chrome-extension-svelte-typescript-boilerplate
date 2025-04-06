@@ -48,14 +48,19 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Aplicadas otimizações de performance usando carregamento seletivo de dados, redução de operações síncronas e melhorias na gestão do storage. Corrigidos problemas com efeitos reativos e referências a funções unsubscribe. Ver detalhes no diário de desenvolvimento (src/project/diario/2025-04-01.md).
 - **Resultado**: Performance do popup significativamente melhorada, com carregamento mais rápido e transição fluida entre abas. Corrigidos erros relacionados a estados reativos e loops infinitos.
 
-### 4. Problemas de Sincronização entre Storage Local e Storage Sync
+### ~~4. Problemas de Sincronização entre Storage Local e Storage Sync~~ (RESOLVIDO - 2025-04-04)
 
-- **Problema**: Itens recém-salvos não aparecem imediatamente na lista de itens salvos, e tags recém-criadas não aparecem nas sugestões.
-- **Ação**: Revisar e aprimorar o mecanismo de sincronização entre chrome.storage.local e chrome.storage.sync.
-- **Hipóteses a verificar**:
-  - Tempos de sincronização entre os dois sistemas de armazenamento
-  - Possíveis conflitos ou sobreposições de dados
-  - Mecanismos para forçar a sincronização quando necessário
+- ~~**Problema**: Itens recém-salvos não aparecem imediatamente na lista de itens salvos, e tags recém-criadas não aparecem nas sugestões.~~
+- ~~**Ação**: Revisar e aprimorar o mecanismo de sincronização entre chrome.storage.local e chrome.storage.sync.~~
+- ~~**Hipóteses a verificar**:~~
+  - ~~Tempos de sincronização entre os dois sistemas de armazenamento~~
+  - ~~Possíveis conflitos ou sobreposições de dados~~
+  - ~~Mecanismos para forçar a sincronização quando necessário~~
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-04
+- **Solução implementada**: Reformulada a estratégia de sincronização no arquivo `storage.ts`, corrigindo os problemas de atualização imediata dos dados no `storage.local`. Implementado um sistema de callbacks para garantir que as alterações sejam refletidas corretamente em diferentes partes da extensão sem depender exclusivamente de eventos do chrome.storage. Adicionado mecanismo para garantir que novos itens, tags e modificações apareçam imediatamente nas listagens e sugestões.
+- **Resultado**: Itens recém-salvos agora aparecem imediatamente na lista de itens salvos, e tags recém-criadas são exibidas corretamente nas sugestões. A sincronização entre diferentes partes da extensão funciona de maneira consistente e confiável.
 
 ## Melhorias de Experiência do Usuário
 
@@ -179,6 +184,16 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Adaptar a interface atual de edição para funcionar dentro do Dialog
   - Garantir que todas as funcionalidades existentes sejam mantidas no novo formato
 
+### 14. Refinamento do Indicador "Ler Mais Tarde" nos Cards
+
+- **Melhoria**: Aprimorar a exibição e interatividade do indicador de agendamento nos cards de itens salvos.
+- **Implementação**:
+    - No card (`SavedItemsCardView`), exibir apenas o ícone `<CalendarClock>` quando um item estiver agendado.
+    - Implementar lógica de formatação específica para o *tooltip* do ícone `<CalendarClock>` (Hoje/Amanhã/Em X dias/Ontem/Há X dias, às HH:mmh).
+    - Posicionar o ícone/botão `<CalendarClock>` no rodapé do card, à direita, próximo ao botão de Ações/Editar.
+    - O ícone `<Info>` (data de adição) deve permanecer na posição atual para itens não agendados.
+    - Transformar o ícone `<CalendarClock>` em um botão clicável para editar o agendamento.
+
 ## Novas Implementações
 
 ### 1. Verificação de Duplicatas
@@ -277,11 +292,23 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Adaptar o armazenamento para suportar conteúdo formatado
   - Garantir que a renderização preserve a formatação em todos os contextos
 
+### 12. Visualizações Múltiplas para Itens Salvos (Tabela, Cartões, Kanban, Fluxo)
+
+- **Feature**: Refatorar a `SavedItemsView` para oferecer múltiplos modos de visualização dos itens salvos.
+- **Implementação**:
+    - ~~Utilizar o componente `Tabs` do `shadcn-svelte` para permitir a alternância entre as visualizações.~~ (CONCLUÍDO em 2025-04-05)
+    - **Visualização em Tabela**: Implementar usando o componente `DataTable` do `shadcn-svelte` e `@tanstack/table-core`, exibindo colunas como Título, URL, Favorito, Ler Mais Tarde (Data), Grupos, Tags, Notas, Flashcards, Criado em, e Ações. Incluir funcionalidades de ordenação, filtragem e seleção.
+    - ~~**Visualização em Cartões**: Manter e refatorar a visualização atual baseada em cards (`SavedItemCard`) em um componente separado (`SavedItemsCardView`).~~ (CONCLUÍDO em 2025-04-05)
+    - **Visualização em Kanban**: Implementar uma visualização em quadros, provavelmente agrupando por Grupos (ver item existente NI#2).
+    - **Visualização em Fluxo**: Implementar usando a biblioteca `@xyflow/svelte` para visualizar conexões entre itens (ver item existente no `planejamento.md`).
+    - Cada visualização será implementada em um componente Svelte separado (`SavedItemsTableView`, `SavedItemsCardView`, `SavedItemsKanbanView`, `SavedItemsFlowView`).
+
 ## Plano de Execução
 
-### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-02)
+### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-04)
 - ~~Focar na resolução dos problemas de performance do popup~~ (CONCLUÍDO em 2025-04-01)
 - ~~Corrigir problemas de exibição na página de opções~~ (CONCLUÍDO em 2025-04-02)
+- ~~Resolver problemas de sincronização entre storage.local e componentes~~ (CONCLUÍDO em 2025-04-04)
 - ~~Estimar 3 dias para investigação e otimização~~
 
 ### Fase 2: Melhorias de UI/UX (Prioridade Média)
@@ -291,20 +318,26 @@ Este documento registra as correções, melhorias e novas implementações que d
 - ~~Implementar melhoria 5 (dimensões do popup)~~ (CONCLUÍDA em 2025-04-01)
 - Estimar 5-7 dias para estas implementações
 
-### Fase 3: Melhorias de Visualização (Prioridade Média-Baixa)
+### Fase 3: Implementação de Visualizações de Itens Salvos (Prioridade Média-Alta)
+- ~~Implementar estrutura de Abas (`Tabs`) na `SavedItemsView`.~~ (CONCLUÍDO em 2025-04-05)
+- Implementar a **Visualização em Tabela** (`SavedItemsTableView`) com `DataTable`. (Estimar 3-4 dias)
+- ~~Refatorar a **Visualização em Cartões** (`SavedItemsCardView`).~~ (CONCLUÍDO em 2025-04-05)
+- Implementar a **Visualização em Kanban** (`SavedItemsKanbanView`). (Ver estimativa NI#2, ~5-7 dias)
+- Implementar a **Visualização em Fluxo** (`SavedItemsFlowView`) com `@xyflow/svelte`. (Estimar ~4-5 dias)
+- *Substitui parcialmente NI#2 (Kanban) e adiciona Tabela/Fluxo a esta fase.*
+
+### Fase 4: Melhorias de Visualização e Organização (Prioridade Média-Baixa)
 - Implementar melhorias 6-7 (visualização embarcada, diálogos de conteúdo)
-- Estimar 4-6 dias para estas implementações
-
-### Fase 4: Melhorias de Organização e Usabilidade (Prioridade Média)
 - Implementar melhorias 8-13 (filtros, identificação, ferramentas, debug, títulos e edição em dialog)
-- Estimar 7-10 dias para estas implementações
+- Implementar melhoria 14 (Refinamento Indicador "Ler Mais Tarde")
+- *Reorganizada para focar em melhorias gerais após as visualizações principais.*
+- Estimar 11-16 dias para estas implementações (adicionado ~1 dia para MU#14)
 
-### Fase 5: Novas Features (Prioridade Variável)
+### Fase 5: Novas Features e Refinamentos (Prioridade Variável)
 - Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
-- Implementar correções de sincronização de armazenamento (Prioridade Alta) - 3 dias
+- ~~Implementar correções de sincronização de armazenamento (Prioridade Alta) - 3 dias~~ (CONCLUÍDO em 2025-04-04)
 - Implementar sidebar para painel de opções (Prioridade Média) - 3 dias
 - Implementar seletor de tema aprimorado (Prioridade Média) - 1 dia
-- Implementar visualização em Kanban (Prioridade Baixa) - 5-7 dias
 - Implementar dashboard de atividades (Prioridade Baixa) - 7-10 dias
 - Implementar recursos avançados (anotações de texto, vídeo, TipTap) - 15-20 dias
 
@@ -316,4 +349,6 @@ As correções de performance foram abordadas com sucesso, melhorando significat
 
 As correções na página de opções e a migração para a sintaxe moderna do Svelte 5 resolveram problemas críticos que impediam a navegação e visualização correta de conteúdo. O uso de toast notifications e a padronização dos componentes visuais contribuíram para uma experiência mais coesa e agradável.
 
-Os próximos passos se concentrarão em melhorar ainda mais a experiência do usuário com feedback visual, organização aprimorada e recursos avançados como visualização em Kanban e editor rich text. Também será dada especial atenção à otimização do armazenamento e sincronização de dados para garantir que todas as informações sejam preservadas corretamente. 
+Avanços significativos foram alcançados na interface de visualização de itens salvos, com um redesign completo dos cards que agora exibem melhor as informações, permitem interações mais intuitivas e oferecem uma experiência visual mais rica. A correção dos problemas de sincronização entre o storage e os componentes garante uma resposta imediata às ações do usuário, eliminando a frustração causada pela falta de feedback visual após operações.
+
+Os próximos passos se concentrarão em implementar as novas visualizações (Tabela, Kanban, Fluxo) dentro de uma estrutura de abas na página de Itens Salvos, oferecendo maior flexibilidade ao usuário. Após isso, o foco será em melhorias adicionais de usabilidade e na implementação de novas funcionalidades como dashboards e anotações avançadas. 

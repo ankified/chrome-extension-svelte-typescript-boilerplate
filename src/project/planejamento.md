@@ -78,9 +78,12 @@ interface ItemLink {
 #### 3. Página de Opções
 - **Propósito**: Gerenciamento completo dos favoritos e grupos
 - **Views**:
-  - **Lista**: Visualização tabular de todos os itens com ordenação e filtros
-  - **KanBan**: Visualização em quadros dos grupos e seus itens
-  - **SvelteFlow**: Visualização de conexões entre itens
+  - **Tabs Container**: Utilizar o componente `Tabs` do `shadcn-svelte` para organizar as diferentes visualizações e seções.
+  - **Itens Salvos**: 
+    - **Tabela**: Nova visualização tabular de todos os itens usando `DataTable` do `shadcn-svelte` com ordenação, filtros avançados e seleção.
+    - **Cartões**: Visualização padrão atual com cards individuais.
+    - **KanBan**: Visualização em quadros dos grupos e seus itens (drag-and-drop para reorganizar).
+    - **Fluxo (SvelteFlow)**: Visualização de conexões entre itens para mapeamento de relações.
   - **Agendamentos**: Visualização de calendário/linha do tempo dos itens marcados para ler mais tarde
   - **Configurações**: Preferências da extensão, importação/exportação
 

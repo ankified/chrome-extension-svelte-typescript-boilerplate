@@ -6,7 +6,7 @@ Este documento descreve o estado atual da implementação da extensão de navega
 
 ## Estrutura do Projeto
 
-- **Tecnologias**: Svelte 5, TypeScript, TailwindCSS, shadcn-svelte
+- **Tecnologias**: Svelte 5, TypeScript, TailwindCSS, shadcn-svelte, lucide-svelte, chroma-js
 - **Tema**: Suporte completo a tema claro e escuro (seguindo preferência do sistema)
 - **Interfaces**: Popup, Painel Lateral e Página de Opções
 
@@ -22,12 +22,14 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **FlashcardInput**: Formulário para criação de flashcards
 - **FlashcardStudySession**: Sistema de estudo de flashcards com algoritmo de repetição espaçada
 - **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com layout de duas colunas - favicon único em tamanho grande na esquerda e informações textuais (título e URL) na direita
+- **SavedItemCard**: Card moderno para exibição de itens salvos com layout de duas colunas (favicon e conteúdo), ações contextuais, exibição de grupo com cores e contraste de texto adequado, animações de hover e sistema avançado de visualização de tags
 
 ### Componentes de Visualização
 
 - **NotesView**: Visualização de notas agrupadas por item ou desvinculadas
 - **FlashcardsView**: Visualização de flashcards com filtros por tags
-- **SavedItemsView**: Visualização de itens salvos com filtros e ordenação
+- **SavedItemsView**: Componente principal para visualização de itens salvos. Agora utiliza o componente `Tabs` do `shadcn-svelte` para organizar diferentes modos de visualização (Tabela, Cartões, Kanban, Fluxo). Mantém a lógica de filtros e ordenação.
+- **SavedItemsCardView**: Novo componente dedicado à visualização de itens salvos no formato de grade de cartões. Contém a lógica de renderização e ações específicas dos cards (incluindo tooltip refinado para data de adição).
 - **SettingsView**: Configurações da extensão, incluindo backup/exportação de dados
 
 ### Componentes UI Avançados
@@ -45,10 +47,12 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 ### Gerenciamento de Itens Salvos
 
 - Salvar páginas web com URL, título e metadados
-- Organizar itens com tags
+- Organizar itens com tags e grupos com cores personalizadas
 - Filtrar e pesquisar itens salvos
 - Vincular notas e flashcards a itens salvos
 - Seleção múltipla de grupos com interface aprimorada usando DropdownMenu
+- Visualização aprimorada com cards modernos, favicon, menu dropdown para ações e gerenciamento simplificado de grupos e tags diretamente nos cards
+- Sincronização otimizada entre chrome.storage.local e componentes para atualização imediata
 
 ### Sistema de Notas
 
@@ -74,7 +78,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Remoção de tags com um clique
 - Normalização automática de tags para evitar duplicação
 - Sistema avançado de seleção com autocomplete baseado em tags existentes
-- Visualização aprimorada de tags como etiquetas visuais
+- Visualização aprimorada de tags como etiquetas visuais com animações suaves e transições elegantes
+- Remoção de tags diretamente nas pills com animação de largura no hover
 
 ### Referências entre Itens
 
@@ -103,7 +108,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Migração completa de blocos reativos `$:` para `$derived(() => {})` em componentes complexos
 - Correção de acesso a variáveis reativas nos templates (remoção de notação de função)
 
-### Integração com shadcn-svelte
+### Integração com shadcn-svelte e Lucide
 
 - Implementação de componentes Dialog para edição modal
 - Uso de componentes modernos baseados em Radix UI para navegação por abas
@@ -112,6 +117,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Estilização consistente com suporte a tema claro/escuro
 - Melhorias de acessibilidade em interações complexas
 - Implementação de Toaster para exibição de notificações toast
+- Uso consistente de ícones do Lucide para melhor padronização de UI
+- Integração com chroma-js para gerenciamento de cores e contraste
 
 ### Otimizações de Performance
 
@@ -122,6 +129,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Melhor gerenciamento de estado reativo para evitar loops infinitos
 - Refatoração do gerenciamento de efeitos reativos para maior eficiência
 - Remoção de logs de debug desnecessários que impactavam a performance
+- Melhorias na sincronização do chrome.storage.local para refletir mudanças imediatamente
 
 ### Correção de Bugs
 
@@ -135,6 +143,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Tratamento de erro específico para "Extension context invalidated"
 - Correção de tipos para evitar erros em operações como `tags.forEach` e `tags.join`
 - Correção de problemas de navegação entre abas na página de opções
+- Correção de problemas de sincronização imediata no storage.local
 
 ### Melhorias de UI/UX
 
@@ -143,11 +152,20 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Visualização em grid para melhor aproveitamento do espaço
 - Design responsivo para adaptar a diferentes tamanhos de tela
 - Sistema avançado de gestão de tags com sugestões e chips visuais
-- Navegação por abas moderna com o componente Tabs do shadcn-svelte
+- Navegação por abas moderna com o componente Tabs do shadcn-svelte (implementado em `SavedItemsView`)
 - Seleção mais intuitiva com componentes ToggleGroup e DropdownMenu
 - Visualização aprimorada de URLs e títulos com cards no estilo de mídia social, incluindo favicons e edição via popover
 - Feedback de salvamento moderno usando toast notifications, eliminando alertas nativos do navegador
 - Fluxo de salvamento simplificado com resetamento automático de formulários após a conclusão
+- Cards de itens salvos redesenhados com layout de duas colunas (favicon e conteúdo)
+- Exibição visual de grupo com cores adequadas e contraste de texto automático
+- Botões de ação no rodapé dos cards (Gerenciar Grupos, Etiquetas, Notas, Flashcards, Agendamento)
+- Animações suaves para interações do usuário (hover, clique, seleção)
+- Tooltip refinado para exibição de data no formato "DD/MM/YYYY, às HH:mmh" (implementado em `SavedItemsCardView`)
+- Menu dropdown para ações nos cards (Editar, Excluir)
+- Refinamento das pills de tag e grupo com animação de largura ao passar o mouse
+- Padronização dos ícones de exclusão para "X" em vez de "lixeira"
+- Garantia de truncamento adequado para URLs longas
 
 ## Estado da Visualização de Flashcards e Notas
 
@@ -169,6 +187,8 @@ A visualização de flashcards e notas foi significativamente melhorada:
 - **Erro "Extension context invalidated"**: Adicionado tratamento específico com reload automático da página
 - **Erros de tipo em operações com arrays**: Implementação de verificações de tipo e tratamento defensivo em operações como forEach e join
 - **Incompatibilidade com Svelte 5**: Migração completa de blocos reativos ($:) para o novo padrão ($derived) e ajustes no acesso a variáveis reativas nos templates
+- **Problemas de sincronização no storage.local**: Corrigido para garantir que os dados sejam refletidos imediatamente após alterações
+- **Interface de cartões de itens salvos**: Completamente redesenhada para maior clareza e usabilidade
 
 ## Próximos Passos e Melhorias Planejadas
 
@@ -181,7 +201,6 @@ A visualização de flashcards e notas foi significativamente melhorada:
 - Desenvolver visualização em KanBan para flashcards
 - Implementar anotações de texto selecionado e vídeos
 - Expandir dashboards de estatísticas e progresso
-- Otimizar sincronização entre chrome.storage.local e chrome.storage.sync
 
 ## Conclusão
 
@@ -189,4 +208,6 @@ O projeto encontra-se em estado funcional com todas as principais features imple
 
 As otimizações de performance implementadas resolveram com sucesso os problemas de lentidão no popup, garantindo carregamento e alternância entre abas mais rápidos. O sistema avançado de tags agora oferece uma experiência mais fluida e visual para os usuários, com sugestões baseadas em tags existentes e exibição como etiquetas visuais.
 
-As correções realizadas garantem que as funcionalidades de notas e flashcards funcionem corretamente em todos os contextos, com especial atenção ao vínculo entre itens e à visualização de cores e informações associadas, que são fundamentais para a organização e utilidade da extensão. A migração completa para Svelte 5 foi concluída com sucesso, incluindo a substituição de todas as expressões reativas antigas pelo novo padrão, resultando em um código mais robusto e compatível com as versões mais recentes do framework. 
+As correções realizadas garantem que as funcionalidades de notas e flashcards funcionem corretamente em todos os contextos, com especial atenção ao vínculo entre itens e à visualização de cores e informações associadas, que são fundamentais para a organização e utilidade da extensão. A migração completa para Svelte 5 foi concluída com sucesso, incluindo a substituição de todas as expressões reativas antigas pelo novo padrão, resultando em um código mais robusto e compatível com as versões mais recentes do framework.
+
+A interface de itens salvos recebeu um grande redesign, tornando-se mais visual, intuitiva e eficiente, com melhor uso de cores, ícones e animações para uma experiência de usuário refinada. A sincronização de dados entre diferentes partes da extensão foi aprimorada para garantir consistência e resposta imediata às ações do usuário.
