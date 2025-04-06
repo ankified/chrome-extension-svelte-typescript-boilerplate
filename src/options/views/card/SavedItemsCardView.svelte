@@ -5,7 +5,7 @@
   import { Button } from "../../../lib/components/ui/button/index.js";
   import * as Tooltip from "../../../lib/components/ui/tooltip/index.js";
   import * as DropdownMenu from "../../../lib/components/ui/dropdown-menu/index.js";
-  import { Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, X } from "@lucide/svelte";
+  import { Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, X, StickyNote, Layers3 } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
   import chroma from 'chroma-js';
   import { formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, differenceInDays, format as formatDateFn } from 'date-fns';
@@ -248,10 +248,25 @@
     newTagInput = "";
   }
 
+  // Novas funções (placeholders) para navegação/exibição de notas/flashcards
+  function viewNotes(item: SavedItem) {
+    toast.info("Visualizar/Gerenciar Notas (Não implementado)", {
+        description: `Item: ${item.title}`
+    });
+  }
+
+  function viewFlashcards(item: SavedItem) {
+    toast.info("Visualizar/Gerenciar Flashcards (Não implementado)", {
+        description: `Item: ${item.title}`
+    });
+  }
+
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {#each data as item (item.id)}
+      {@const noteCount = item.noteIds?.length || 0}
+      {@const flashcardCount = item.flashcardIds?.length || 0}
       <div class="saved-item-card border rounded-lg overflow-hidden shadow-sm dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
         <!-- Header com Favicon e Título/URL -->
         <div class="p-3 flex items-start space-x-3 border-b dark:border-gray-700">
@@ -360,8 +375,54 @@
               </Tooltip.Root>
             </Tooltip.Provider>
             
-            <!-- Ícones da direita: Agendamento (se houver) e Ações -->
+            <!-- Ícones da direita: Notas, Flashcards, Agendamento (se houver) e Ações -->
             <div class="flex items-center space-x-1">
+              <!-- Botão/Contador de Notas -->
+              <Tooltip.Provider>
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      class="h-6 w-6 relative"
+                      onclick={() => viewNotes(item)}
+                      aria-label="Notas"
+                    >
+                      <StickyNote class="h-4 w-4" />
+                      {#if noteCount > 0}
+                        <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{noteCount}</span>
+                      {/if}
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {noteCount === 0 ? 'Adicionar Nota' : noteCount === 1 ? '1 Nota' : `${noteCount} Notas`}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </Tooltip.Provider>
+
+              <!-- Botão/Contador de Flashcards -->
+              <Tooltip.Provider>
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      class="h-6 w-6 relative"
+                      onclick={() => viewFlashcards(item)}
+                      aria-label="Flashcards"
+                    >
+                      <Layers3 class="h-4 w-4" />
+                      {#if flashcardCount > 0}
+                         <span class="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{flashcardCount}</span>
+                      {/if}
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {flashcardCount === 0 ? 'Adicionar Flashcard' : flashcardCount === 1 ? '1 Flashcard' : `${flashcardCount} Flashcards`}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </Tooltip.Provider>
+
               <!-- Ícone de Agendamento (Ler Mais Tarde) - Apenas se estiver agendado -->
               {#if item.readLater && item.scheduledDate}
                 <Tooltip.Provider>
@@ -372,7 +433,6 @@
                         size="icon" 
                         class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300" 
                         onclick={() => editSchedule(item)}
-                        
                         aria-label="Editar agendamento"
                       >
                         <CalendarClock class="h-4 w-4" />
@@ -388,7 +448,7 @@
               <!-- Botão Dropdown de Ações -->
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <Button variant="ghost" size="icon" class="h-6 w-6" >
+                  <Button variant="ghost" size="icon" class="h-6 w-6">
                     <Edit class="h-4 w-4" />
                     <span class="sr-only">Ações</span>
                   </Button>

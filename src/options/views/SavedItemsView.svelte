@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { savedItems, groups, verifyAndFixGroupRelations } from "../../storage";
-  import type { SavedItem, Group } from "../../types";
+  import { savedItems, groups, notes, flashcards, verifyAndFixGroupRelations } from "../../storage";
+  import type { SavedItem, Group, Note, Flashcard } from "../../types";
   import * as AlertDialog from "../../lib/components/ui/alert-dialog/index.js";
   import { Button } from "../../lib/components/ui/button/index.js";
   import * as Tooltip from "../../lib/components/ui/tooltip/index.js";
@@ -90,6 +90,10 @@
          const dateA = a.readLater && a.scheduledDate ? a.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
          const dateB = b.readLater && b.scheduledDate ? b.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
          comparison = dateA - dateB;
+      } else if (criteria === "noteCount") {
+          comparison = (a.noteIds?.length || 0) - (b.noteIds?.length || 0);
+      } else if (criteria === "flashcardCount") {
+          comparison = (a.flashcardIds?.length || 0) - (b.flashcardIds?.length || 0);
       }
       return direction === "desc" ? -comparison : comparison;
     });
@@ -279,12 +283,20 @@
     </DropdownMenu.Root>
     <Select.Root type="multiple" bind:value={sortCriteria} onValueChange={(v: string[] | null) => { if (v !== null) sortCriteria = v; }}>
       <Select.Trigger class="w-full md:w-[180px]">
+        {sortCriteria[0] === 'dateAdded' ? 'Data Adição' : 
+         sortCriteria[0] === 'title' ? 'Título' :
+         sortCriteria[0] === 'url' ? 'URL' :
+         sortCriteria[0] === 'scheduledDate' ? 'Data Agendada' :
+         sortCriteria[0] === 'noteCount' ? 'Notas' :
+         sortCriteria[0] === 'flashcardCount' ? 'Flashcards' : 'Ordenar por'}
       </Select.Trigger>
       <Select.Content>
         <Select.Item value="dateAdded">Data Adição</Select.Item>
         <Select.Item value="title">Título</Select.Item>
         <Select.Item value="url">URL</Select.Item>
         <Select.Item value="scheduledDate">Data Agendada</Select.Item>
+        <Select.Item value="noteCount">Nº Notas</Select.Item>
+        <Select.Item value="flashcardCount">Nº Flashcards</Select.Item>
       </Select.Content>
     </Select.Root>
     <Select.Root type="multiple" bind:value={sortDirection} onValueChange={(v: string[] | null) => { if (v !== null) sortDirection = v; }}>
