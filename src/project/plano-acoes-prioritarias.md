@@ -199,6 +199,41 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Refinado o indicador de agendamento nos cards (`SavedItemsCardView.svelte`). O ícone `<Info>` agora é sempre visível à esquerda. O ícone `<CalendarClock>` aparece apenas para itens agendados, à direita, como um botão clicável (chama `editSchedule` placeholder) com tooltip formatado (ex: "Hoje, às 15:30h").
 - **Resultado**: Exibição clara e consistente da data de adição e do status de agendamento, com interação preparada para edição futura.
 
+### 15. Remover Título Redundante (Itens Salvos)
+
+- **Melhoria**: Remover o título "Itens Salvos" do corpo principal da página (`SavedItemsView`), pois o título já existe na navegação.
+- **Implementação**:
+    - Remover o elemento `<h1>Itens Salvos</h1>` do template de `SavedItemsView.svelte`.
+
+### 16. Reorganizar Layout Superior (Itens Salvos)
+
+- **Melhoria**: Posicionar as abas de visualização (Tabela, Cartões, etc.) acima da barra de pesquisa e filtros.
+- **Implementação**:
+    - Mover o bloco `<Tabs.Root>` para antes do `div` que contém `Input type="search"` e os `Select`/`DropdownMenu` de filtros/ordenação em `SavedItemsView.svelte`.
+
+### 17. Área de Rolagem para Cartões com Cabeçalho/Rodapé Fixos
+
+- **Melhoria**: Fazer com que apenas a área dos cartões de itens salvos seja rolável, mantendo as abas, filtros e botões de gerenciamento global fixos.
+- **Implementação**:
+    - Em `SavedItemsView.svelte`, estruturar o layout principal usando flexbox (`flex flex-col h-full` ou similar no container geral da página de opções se necessário).
+    - O cabeçalho (Abas + Filtros/Ordenação) e o rodapé (Botões Gerenciar Grupos/Tags) devem ter altura fixa (`flex-shrink-0`).
+    - A área de conteúdo (`Tabs.Content`) que contém `SavedItemsCardView` deve ocupar o espaço restante (`flex-grow`) e ter `overflow-y-auto` ou ser envolvida por um componente `ScrollArea` configurado para ocupar o espaço disponível.
+
+### 18. Truncar Título do Card
+
+- **Melhoria**: Garantir que títulos longos nos cartões sejam truncados em uma única linha com reticências.
+- **Implementação**:
+    - No componente `SavedItemsCardView.svelte`, aplicar a classe `truncate` do TailwindCSS ao elemento `<h3>` que exibe `item.title` (substituindo ou complementando `line-clamp-2` se necessário).
+
+### 19. Refinar Rolagem Horizontal das Pills (Grupos/Tags)
+
+- **Melhoria**: Aprimorar a experiência de rolagem horizontal para as pills de Grupos e Tags dentro dos cards quando excedem a largura.
+- **Implementação**:
+    - Em `SavedItemsCardView.svelte`, avaliar a solução atual com `overflow-x-auto`.
+    - Considerar adicionar botões de navegação ("<" e ">") que aparecem condicionalmente para facilitar a rolagem.
+    - Explorar a possibilidade de ocultar a barra de rolagem visualmente, mantendo a funcionalidade.
+    - Como alternativa, implementar um indicador "+X mais" se a lista for muito longa.
+
 ## Novas Implementações
 
 ### 1. Verificação de Duplicatas
@@ -335,8 +370,9 @@ Este documento registra as correções, melhorias e novas implementações que d
 - Implementar melhorias 6-7 (visualização embarcada, diálogos de conteúdo)
 - Implementar melhorias 8-13 (filtros, identificação, ferramentas, debug, títulos e edição em dialog)
 - ~~Implementar melhoria 14 (Refinamento Indicador "Ler Mais Tarde")~~ (CONCLUÍDO em 2025-04-06)
+- Implementar melhorias 15-19 (Layout Itens Salvos: título, abas, scroll fixo, truncamento, scroll pills)
 - *Reorganizada para focar em melhorias gerais após as visualizações principais.*
-- Estimar ~~11-16 dias~~ 10-15 dias para estas implementações (removido ~1 dia para MU#14)
+- Estimar ~~10-15 dias~~ 13-19 dias para estas implementações (adicionado ~3-4 dias para MU#15-19)
 
 ### Fase 5: Novas Features e Refinamentos (Prioridade Variável)
 - Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
