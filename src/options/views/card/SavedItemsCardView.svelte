@@ -10,6 +10,7 @@
   import chroma from 'chroma-js';
   import { formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, differenceInDays, format as formatDateFn } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
+  import { ScrollArea } from "../../../lib/components/ui/scroll-area/index.js";
 
   // Props recebidos de SavedItemsView
   let { data, groups: allGroups }: { data: SavedItem[], groups: Group[] } = $props();
@@ -295,74 +296,86 @@
         </div>
         
         <!-- Corpo com Grupos, Tags e Conteúdo Principal -->
-        <div class="p-3 flex-grow flex flex-col justify-between">
-          <div>
+        <div class="p-3 flex-grow flex flex-col justify-between min-h-0">
+          <div class="flex-shrink mb-2">
             <!-- Grupos -->
             {#if item.groupIds && item.groupIds.length > 0}
-              <div class="flex flex-wrap gap-1 mb-2">
-                {#each item.groupIds as groupId}
-                  {@const group = getGroupInfo(groupId)}
-                  {@const bgColor = group.color || '#cccccc'}
-                  {@const textColor = getTextColorForBackground(bgColor)}
-                  <span 
-                    class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
-                    style={`background-color: ${bgColor}; color: ${textColor};`}
-                    title={group.name}
-                  >
-                    <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
-                    <span class="mr-1 flex-shrink-0">{group.name}</span> 
-                    <button 
-                      class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
-                      onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
-                      title="Remover do grupo"
+              <div class="overflow-x-auto pb-1 mb-2">
+                <div class="flex gap-1 whitespace-nowrap">
+                  {#each item.groupIds as groupId}
+                    {@const group = getGroupInfo(groupId)}
+                    {@const bgColor = group.color || '#cccccc'}
+                    {@const textColor = getTextColorForBackground(bgColor)}
+                    <span 
+                      class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
+                      style={`background-color: ${bgColor}; color: ${textColor};`}
+                      title={group.name}
                     >
-                      <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
-                    </button>
-                  </span>
-                {/each}
+                      <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
+                      <span class="mr-1 flex-shrink-0">{group.name}</span> 
+                      <button 
+                        class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
+                        onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
+                        title="Remover do grupo"
+                      >
+                        <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
+                      </button>
+                    </span>
+                  {/each}
+                </div>
               </div>
             {/if}
             
             <!-- Tags -->
-            <div class="flex flex-wrap gap-1 mb-2">
-              {#if item.tags && Array.isArray(item.tags)}
-                {#each item.tags as tag}
-                  {#if editingTagItem?.id === item.id && editTagInput === tag}
-                    <input 
-                      type="text" 
-                      bind:value={editTagInput} 
-                      onblur={() => saveEditedTag(item, tag)}
-                      onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
-                      class="text-xs p-1 border rounded"
-                      autofocus
-                    />
-                  {:else}
-                    <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden" title={`Tag: ${tag}`}>
-                      <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
-                      <span class="mr-1 flex-shrink-0">{tag}</span>
-                      <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
-                        <button 
-                           class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
-                           onclick={() => removeTagFromItem(item, tag)}
-                           title="Remover tag"
-                         >
-                           <X class="h-3 w-3" style="stroke-width: 2.5;" />
-                         </button>
+            <div class="overflow-x-auto pb-1 mb-2">
+              <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                {#if item.tags && Array.isArray(item.tags)}
+                  {#each item.tags as tag}
+                    {#if editingTagItem?.id === item.id && editTagInput === tag}
+                      <input 
+                        type="text" 
+                        bind:value={editTagInput} 
+                        onblur={() => saveEditedTag(item, tag)}
+                        onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
+                        class="text-xs p-1 border rounded flex-shrink-0"
+                        autofocus
+                      />
+                    {:else}
+                      <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0" title={`Tag: ${tag}`}>
+                        <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                        <span class="mr-1 flex-shrink-0">{tag}</span>
+                        <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
+                          <button 
+                             class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
+                             onclick={() => removeTagFromItem(item, tag)}
+                             title="Remover tag"
+                           >
+                             <X class="h-3 w-3" style="stroke-width: 2.5;" />
+                           </button>
+                        </div>
                       </div>
-                    </div>
-                  {/if}
-                {/each}
-              {/if}
+                    {/if}
+                  {/each}
+                {/if}
+              </div>
             </div>
+          </div>
             
-            <!-- Comentário -->
+          <!-- Comentário com ScrollArea -->
+          <div class="flex-grow mb-2 overflow-hidden">
             {#if item.comments}
-              <p class="text-xs text-gray-600 dark:text-gray-300 mb-2 line-clamp-3">{item.comments}</p>
+              <ScrollArea class="h-16 w-full rounded-md border dark:border-gray-700 p-2">
+                   <p class="text-xs text-gray-600 dark:text-gray-300">{item.comments}</p>
+              </ScrollArea>
+            {:else}
+              <div class="h-16 flex items-center justify-center text-xs text-gray-400 italic border rounded-md dark:border-gray-700">
+                Sem comentário
+              </div>
             {/if}
           </div>
 
           <!-- Seção Inferior: Ler Mais Tarde / Adicionado em -->
-          <div class="mt-auto pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div class="mt-auto pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t dark:border-gray-700">
             <!-- Ícone de Info (Adicionado em) - Sempre visível -->
             <Tooltip.Provider>
               <Tooltip.Root>
@@ -386,6 +399,7 @@
                       size="icon" 
                       class="h-6 w-6 relative"
                       onclick={() => viewNotes(item)}
+
                       aria-label="Notas"
                     >
                       <StickyNote class="h-4 w-4" />
@@ -409,6 +423,7 @@
                       size="icon" 
                       class="h-6 w-6 relative"
                       onclick={() => viewFlashcards(item)}
+
                       aria-label="Flashcards"
                     >
                       <Layers3 class="h-4 w-4" />
@@ -433,6 +448,7 @@
                         size="icon" 
                         class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300" 
                         onclick={() => editSchedule(item)}
+  
                         aria-label="Editar agendamento"
                       >
                         <CalendarClock class="h-4 w-4" />

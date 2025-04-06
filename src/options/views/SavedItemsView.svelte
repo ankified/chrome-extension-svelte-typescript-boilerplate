@@ -400,43 +400,56 @@
     </AlertDialog.Content>
   </AlertDialog.Root>
 
-   <div class="mt-4 flex justify-end items-center gap-2">
-      {#if availableTags.length > 0}
-       <Button variant="destructive" size="sm" onclick={removeAllTags}>
-         <Trash2 class="mr-1.5 h-3.5 w-3.5"/> Remover Todas as Tags... ({availableTags.length})
+  <div class="mt-4 flex justify-end items-center gap-2">
+    <!-- Botão Gerenciar Grupos -->
+    <Button
+      variant="outline"
+      onclick={() => toast.info('Gerenciamento de Grupos ainda não implementado.')}
+      disabled={$groups.length === 0}
+    >
+      <Folder class="mr-2 h-4 w-4" />
+      Gerenciar Grupos ({$groups.length})
+    </Button>
+
+    <!-- Restaurado DropdownMenu "Gerenciar Tags" -->
+    <DropdownMenu.Root>
+     <DropdownMenu.Trigger>
+       <Button variant="outline" disabled={availableTags.length === 0}>
+         <Tags class="mr-2 h-4 w-4" />
+          Gerenciar Tags ({availableTags.length})
        </Button>
-      {/if}
-      <DropdownMenu.Root>
-       <DropdownMenu.Trigger>
-         <Button variant="outline" disabled={availableTags.length === 0}>
-           <Tags class="mr-2 h-4 w-4" />
-            Gerenciar Tags ({availableTags.length})
-         </Button>
-       </DropdownMenu.Trigger>
-       <DropdownMenu.Content align="end" class="w-64 max-h-80 overflow-y-auto">
-         <DropdownMenu.Label>Gerenciamento Global de Tags</DropdownMenu.Label>
-         <DropdownMenu.Separator />
-         {#if availableTags.length > 0}
-            <DropdownMenu.Label class="text-xs font-normal text-muted-foreground px-2">Clique para Renomear ou Remover</DropdownMenu.Label>
-            {#each availableTags as tag}
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>{tag}</DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                    <DropdownMenu.Item onclick={() => openEditTagDialog(tag)}>
-                      <Edit class="mr-2 h-3.5 w-3.5"/> Renomear "{tag}"...
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator/>
-                    <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:text-red-700" onclick={() => openRemoveTagDialog(tag)}>
-                      <Trash2 class="mr-2 h-3.5 w-3.5"/> Remover "{tag}" de tudo...
-                    </DropdownMenu.Item>
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-            {/each}
-         {:else}
-           <DropdownMenu.Item disabled>Nenhuma tag para gerenciar</DropdownMenu.Item>
-         {/if}
-       </DropdownMenu.Content>
-     </DropdownMenu.Root>
-   </div>
+     </DropdownMenu.Trigger>
+     <DropdownMenu.Content align="end" class="w-64 max-h-80 overflow-y-auto">
+       <DropdownMenu.Label>Gerenciamento Global de Tags</DropdownMenu.Label>
+       <DropdownMenu.Separator />
+       {#if availableTags.length > 0}
+          <DropdownMenu.Label class="text-xs font-normal text-muted-foreground px-2">Clique para Renomear ou Remover</DropdownMenu.Label>
+          {#each availableTags as tag}
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>{tag}</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                  <DropdownMenu.Item onclick={() => openEditTagDialog(tag)}>
+                    <Edit class="mr-2 h-3.5 w-3.5"/> Renomear "{tag}"...
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator/>
+                  <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:text-red-700 dark:focus:text-red-500" onclick={() => openRemoveTagDialog(tag)}>
+                    <Trash2 class="mr-2 h-3.5 w-3.5"/> Remover "{tag}" de tudo...
+                  </DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          {/each}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            class="text-red-600 dark:text-red-500 focus:text-red-700 dark:focus:text-red-500"
+            onclick={removeAllTags}
+          >
+            <Trash2 class="mr-2 h-3.5 w-3.5"/> Remover TODAS as Tags...
+          </DropdownMenu.Item>
+       {:else}
+         <DropdownMenu.Item disabled>Nenhuma tag para gerenciar</DropdownMenu.Item>
+       {/if}
+     </DropdownMenu.Content>
+   </DropdownMenu.Root>
+ </div>
 </div>  
   
