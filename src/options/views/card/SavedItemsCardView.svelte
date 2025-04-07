@@ -11,6 +11,8 @@
   import { formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, differenceInDays, format as formatDateFn } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
   import { ScrollArea } from "../../../lib/components/ui/scroll-area/index.js";
+  import * as Popover from "../../../lib/components/ui/popover/index.js";
+  import { onMount, onDestroy } from 'svelte'; // Precisaremos para ResizeObserver
 
   // Props recebidos de SavedItemsView
   let { data, groups: allGroups }: { data: SavedItem[], groups: Group[] } = $props();
@@ -20,6 +22,124 @@
   let editTagInput = $state("");
   let addingTagItem = $state<SavedItem | null>(null);
   let newTagInput = $state("");
+
+  // --- NOVO ESTADO PARA VISIBILIDADE DAS PILLS ---
+  let groupContainerRefs: { [id: string]: HTMLDivElement | undefined } = $state({});
+  let tagContainerRefs: { [id: string]: HTMLDivElement | undefined } = $state({});
+
+  let visibleGroupsMap = $state<{ [id: string]: string[] }>({});
+  let hiddenGroupCountMap = $state<{ [id: string]: number }>({});
+  let visibleTagsMap = $state<{ [id: string]: string[] }>({});
+  let hiddenTagCountMap = $state<{ [id: string]: number }>({});
+
+  // Para gerenciar ResizeObservers
+  let resizeObservers: { [id: string]: ResizeObserver } = {};
+
+  // Função para calcular pills visíveis (será definida depois)
+  function calculateVisiblePills(itemId: string) {
+    const groupContainer = groupContainerRefs[itemId];
+    const tagContainer = tagContainerRefs[itemId];
+    const item = data.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Lógica de cálculo para grupos
+    if (groupContainer && item.groupIds?.length) {
+      const containerWidth = groupContainer.clientWidth;
+      const pillElements = groupContainer.querySelectorAll<HTMLElement>(':scope > div > .group-chip'); // Seleciona as pills dentro do container flex
+      let currentWidth = 0;
+      let visibleCount = 0;
+      const gap = 4; // Tailwind gap-1 = 0.25rem = 4px (aproximado)
+
+      for (let i = 0; i < pillElements.length; i++) {
+        const pillWidth = pillElements[i].offsetWidth;
+        // Considera o espaço para o indicador "+X" se houver mais pills
+        const spaceForIndicator = (i + 1 < pillElements.length) ? 40 : 0; // Estimar largura do "+X"
+        if (currentWidth + pillWidth + (i > 0 ? gap : 0) + spaceForIndicator <= containerWidth) {
+          currentWidth += pillWidth + (i > 0 ? gap : 0);
+          visibleCount++;
+        } else {
+          break; // Não cabe mais
+        }
+      }
+      visibleGroupsMap[itemId] = item.groupIds.slice(0, visibleCount);
+      hiddenGroupCountMap[itemId] = item.groupIds.length - visibleCount;
+    } else {
+      visibleGroupsMap[itemId] = item?.groupIds ?? [];
+      hiddenGroupCountMap[itemId] = 0;
+    }
+
+    // Lógica de cálculo para tags (similar)
+    if (tagContainer && item.tags?.length) {
+      const containerWidth = tagContainer.clientWidth;
+      // Seleciona as pills de tag (considerando o wrapper extra se houver)
+      const pillElements = tagContainer.querySelectorAll<HTMLElement>(':scope > div > .tag');
+      let currentWidth = 0;
+      let visibleCount = 0;
+      const gap = 4; // Tailwind gap-1
+
+      for (let i = 0; i < pillElements.length; i++) {
+        const pillWidth = pillElements[i].offsetWidth;
+        const spaceForIndicator = (i + 1 < pillElements.length) ? 40 : 0;
+        if (currentWidth + pillWidth + (i > 0 ? gap : 0) + spaceForIndicator <= containerWidth) {
+          currentWidth += pillWidth + (i > 0 ? gap : 0);
+          visibleCount++;
+        } else {
+          break;
+        }
+      }
+
+      // Verifica se item.tags existe e é um array antes de usar slice
+      if (Array.isArray(item.tags)) {
+        visibleTagsMap[itemId] = item.tags.slice(0, visibleCount);
+        hiddenTagCountMap[itemId] = item.tags.length - visibleCount;
+      } else {
+        visibleTagsMap[itemId] = [];
+        hiddenTagCountMap[itemId] = 0;
+      }
+
+    } else {
+      visibleTagsMap[itemId] = Array.isArray(item?.tags) ? item.tags : [];
+      hiddenTagCountMap[itemId] = 0;
+    }
+  }
+
+  // Efeito para recalcular quando os containers ou dados mudarem
+  $effect(() => {
+    // Limpa observadores antigos ao recarregar dados/componentes
+    Object.values(resizeObservers).forEach(observer => observer.disconnect());
+    resizeObservers = {};
+
+    for (const item of data) {
+      const itemId = item.id;
+      const groupContainer = groupContainerRefs[itemId];
+      const tagContainer = tagContainerRefs[itemId];
+
+      const setupObserver = (element: HTMLElement, id: string) => {
+        if (resizeObservers[id]) {
+          resizeObservers[id].disconnect();
+        }
+        const observer = new ResizeObserver(() => {
+          // Atraso pequeno para garantir que o DOM esteja estável após redimensionamento
+          requestAnimationFrame(() => calculateVisiblePills(id.split('-')[0])); // Extrai itemId
+        });
+        observer.observe(element);
+        resizeObservers[id] = observer;
+        // Cálculo inicial
+        requestAnimationFrame(() => calculateVisiblePills(id.split('-')[0])); // Extrai itemId
+      };
+
+      if (groupContainer) {
+        setupObserver(groupContainer, `${itemId}-groups`);
+      }
+      if (tagContainer) {
+        setupObserver(tagContainer, `${itemId}-tags`);
+      }
+    }
+    // Limpeza quando o componente é destruído
+    return () => {
+      Object.values(resizeObservers).forEach(observer => observer.disconnect());
+    };
+  });
 
   // Funções auxiliares movidas de SavedItemsView
   function getGroupInfo(groupId: string): { name: string; color: string } {
@@ -268,6 +388,12 @@
     {#each data as item (item.id)}
       {@const noteCount = item.noteIds?.length || 0}
       {@const flashcardCount = item.flashcardIds?.length || 0}
+      <!-- Derivados reativos para este item -->
+      {@const visibleGroupIds = visibleGroupsMap[item.id] ?? item.groupIds ?? []}
+      {@const hiddenGroupCount = hiddenGroupCountMap[item.id] ?? 0}
+      {@const visibleItemTags = visibleTagsMap[item.id] ?? (Array.isArray(item.tags) ? item.tags : [])}
+      {@const hiddenTagCount = hiddenTagCountMap[item.id] ?? 0}
+
       <div class="saved-item-card border rounded-lg overflow-hidden shadow-sm dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
         <!-- Header com Favicon e Título/URL -->
         <div class="p-3 flex items-start space-x-3 border-b dark:border-gray-700">
@@ -279,7 +405,7 @@
           />
           <div class="flex-grow min-w-0">
             <h3 
-              class="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer line-clamp-2"
+              class="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer truncate"
               onclick={() => openURL(item.url)}
               title={item.title}
             >
@@ -300,20 +426,22 @@
           <div class="flex-shrink mb-2">
             <!-- Grupos -->
             {#if item.groupIds && item.groupIds.length > 0}
-              <div class="overflow-x-auto pb-1 mb-2">
-                <div class="flex gap-1 whitespace-nowrap">
-                  {#each item.groupIds as groupId}
+              <!-- Container com bind:this -->
+              <div bind:this={groupContainerRefs[item.id]} class="overflow-hidden pb-1 mb-2 hide-scrollbar">
+                <div class="flex gap-1 whitespace-nowrap items-center">
+                  <!-- Loop pelas pills visíveis -->
+                  {#each visibleGroupIds as groupId}
                     {@const group = getGroupInfo(groupId)}
                     {@const bgColor = group.color || '#cccccc'}
                     {@const textColor = getTextColorForBackground(bgColor)}
-                    <span 
-                      class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
+                    <span
+                      class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0"
                       style={`background-color: ${bgColor}; color: ${textColor};`}
                       title={group.name}
                     >
                       <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
-                      <span class="mr-1 flex-shrink-0">{group.name}</span> 
-                      <button 
+                      <span class="mr-1 flex-shrink-0">{group.name}</span>
+                      <button
                         class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
                         onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
                         title="Remover do grupo"
@@ -322,41 +450,116 @@
                       </button>
                     </span>
                   {/each}
+
+                  <!-- Indicador "+X" e Popover para Grupos -->
+                  {#if hiddenGroupCount > 0}
+                    <Popover.Root>
+                      <Popover.Trigger>
+                         <button
+                          class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 flex-shrink-0"
+                          title={`Mais ${hiddenGroupCount} grupo(s)`}
+                        >
+                          +{hiddenGroupCount}
+                        </button>
+                      </Popover.Trigger>
+                      <Popover.Content class="w-auto p-2 max-h-48 overflow-y-auto">
+                        <div class="text-sm font-semibold mb-2">Todos os Grupos</div>
+                        <div class="flex flex-col gap-1">
+                           {#each item.groupIds as groupId}
+                              {@const group = getGroupInfo(groupId)}
+                              {@const bgColor = group.color || '#cccccc'}
+                              {@const textColor = getTextColorForBackground(bgColor)}
+                              <span
+                                class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
+                                style={`background-color: ${bgColor}; color: ${textColor};`}
+                                title={group.name}
+                              >
+                                <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
+                                <span class="mr-1 flex-shrink-0">{group.name}</span>
+                                <button
+                                  class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ml-auto"
+                                  onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
+                                  title="Remover do grupo"
+                                >
+                                  <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
+                                </button>
+                              </span>
+                           {/each}
+                        </div>
+                      </Popover.Content>
+                    </Popover.Root>
+                  {/if}
                 </div>
               </div>
             {/if}
             
             <!-- Tags -->
-            <div class="overflow-x-auto pb-1 mb-2">
-              <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                {#if item.tags && Array.isArray(item.tags)}
-                  {#each item.tags as tag}
-                    {#if editingTagItem?.id === item.id && editTagInput === tag}
-                      <input 
-                        type="text" 
-                        bind:value={editTagInput} 
-                        onblur={() => saveEditedTag(item, tag)}
-                        onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
-                        class="text-xs p-1 border rounded flex-shrink-0"
-                        autofocus
-                      />
-                    {:else}
-                      <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0" title={`Tag: ${tag}`}>
-                        <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
-                        <span class="mr-1 flex-shrink-0">{tag}</span>
-                        <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
-                          <button 
-                             class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
-                             onclick={() => removeTagFromItem(item, tag)}
-                             title="Remover tag"
-                           >
-                             <X class="h-3 w-3" style="stroke-width: 2.5;" />
-                           </button>
-                        </div>
-                      </div>
-                    {/if}
-                  {/each}
+             <!-- Container com bind:this -->
+            <div bind:this={tagContainerRefs[item.id]} class="overflow-hidden pb-1 mb-2 hide-scrollbar">
+              <div class="flex flex-wrap gap-1 whitespace-nowrap items-center">
+                <!-- Loop pelas pills visíveis -->
+                {#if Array.isArray(visibleItemTags)}
+                   {#each visibleItemTags as tag}
+                      {#if editingTagItem?.id === item.id && editTagInput === tag}
+                         <input 
+                           type="text" 
+                           bind:value={editTagInput} 
+                           onblur={() => saveEditedTag(item, tag)}
+                           onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
+                           class="text-xs p-1 border rounded flex-shrink-0"
+                           autofocus
+                         />
+                      {:else}
+                         <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0" title={`Tag: ${tag}`}>
+                           <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                           <span class="mr-1 flex-shrink-0">{tag}</span>
+                           <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
+                             <button
+                                class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
+                                onclick={() => removeTagFromItem(item, tag)}
+                                title="Remover tag"
+                              >
+                                <X class="h-3 w-3" style="stroke-width: 2.5;" />
+                              </button>
+                           </div>
+                         </div>
+                      {/if}
+                   {/each}
                 {/if}
+
+                 <!-- Indicador "+X" e Popover para Tags -->
+                 {#if hiddenTagCount > 0}
+                   <Popover.Root>
+                     <Popover.Trigger>
+                        <button
+                         class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 flex-shrink-0"
+                         title={`Mais ${hiddenTagCount} tag(s)`}
+                       >
+                         +{hiddenTagCount}
+                       </button>
+                     </Popover.Trigger>
+                     <Popover.Content class="w-auto p-2 max-h-48 overflow-y-auto">
+                       <div class="text-sm font-semibold mb-2">Todas as Tags</div>
+                       <div class="flex flex-col gap-1">
+                          {#if Array.isArray(item.tags)}
+                             {#each item.tags as tag}
+                               <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden" title={`Tag: ${tag}`}>
+                                 <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                                 <span class="mr-1 flex-shrink-0">{tag}</span>
+                                 <button
+                                   class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5 ml-auto"
+                                   onclick={() => removeTagFromItem(item, tag)}
+                                   title="Remover tag"
+                                 >
+                                   <X class="h-3 w-3" style="stroke-width: 2.5;" />
+                                 </button>
+                               </div>
+                             {/each}
+                          {/if}
+                       </div>
+                     </Popover.Content>
+                   </Popover.Root>
+                 {/if}
               </div>
             </div>
           </div>

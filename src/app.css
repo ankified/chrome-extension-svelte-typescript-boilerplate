@@ -109,3 +109,13 @@ textarea::placeholder {
 .dark .border-gray-300 {
   border-color: rgba(255, 255, 255, 0.2) !important;
 }
+
+/* Utility to hide scrollbars visually but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}

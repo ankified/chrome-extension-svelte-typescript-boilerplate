@@ -230,87 +230,16 @@
 
 </script>
 
-<div class="p-4 md:p-6 space-y-4">
-  <header class="mb-4">
-    <h1 class="text-2xl font-semibold">Itens Salvos</h1>
+<!-- Aplicar flexbox column, altura total e remover padding/bg antigos -->
+<div class="flex flex-col h-full p-4 md:p-6 space-y-0">
+  <header class="mb-0 flex-shrink-0">
+    <!-- Título removido -->
   </header>
 
-  <div class="flex flex-col md:flex-row gap-2">
-    <div class="relative flex-grow">
-      <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input type="search" placeholder="Pesquisar itens..." class="pl-8 w-full" bind:value={searchQuery} />
-    </div>
-    <Select.Root type="multiple" bind:value={selectedGroup} onValueChange={(v: string[] | null) => { if (v !== null) selectedGroup = v; }}>
-      <Select.Trigger class="w-full md:w-[180px]">
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="">Todos os Grupos</Select.Item>
-        <Select.Item value="NO_GROUP">Sem Grupo</Select.Item>
-        {#each $groups as group (group.id)}
-          <Select.Item value={group.id}>{group.name}</Select.Item>
-        {/each}
-      </Select.Content>
-    </Select.Root>
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        <Button variant="outline" class="w-full md:w-auto" disabled={availableTags.length === 0}>
-          <Filter class="mr-2 h-4 w-4" />
-          Filtrar Tags ({selectedTags.length})
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content class="w-60 max-h-80 overflow-y-auto">
-        <DropdownMenu.Label>Filtrar por Tags</DropdownMenu.Label>
-        <DropdownMenu.Separator />
-        {#if availableTags.length > 0}
-          {#each availableTags as tag}
-            <DropdownMenu.CheckboxItem
-              checked={selectedTags.some(st => st.toLowerCase() === tag.toLowerCase())}
-              onCheckedChange={() => toggleTag(tag)}
-            >
-              {tag}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        {:else}
-          <DropdownMenu.Item disabled>Nenhuma tag disponível</DropdownMenu.Item>
-        {/if}
-        {#if selectedTags.length > 0}
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item onclick={() => selectedTags = []}>
-            Limpar Seleção
-          </DropdownMenu.Item>
-        {/if}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-    <Select.Root type="multiple" bind:value={sortCriteria} onValueChange={(v: string[] | null) => { if (v !== null) sortCriteria = v; }}>
-      <Select.Trigger class="w-full md:w-[180px]">
-        {sortCriteria[0] === 'dateAdded' ? 'Data Adição' : 
-         sortCriteria[0] === 'title' ? 'Título' :
-         sortCriteria[0] === 'url' ? 'URL' :
-         sortCriteria[0] === 'scheduledDate' ? 'Data Agendada' :
-         sortCriteria[0] === 'noteCount' ? 'Notas' :
-         sortCriteria[0] === 'flashcardCount' ? 'Flashcards' : 'Ordenar por'}
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="dateAdded">Data Adição</Select.Item>
-        <Select.Item value="title">Título</Select.Item>
-        <Select.Item value="url">URL</Select.Item>
-        <Select.Item value="scheduledDate">Data Agendada</Select.Item>
-        <Select.Item value="noteCount">Nº Notas</Select.Item>
-        <Select.Item value="flashcardCount">Nº Flashcards</Select.Item>
-      </Select.Content>
-    </Select.Root>
-    <Select.Root type="multiple" bind:value={sortDirection} onValueChange={(v: string[] | null) => { if (v !== null) sortDirection = v; }}>
-      <Select.Trigger class="w-full md:w-[120px]">
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Item value="asc">Ascendente</Select.Item>
-        <Select.Item value="desc">Descendente</Select.Item>
-      </Select.Content>
-    </Select.Root>
-  </div>
-
-  <Tabs.Root value="cards" class="w-full pt-4">
-    <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
+  <!-- Tabs Root agora tem padding/margem controlados pelo flex container -->
+  <Tabs.Root value="cards" class="w-full flex flex-col flex-grow overflow-hidden">
+    <!-- Tab List não encolhe -->
+    <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 flex-shrink-0">
       <Tabs.Trigger value="table" class="flex items-center justify-center gap-1 text-xs sm:text-sm">
         <List class="h-4 w-4" /> Tabela
       </Tabs.Trigger>
@@ -325,28 +254,107 @@
       </Tabs.Trigger>
     </Tabs.List>
 
-    <Tabs.Content value="table">
+    <Tabs.Content value="table" class="flex-grow overflow-y-auto p-1">
       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
         <p class="font-medium">Visualização em Tabela</p>
         <p class="text-sm">(Em desenvolvimento)</p>
       </div>
     </Tabs.Content>
-    <Tabs.Content value="cards">
-      <SavedItemsCardView data={sortedItems} groups={$groups} />
+    <!-- Tab Content para Cards: flex column, cresce e permite overflow interno -->
+    <Tabs.Content value="cards" class="flex flex-col flex-grow overflow-hidden">
+      <!-- Barra de pesquisa/filtros não encolhe -->
+      <div class="flex flex-col md:flex-row gap-2 pb-4 flex-shrink-0 px-1">
+        <div class="relative flex-grow">
+          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input type="search" placeholder="Pesquisar itens..." class="pl-8 w-full" bind:value={searchQuery} />
+        </div>
+        <Select.Root type="multiple" bind:value={selectedGroup} onValueChange={(v: string[] | null) => { if (v !== null) selectedGroup = v; }}>
+          <Select.Trigger class="w-full md:w-[180px]">
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="">Todos os Grupos</Select.Item>
+            <Select.Item value="NO_GROUP">Sem Grupo</Select.Item>
+            {#each $groups as group (group.id)}
+              <Select.Item value={group.id}>{group.name}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <Button variant="outline" class="w-full md:w-auto" disabled={availableTags.length === 0}>
+              <Filter class="mr-2 h-4 w-4" />
+              Filtrar Tags ({selectedTags.length})
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content class="w-60 max-h-80 overflow-y-auto">
+            <DropdownMenu.Label>Filtrar por Tags</DropdownMenu.Label>
+            <DropdownMenu.Separator />
+            {#if availableTags.length > 0}
+              {#each availableTags as tag}
+                <DropdownMenu.CheckboxItem
+                  checked={selectedTags.some(st => st.toLowerCase() === tag.toLowerCase())}
+                  onCheckedChange={() => toggleTag(tag)}
+                >
+                  {tag}
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            {:else}
+              <DropdownMenu.Item disabled>Nenhuma tag disponível</DropdownMenu.Item>
+            {/if}
+            {#if selectedTags.length > 0}
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item onclick={() => selectedTags = []}>
+                Limpar Seleção
+              </DropdownMenu.Item>
+            {/if}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        <Select.Root type="multiple" bind:value={sortCriteria} onValueChange={(v: string[] | null) => { if (v !== null) sortCriteria = v; }}>
+          <Select.Trigger class="w-full md:w-[180px]">
+            {sortCriteria[0] === 'dateAdded' ? 'Data Adição' : 
+             sortCriteria[0] === 'title' ? 'Título' :
+             sortCriteria[0] === 'url' ? 'URL' :
+             sortCriteria[0] === 'scheduledDate' ? 'Data Agendada' :
+             sortCriteria[0] === 'noteCount' ? 'Notas' :
+             sortCriteria[0] === 'flashcardCount' ? 'Flashcards' : 'Ordenar por'}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="dateAdded">Data Adição</Select.Item>
+            <Select.Item value="title">Título</Select.Item>
+            <Select.Item value="url">URL</Select.Item>
+            <Select.Item value="scheduledDate">Data Agendada</Select.Item>
+            <Select.Item value="noteCount">Nº Notas</Select.Item>
+            <Select.Item value="flashcardCount">Nº Flashcards</Select.Item>
+          </Select.Content>
+        </Select.Root>
+        <Select.Root type="multiple" bind:value={sortDirection} onValueChange={(v: string[] | null) => { if (v !== null) sortDirection = v; }}>
+          <Select.Trigger class="w-full md:w-[120px]">
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="asc">Ascendente</Select.Item>
+            <Select.Item value="desc">Descendente</Select.Item>
+          </Select.Content>
+        </Select.Root>
+      </div>
+      <!-- Área de Cards: cresce e tem rolagem interna -->
+      <div class="flex-grow overflow-y-auto pr-1">
+          <SavedItemsCardView data={sortedItems} groups={$groups} />
+      </div>
     </Tabs.Content>
-    <Tabs.Content value="kanban">
+    <Tabs.Content value="kanban" class="flex-grow overflow-y-auto p-1">
        <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
          <p class="font-medium">Visualização Kanban</p>
          <p class="text-sm">(Em desenvolvimento)</p>
        </div>
     </Tabs.Content>
-    <Tabs.Content value="flow">
+    <Tabs.Content value="flow" class="flex-grow overflow-y-auto p-1">
        <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
          <p class="font-medium">Visualização em Fluxo</p>
          <p class="text-sm">(Em desenvolvimento)</p>
        </div>
     </Tabs.Content>
   </Tabs.Root>
+
 
   <AlertDialog.Root bind:open={showRemoveTagDialog}>
     <AlertDialog.Content>
@@ -400,7 +408,8 @@
     </AlertDialog.Content>
   </AlertDialog.Root>
 
-  <div class="mt-4 flex justify-end items-center gap-2">
+  <!-- Botões inferiores: não encolhem e têm margem superior -->
+  <div class="mt-4 flex justify-end items-center gap-2 flex-shrink-0">
     <!-- Botão Gerenciar Grupos -->
     <Button
       variant="outline"
