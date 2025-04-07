@@ -11,135 +11,15 @@
   import { formatDistanceToNowStrict, isToday, isTomorrow, isYesterday, differenceInDays, format as formatDateFn } from 'date-fns';
   import { ptBR } from 'date-fns/locale';
   import { ScrollArea } from "../../../lib/components/ui/scroll-area/index.js";
-  import * as Popover from "../../../lib/components/ui/popover/index.js";
-  import { onMount, onDestroy } from 'svelte'; // Precisaremos para ResizeObserver
+  import * as Carousel from "../../../lib/components/ui/carousel/index.js";
+  import * as Dialog from "../../../lib/components/ui/dialog/index.js";
+  import { Input } from "../../../lib/components/ui/input/index.js";
 
   // Props recebidos de SavedItemsView
   let { data, groups: allGroups }: { data: SavedItem[], groups: Group[] } = $props();
 
-  // Estados locais para edição/adição de tags (podem ser movidos para um store se necessário)
-  let editingTagItem = $state<SavedItem | null>(null);
-  let editTagInput = $state("");
-  let addingTagItem = $state<SavedItem | null>(null);
+  // Garantir que newTagInput existe
   let newTagInput = $state("");
-
-  // --- NOVO ESTADO PARA VISIBILIDADE DAS PILLS ---
-  let groupContainerRefs: { [id: string]: HTMLDivElement | undefined } = $state({});
-  let tagContainerRefs: { [id: string]: HTMLDivElement | undefined } = $state({});
-
-  let visibleGroupsMap = $state<{ [id: string]: string[] }>({});
-  let hiddenGroupCountMap = $state<{ [id: string]: number }>({});
-  let visibleTagsMap = $state<{ [id: string]: string[] }>({});
-  let hiddenTagCountMap = $state<{ [id: string]: number }>({});
-
-  // Para gerenciar ResizeObservers
-  let resizeObservers: { [id: string]: ResizeObserver } = {};
-
-  // Função para calcular pills visíveis (será definida depois)
-  function calculateVisiblePills(itemId: string) {
-    const groupContainer = groupContainerRefs[itemId];
-    const tagContainer = tagContainerRefs[itemId];
-    const item = data.find(i => i.id === itemId);
-    if (!item) return;
-
-    // Lógica de cálculo para grupos
-    if (groupContainer && item.groupIds?.length) {
-      const containerWidth = groupContainer.clientWidth;
-      const pillElements = groupContainer.querySelectorAll<HTMLElement>(':scope > div > .group-chip'); // Seleciona as pills dentro do container flex
-      let currentWidth = 0;
-      let visibleCount = 0;
-      const gap = 4; // Tailwind gap-1 = 0.25rem = 4px (aproximado)
-
-      for (let i = 0; i < pillElements.length; i++) {
-        const pillWidth = pillElements[i].offsetWidth;
-        // Considera o espaço para o indicador "+X" se houver mais pills
-        const spaceForIndicator = (i + 1 < pillElements.length) ? 40 : 0; // Estimar largura do "+X"
-        if (currentWidth + pillWidth + (i > 0 ? gap : 0) + spaceForIndicator <= containerWidth) {
-          currentWidth += pillWidth + (i > 0 ? gap : 0);
-          visibleCount++;
-        } else {
-          break; // Não cabe mais
-        }
-      }
-      visibleGroupsMap[itemId] = item.groupIds.slice(0, visibleCount);
-      hiddenGroupCountMap[itemId] = item.groupIds.length - visibleCount;
-    } else {
-      visibleGroupsMap[itemId] = item?.groupIds ?? [];
-      hiddenGroupCountMap[itemId] = 0;
-    }
-
-    // Lógica de cálculo para tags (similar)
-    if (tagContainer && item.tags?.length) {
-      const containerWidth = tagContainer.clientWidth;
-      // Seleciona as pills de tag (considerando o wrapper extra se houver)
-      const pillElements = tagContainer.querySelectorAll<HTMLElement>(':scope > div > .tag');
-      let currentWidth = 0;
-      let visibleCount = 0;
-      const gap = 4; // Tailwind gap-1
-
-      for (let i = 0; i < pillElements.length; i++) {
-        const pillWidth = pillElements[i].offsetWidth;
-        const spaceForIndicator = (i + 1 < pillElements.length) ? 40 : 0;
-        if (currentWidth + pillWidth + (i > 0 ? gap : 0) + spaceForIndicator <= containerWidth) {
-          currentWidth += pillWidth + (i > 0 ? gap : 0);
-          visibleCount++;
-        } else {
-          break;
-        }
-      }
-
-      // Verifica se item.tags existe e é um array antes de usar slice
-      if (Array.isArray(item.tags)) {
-        visibleTagsMap[itemId] = item.tags.slice(0, visibleCount);
-        hiddenTagCountMap[itemId] = item.tags.length - visibleCount;
-      } else {
-        visibleTagsMap[itemId] = [];
-        hiddenTagCountMap[itemId] = 0;
-      }
-
-    } else {
-      visibleTagsMap[itemId] = Array.isArray(item?.tags) ? item.tags : [];
-      hiddenTagCountMap[itemId] = 0;
-    }
-  }
-
-  // Efeito para recalcular quando os containers ou dados mudarem
-  $effect(() => {
-    // Limpa observadores antigos ao recarregar dados/componentes
-    Object.values(resizeObservers).forEach(observer => observer.disconnect());
-    resizeObservers = {};
-
-    for (const item of data) {
-      const itemId = item.id;
-      const groupContainer = groupContainerRefs[itemId];
-      const tagContainer = tagContainerRefs[itemId];
-
-      const setupObserver = (element: HTMLElement, id: string) => {
-        if (resizeObservers[id]) {
-          resizeObservers[id].disconnect();
-        }
-        const observer = new ResizeObserver(() => {
-          // Atraso pequeno para garantir que o DOM esteja estável após redimensionamento
-          requestAnimationFrame(() => calculateVisiblePills(id.split('-')[0])); // Extrai itemId
-        });
-        observer.observe(element);
-        resizeObservers[id] = observer;
-        // Cálculo inicial
-        requestAnimationFrame(() => calculateVisiblePills(id.split('-')[0])); // Extrai itemId
-      };
-
-      if (groupContainer) {
-        setupObserver(groupContainer, `${itemId}-groups`);
-      }
-      if (tagContainer) {
-        setupObserver(tagContainer, `${itemId}-tags`);
-      }
-    }
-    // Limpeza quando o componente é destruído
-    return () => {
-      Object.values(resizeObservers).forEach(observer => observer.disconnect());
-    };
-  });
 
   // Funções auxiliares movidas de SavedItemsView
   function getGroupInfo(groupId: string): { name: string; color: string } {
@@ -292,55 +172,12 @@
     toast.success(`Tag "${tagToRemove}" removida com sucesso.`);
   }
   
-  function editTag(item: SavedItem, tag: string) {
-    editingTagItem = item;
-    editTagInput = tag;
-  }
-  
-  function saveEditedTag(item: SavedItem, oldTag: string) {
-    if (!editTagInput.trim()) {
-      cancelEditTag();
-      return;
-    }
-    
-    const newTag = editTagInput.trim();
-    
-    savedItems.update(items => {
-      return items.map(i => {
-        if (i.id === item.id) {
-          return {
-            ...i,
-            tags: i.tags.map(tag => 
-              tag === oldTag ? newTag : tag
-            )
-          };
-        }
-        return i;
-      });
-    });
-    
-    toast.success(`Tag "${oldTag}" alterada para "${newTag}".`);
-    cancelEditTag();
-  }
-  
-  function cancelEditTag() {
-    editingTagItem = null;
-    editTagInput = "";
-  }
-  
-  function startAddingTag(item: SavedItem) {
-    addingTagItem = item;
-    newTagInput = "";
-  }
-  
+  // Função saveNewTag é mantida para o Dialog
   function saveNewTag(item: SavedItem) {
     if (!newTagInput.trim()) {
-      cancelAddTag();
       return;
     }
-    
     const newTag = newTagInput.trim();
-    
     savedItems.update(items => {
       return items.map(i => {
         if (i.id === item.id) {
@@ -348,7 +185,6 @@
           const tagExists = currentTags.some(tag => 
             typeof tag === 'string' && tag.toLowerCase() === newTag.toLowerCase()
           );
-          
           if (!tagExists) {
             return {
               ...i,
@@ -359,14 +195,8 @@
         return i;
       });
     });
-    
     toast.success(`Tag "${newTag}" adicionada.`);
-    cancelAddTag();
-  }
-  
-  function cancelAddTag() {
-    addingTagItem = null;
-    newTagInput = "";
+    // Limpar input é feito no onkeydown/onclick agora
   }
 
   // Novas funções (placeholders) para navegação/exibição de notas/flashcards
@@ -388,11 +218,8 @@
     {#each data as item (item.id)}
       {@const noteCount = item.noteIds?.length || 0}
       {@const flashcardCount = item.flashcardIds?.length || 0}
-      <!-- Derivados reativos para este item -->
-      {@const visibleGroupIds = visibleGroupsMap[item.id] ?? item.groupIds ?? []}
-      {@const hiddenGroupCount = hiddenGroupCountMap[item.id] ?? 0}
-      {@const visibleItemTags = visibleTagsMap[item.id] ?? (Array.isArray(item.tags) ? item.tags : [])}
-      {@const hiddenTagCount = hiddenTagCountMap[item.id] ?? 0}
+      {@const groupCount = item.groupIds?.length || 0}
+      {@const tagCount = item.tags?.length || 0}
 
       <div class="saved-item-card border rounded-lg overflow-hidden shadow-sm dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
         <!-- Header com Favicon e Título/URL -->
@@ -424,144 +251,73 @@
         <!-- Corpo com Grupos, Tags e Conteúdo Principal -->
         <div class="p-3 flex-grow flex flex-col justify-between min-h-0">
           <div class="flex-shrink mb-2">
-            <!-- Grupos -->
+            <!-- Grupos com Carousel -->
             {#if item.groupIds && item.groupIds.length > 0}
-              <!-- Container com bind:this -->
-              <div bind:this={groupContainerRefs[item.id]} class="overflow-hidden pb-1 mb-2 hide-scrollbar">
-                <div class="flex gap-1 whitespace-nowrap items-center">
-                  <!-- Loop pelas pills visíveis -->
-                  {#each visibleGroupIds as groupId}
-                    {@const group = getGroupInfo(groupId)}
-                    {@const bgColor = group.color || '#cccccc'}
-                    {@const textColor = getTextColorForBackground(bgColor)}
-                    <span
-                      class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0"
-                      style={`background-color: ${bgColor}; color: ${textColor};`}
-                      title={group.name}
-                    >
-                      <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
-                      <span class="mr-1 flex-shrink-0">{group.name}</span>
-                      <button
-                        class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
-                        onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
-                        title="Remover do grupo"
-                      >
-                        <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
-                      </button>
-                    </span>
-                  {/each}
-
-                  <!-- Indicador "+X" e Popover para Grupos -->
-                  {#if hiddenGroupCount > 0}
-                    <Popover.Root>
-                      <Popover.Trigger>
-                         <button
-                          class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 flex-shrink-0"
-                          title={`Mais ${hiddenGroupCount} grupo(s)`}
-                        >
-                          +{hiddenGroupCount}
-                        </button>
-                      </Popover.Trigger>
-                      <Popover.Content class="w-auto p-2 max-h-48 overflow-y-auto">
-                        <div class="text-sm font-semibold mb-2">Todos os Grupos</div>
-                        <div class="flex flex-col gap-1">
-                           {#each item.groupIds as groupId}
-                              {@const group = getGroupInfo(groupId)}
-                              {@const bgColor = group.color || '#cccccc'}
-                              {@const textColor = getTextColorForBackground(bgColor)}
-                              <span
-                                class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden"
-                                style={`background-color: ${bgColor}; color: ${textColor};`}
-                                title={group.name}
-                              >
-                                <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
-                                <span class="mr-1 flex-shrink-0">{group.name}</span>
-                                <button
-                                  class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ml-auto"
-                                  onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
-                                  title="Remover do grupo"
-                                >
-                                  <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
-                                </button>
-                              </span>
-                           {/each}
-                        </div>
-                      </Popover.Content>
-                    </Popover.Root>
-                  {/if}
-                </div>
-              </div>
-            {/if}
-            
-            <!-- Tags -->
-             <!-- Container com bind:this -->
-            <div bind:this={tagContainerRefs[item.id]} class="overflow-hidden pb-1 mb-2 hide-scrollbar">
-              <div class="flex flex-wrap gap-1 whitespace-nowrap items-center">
-                <!-- Loop pelas pills visíveis -->
-                {#if Array.isArray(visibleItemTags)}
-                   {#each visibleItemTags as tag}
-                      {#if editingTagItem?.id === item.id && editTagInput === tag}
-                         <input 
-                           type="text" 
-                           bind:value={editTagInput} 
-                           onblur={() => saveEditedTag(item, tag)}
-                           onkeydown={(e) => e.key === 'Enter' && saveEditedTag(item, tag)}
-                           class="text-xs p-1 border rounded flex-shrink-0"
-                           autofocus
-                         />
-                      {:else}
-                         <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0" title={`Tag: ${tag}`}>
-                           <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
-                           <span class="mr-1 flex-shrink-0">{tag}</span>
-                           <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
-                             <button
-                                class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
-                                onclick={() => removeTagFromItem(item, tag)}
-                                title="Remover tag"
-                              >
-                                <X class="h-3 w-3" style="stroke-width: 2.5;" />
-                              </button>
-                           </div>
-                         </div>
-                      {/if}
-                   {/each}
-                {/if}
-
-                 <!-- Indicador "+X" e Popover para Tags -->
-                 {#if hiddenTagCount > 0}
-                   <Popover.Root>
-                     <Popover.Trigger>
-                        <button
-                         class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 flex-shrink-0"
-                         title={`Mais ${hiddenTagCount} tag(s)`}
+              <Carousel.Root class="w-full max-w-xs mx-auto relative mb-2 group" opts={{ align: "start", dragFree: true }}>
+                 <Carousel.Content class="-ml-1"> 
+                   {#each item.groupIds as groupId}
+                     <Carousel.Item class="pl-1 basis-auto"> 
+                       {@const group = getGroupInfo(groupId)}
+                       {@const bgColor = group.color || '#cccccc'}
+                       {@const textColor = getTextColorForBackground(bgColor)}
+                       <span
+                         class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0 h-full"
+                         style={`background-color: ${bgColor}; color: ${textColor};`}
+                         title={group.name}
                        >
-                         +{hiddenTagCount}
-                       </button>
-                     </Popover.Trigger>
-                     <Popover.Content class="w-auto p-2 max-h-48 overflow-y-auto">
-                       <div class="text-sm font-semibold mb-2">Todas as Tags</div>
-                       <div class="flex flex-col gap-1">
-                          {#if Array.isArray(item.tags)}
-                             {#each item.tags as tag}
-                               <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden" title={`Tag: ${tag}`}>
-                                 <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
-                                 <span class="mr-1 flex-shrink-0">{tag}</span>
-                                 <button
-                                   class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5 ml-auto"
-                                   onclick={() => removeTagFromItem(item, tag)}
-                                   title="Remover tag"
-                                 >
-                                   <X class="h-3 w-3" style="stroke-width: 2.5;" />
-                                 </button>
-                               </div>
-                             {/each}
-                          {/if}
-                       </div>
-                     </Popover.Content>
-                   </Popover.Root>
+                         <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
+                         <span class="mr-1 flex-shrink-0">{group.name}</span>
+                         <button
+                           class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
+                           onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
+                           title="Remover do grupo"
+                         >
+                           <X class="h-3 w-3" style={`stroke: ${textColor}; stroke-width: 2.5;`} />
+                         </button>
+                       </span>
+                     </Carousel.Item>
+                   {/each}
+                 </Carousel.Content>
+                 <!-- Botões Previous/Next controlados por group-hover -->
+                 {#if item.groupIds.length > 3} 
+                    <!-- Adicionar opacity-0, group-hover:opacity-100 e transition-opacity -->
+                   <Carousel.Previous class="absolute -left-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
+                   <Carousel.Next class="absolute -right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
                  {/if}
-              </div>
-            </div>
+               </Carousel.Root>
+            {/if}
+
+            <!-- Tags com Carousel -->
+            {#if item.tags && item.tags.length > 0}
+              <Carousel.Root class="w-full max-w-xs mx-auto relative mb-2 group" opts={{ align: "start", dragFree: true }}>
+                <Carousel.Content class="-ml-1">
+                  {#if Array.isArray(item.tags)}
+                    {#each item.tags as tag}
+                      <Carousel.Item class="pl-1 basis-auto">
+                        <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0 h-full" title={`Tag: ${tag}`}>
+                          <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                          <span class="mr-1 flex-shrink-0">{tag}</span>
+                          <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
+                            <button
+                              class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
+                              onclick={() => removeTagFromItem(item, tag)}
+                              title="Remover tag"
+                            >
+                              <X class="h-3 w-3" style="stroke-width: 2.5;" />
+                            </button>
+                          </div>
+                        </div>
+                      </Carousel.Item>
+                    {/each}
+                  {/if}
+                </Carousel.Content>
+                 {#if item.tags.length > 3} 
+                   <!-- Adicionar opacity-0, group-hover:opacity-100 e transition-opacity -->
+                   <Carousel.Previous class="absolute -left-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
+                   <Carousel.Next class="absolute -right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
+                 {/if}
+              </Carousel.Root>
+            {/if}
           </div>
             
           <!-- Comentário com ScrollArea -->
@@ -641,6 +397,100 @@
                 </Tooltip.Root>
               </Tooltip.Provider>
 
+              <!-- NOVO: Botão/Contador de Grupos -->
+              <Tooltip.Provider>
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      class="h-6 w-6 relative"
+                      onclick={() => { /* Placeholder para Gerenciar Grupos */ toast.info('Gerenciar Grupos (Não implementado)', { description: `Item: ${item.title}` }); }}
+                      aria-label="Grupos"
+                    >
+                      <Folder class="h-4 w-4" />
+                      {#if groupCount > 0}
+                        <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{groupCount}</span>
+                      {/if}
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {groupCount === 0 ? 'Adicionar a Grupo' : groupCount === 1 ? '1 Grupo' : `${groupCount} Grupos`}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </Tooltip.Provider>
+
+              <!-- NOVO: Botão/Contador de Tags com DIALOG DENTRO -->
+              <Dialog.Root>
+                 <Tooltip.Provider>
+                   <Tooltip.Root>
+                     <Dialog.Trigger>
+                        <Tooltip.Trigger>
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             class="h-6 w-6 relative"
+                             aria-label="Tags"
+                           >
+                             <Tag class="h-4 w-4" />
+                             {#if tagCount > 0}
+                               <span class="absolute -top-1 -right-1 bg-teal-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{tagCount}</span>
+                             {/if}
+                           </Button>
+                       </Tooltip.Trigger>
+                      </Dialog.Trigger>
+                     <Tooltip.Content>
+                       {tagCount === 0 ? 'Adicionar Tag' : tagCount === 1 ? '1 Tag' : `${tagCount} Tags`}
+                     </Tooltip.Content>
+                   </Tooltip.Root>
+                 </Tooltip.Provider>
+                 <!-- MOVIDO: Conteúdo do Dialog para cá -->
+                 <Dialog.Content class="sm:max-w-[425px]">
+                   <Dialog.Header>
+                     <Dialog.Title>Gerenciar Tags para</Dialog.Title>
+                     <!-- Usar 'item' do loop -->
+                     <Dialog.Description class="truncate text-xs text-muted-foreground pt-1" title={item.title}> {item.title || item.url}</Dialog.Description>
+                   </Dialog.Header>
+                   <div class="grid gap-4 py-4">
+                     <!-- Input para adicionar nova tag -->
+                     <div class="flex items-center space-x-2">
+                       <Input 
+                         id="new-tag-input-{item.id}" 
+                         placeholder="Adicionar nova tag..." 
+                         bind:value={newTagInput} 
+                         onkeydown={(e) => { if(e.key === 'Enter') { saveNewTag(item); newTagInput='';} }}
+                       />
+                       <Button onclick={() => { saveNewTag(item); newTagInput=''; }} disabled={!newTagInput.trim()}>Adicionar</Button>
+                     </div>
+                     
+                     <!-- Lista de tags existentes -->
+                     <div class="text-sm font-medium mb-1">Tags Atuais:</div>
+                     {#if item.tags && item.tags.length > 0}
+                       <ScrollArea class="h-32 w-full rounded-md border p-2">
+                           <div class="flex flex-wrap gap-2">
+                           {#each item.tags as tag}
+                               <div class="tag relative text-xs py-0.5 pl-2 pr-1.5 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center whitespace-nowrap overflow-hidden flex-shrink-0" title={`Tag: ${tag}`}>
+                               <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
+                               <span class="mr-1 flex-shrink-0">{tag}</span>
+                               <button
+                                   class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5 ml-1"
+                                   onclick={() => removeTagFromItem(item, tag)}
+                                   title="Remover tag"
+                               >
+                                   <X class="h-3 w-3" style="stroke-width: 2.5;" />
+                               </button>
+                               </div>
+                           {/each}
+                           </div>
+                       </ScrollArea>
+                     {:else}
+                       <p class="text-xs text-muted-foreground italic">Nenhuma tag adicionada.</p>
+                     {/if}
+                   </div>
+                 </Dialog.Content>
+               </Dialog.Root> 
+               <!-- FIM DO DIALOG DE TAGS -->
+
               <!-- Ícone de Agendamento (Ler Mais Tarde) - Apenas se estiver agendado -->
               {#if item.readLater && item.scheduledDate}
                 <Tooltip.Provider>
@@ -690,7 +540,6 @@
                          {/each}
                          <DropdownMenu.Separator />
                        {/if}
-                       <DropdownMenu.Item onclick={() => startAddingTag(item)}>Adicionar Nova Tag...</DropdownMenu.Item>
                     </DropdownMenu.SubContent>
                   </DropdownMenu.Sub>
                   <DropdownMenu.Item onclick={() => { /* Lógica para Gerenciar Grupos */ toast.info('Gerenciamento de grupos ainda não implementado aqui.'); }}>Gerenciar Grupos</DropdownMenu.Item>
@@ -704,21 +553,6 @@
               </DropdownMenu.Root>
             </div>
           </div>
-          
-          <!-- Input para adicionar nova tag (aparece condicionalmente) -->
-          {#if addingTagItem?.id === item.id}
-            <div class="mt-2">
-              <input 
-                type="text" 
-                placeholder="Nova tag..." 
-                bind:value={newTagInput}
-                onkeydown={(e) => e.key === 'Enter' && saveNewTag(item)}
-                onblur={cancelAddTag} 
-                class="text-xs p-1 border rounded w-full"
-                autofocus
-              />
-            </div>
-          {/if}
         </div>
       </div>
     {/each}
