@@ -276,6 +276,14 @@ Este documento registra as correções, melhorias e novas implementações que d
         - Corrigida lógica de abertura do diálogo e reatividade do contador.
 - **Resultado**: Diálogos de gerenciamento de grupos e tags nos cards mais informativos, consistentes com a UI geral e funcionais.
 
+### ~~21. Exibir Mensagem para Grupos/Tags Vazios nos Cards~~ (CONCLUÍDO - 2025-04-08)
+
+- **Melhoria**: ~~Nos cards de itens salvos, exibir uma mensagem indicativa quando não houver grupos ou tags atribuídos.~~
+- **Detalhes da Resolução:**
+  - **Data**: 2025-04-08
+  - **Solução implementada**: Adicionados blocos `{:else}` aos `#if` que controlam a exibição dos carrosséis de grupos e tags em `SavedItemsCardView.svelte`, mostrando um texto como "Nenhum grupo atribuído" ou "Nenhuma tag atribuída".
+- **Resultado**: Melhor feedback visual para o usuário quando um item não possui grupos ou tags.
+
 ## Novas Implementações
 
 ### 1. Verificação de Duplicatas

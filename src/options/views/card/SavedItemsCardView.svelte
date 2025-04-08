@@ -284,38 +284,34 @@
       return;
     }
     const newTag = newTagInput.trim();
-    let tagWasAdded = false;
+    // Verificar se a tag JÁ EXISTE NO SISTEMA (case-insensitive)
+    const systemTagExists = allSystemTags.some(tag => tag.toLowerCase() === newTag.toLowerCase());
 
+    if (systemTagExists) {
+      toast.warning(`A tag "${newTag}" já existe no sistema.`);
+      newTagInput = ''; // Limpar input mesmo se não adicionar
+      return; // Não fazer mais nada
+    }
+
+    // Se chegou aqui, a tag é NOVA para o sistema. Adicionar ao item e ao sistema.
     savedItems.update(items => {
       return items.map(i => {
         if (i.id === item.id) {
           const currentTags = Array.isArray(i.tags) ? [...i.tags] : [];
-          const tagExists = currentTags.some(tag => 
-            typeof tag === 'string' && tag.toLowerCase() === newTag.toLowerCase()
-          );
-          if (!tagExists) {
-            tagWasAdded = true;
-            return {
-              ...i,
-              tags: [...currentTags, newTag]
-            };
-          }
+          // Como já sabemos que a tag é nova no sistema, podemos adicioná-la diretamente ao item
+          // (a verificação anterior já garante que não é duplicada no sistema)
+          return {
+            ...i,
+            tags: [...currentTags, newTag] 
+          }; 
         }
         return i;
       });
     });
 
-    if (tagWasAdded) {
-    toast.success(`Tag "${newTag}" adicionada.`);
-      // Adicionar a nova tag à lista do sistema se não estiver lá
-      if (!allSystemTags.includes(newTag)) {
-        allSystemTags = [...allSystemTags, newTag].sort();
-      }
-    } else {
-      toast.info(`Tag "${newTag}" já existe para este item.`);
-    }
-    
-    // Limpar input independentemente de ter adicionado ou não
+    // Atualizar a lista local de tags do sistema e mostrar sucesso
+    allSystemTags = [...allSystemTags, newTag].sort();
+    toast.success(`Tag "${newTag}" criada e adicionada.`);
     newTagInput = ''; 
   }
 
@@ -425,6 +421,8 @@
                    <Carousel.Next class="absolute -right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
                  <!-- {/if} -->
                </Carousel.Root>
+            {:else}
+              <div class="text-xs text-muted-foreground italic py-1 px-2 text-center my-1">Nenhum grupo atribuído</div>
             {/if}
             
             <!-- Tags com Carousel -->
@@ -455,6 +453,8 @@
                    <Carousel.Next class="absolute -right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"/>
                  <!-- {/if} -->
               </Carousel.Root>
+            {:else}
+              <div class="text-xs text-muted-foreground italic py-1 px-2 text-center my-1">Nenhuma tag atribuída</div>
             {/if}
           </div>
             

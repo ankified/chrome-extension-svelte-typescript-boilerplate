@@ -21,8 +21,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **QuickNoteInput**: Formulário para criação rápida de notas
 - **FlashcardInput**: Formulário para criação de flashcards
 - **FlashcardStudySession**: Sistema de estudo de flashcards com algoritmo de repetição espaçada
-- **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com layout de duas colunas - favicon único em tamanho grande na esquerda e informações textuais (título e URL) na direita
-- **SavedItemCard**: Card moderno para exibição de itens salvos com layout de duas colunas (favicon e conteúdo), ações contextuais, exibição de grupo com cores e contraste de texto adequado, animações de hover e sistema avançado de visualização de tags
+- **PagePreviewCard**: Componente para visualização de URL e título no estilo de card de mídia social com layout de duas colunas - favicon único em tamanho grande à esquerda e informações textuais (título e URL) à direita
+- **SavedItemCard**: Card moderno para exibição de itens salvos com layout de duas colunas (favicon e conteúdo), ações contextuais, exibição de grupos/tags (com carrossel e mensagem alternativa se vazio), animações de hover e diálogos de gerenciamento.
 
 ### Componentes de Visualização
 
