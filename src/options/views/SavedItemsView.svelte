@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { savedItems, groups, notes, flashcards, verifyAndFixGroupRelations } from "../../storage";
+  import { savedItems, groups, notes, flashcards } from "../../storage";
   import type { SavedItem, Group, Note, Flashcard } from "../../types";
   import * as AlertDialog from "../../lib/components/ui/alert-dialog/index.js";
   import { Button } from "../../lib/components/ui/button/index.js";
@@ -26,33 +26,9 @@
   let newTagNameGlobally = $state("");
   let showRemoveAllTagsDialog = $state(false);
 
-  let isVerifyingRelations = $state(false);
-
   let filteredItems = $derived(filterItems($savedItems, searchQuery, selectedGroup.join(","), selectedTags));
   let sortedItems = $derived(sortItems(filteredItems, sortCriteria.join(","), sortDirection.join(",")));
   let availableTags = $derived(getAllTags($savedItems));
-
-  $effect(() => {
-    if ($savedItems && $savedItems.length > 0 && $groups && $groups.length > 0) {
-      checkAndFixGroupRelations();
-    }
-  });
-
-  async function checkAndFixGroupRelations() {
-    if (isVerifyingRelations) return;
-    isVerifyingRelations = true;
-    try {
-      await verifyAndFixGroupRelations();
-    } catch (error) {
-      console.error("[SavedItemsView] Erro ao verificar relações de grupos:", error);
-    } finally {
-      isVerifyingRelations = false;
-    }
-  }
-
-  onMount(() => {
-    checkAndFixGroupRelations();
-  });
 
   function filterItems(items: SavedItem[] | undefined, query: string, groupId: string, tags: string[]) {
     if (!items) return [];

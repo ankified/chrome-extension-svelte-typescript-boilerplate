@@ -108,12 +108,6 @@ function createPersistentStore<T>(key: string, initialValue: T) {
                     console.error(`[Storage] Erro ao salvar \"${key}\" no storage.local:`, error);
                 } else {
                     console.log(`[Storage] Dados salvos com sucesso no storage.local para \"${key}\"`);
-                    // Forçar notificação aos subscribers APÓS a escrita ser confirmada
-                    // Isso garante que qualquer leitura subsequente veja o estado mais recente
-                    // que foi efetivamente salvo.
-                    // Nota: Isso pode causar uma notificação extra se o listener onChanged também disparar,
-                    // mas garante consistência imediata.
-                    store.set(currentValue); 
                 }
                 
                 // Manter a lógica de sincronização com storage.sync (se aplicável)
@@ -137,9 +131,6 @@ function createPersistentStore<T>(key: string, initialValue: T) {
                 // Liberar o agendamento apenas após todas as operações (local e sync) terem sido iniciadas/concluídas
                 updateScheduled = false; 
             });
-            
-            // Remover a linha abaixo, pois updateScheduled é resetado no callback de set
-            // updateScheduled = false; 
         };
         
         // Executar a atualização imediatamente para garantir persistência
@@ -592,20 +583,15 @@ export function verifyAndFixGroupRelations() {
         }
       }
       
-      // Salvar as alterações apenas no chrome.storage.local se foram feitas
+      // Atualizar as stores SOMENTE se houve modificações
       if (itemsModified) {
-        await chrome.storage.local.set({ savedItems: allItems });
+          console.log("[Storage] Aplicando atualizações em savedItems store devido à correção.");
+          savedItems.set(allItems);
       }
-      
       if (groupsModified) {
-        await chrome.storage.local.set({ groups: allGroups });
+          console.log("[Storage] Aplicando atualizações em groups store devido à correção.");
+          groups.set(allGroups);
       }
-      
-      // Atualizar as stores independentemente de modificações no storage
-      // Isso garante que o estado da UI será atualizado mesmo que os dados
-      // já estejam sincronizados no armazenamento
-      savedItems.set(allItems);
-      groups.set(allGroups);
       
       console.log(`[Storage] Correção concluída: ${itemsUpdated} itens e ${groupsUpdated} grupos atualizados`);
       

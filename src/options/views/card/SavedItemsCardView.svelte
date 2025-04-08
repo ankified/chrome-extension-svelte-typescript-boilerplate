@@ -14,6 +14,7 @@
   import * as Carousel from "../../../lib/components/ui/carousel/index.js";
   import * as Dialog from "../../../lib/components/ui/dialog/index.js";
   import { Input } from "../../../lib/components/ui/input/index.js";
+  import { Checkbox } from "../../../lib/components/ui/checkbox/index.js";
 
   // Props recebidos de SavedItemsView
   let { data, groups: allGroups }: { data: SavedItem[], groups: Group[] } = $props();
@@ -110,6 +111,40 @@
         description: `Item: ${item.title}`
     });
   }
+
+  function addItemToGroup(itemId: string, groupId: string) {
+        savedItems.update(items =>
+            items.map(item => {
+                if (item.id === itemId) {
+                    // Garante que groupIds existe e não adiciona duplicatas
+                    const existingGroupIds = item.groupIds ?? [];
+                    if (!existingGroupIds.includes(groupId)) {
+                        return {
+                            ...item,
+                            groupIds: [...existingGroupIds, groupId]
+                        };
+                    }
+                }
+                return item;
+            })
+        );
+        groups.update(currentGroups =>
+            currentGroups.map(group => {
+                if (group.id === groupId) {
+                    // Garante que itemIds existe e não adiciona duplicatas
+                    const existingItemIds = group.itemIds ?? [];
+                    if (!existingItemIds.includes(itemId)) {
+                        return {
+                            ...group,
+                            itemIds: [...existingItemIds, itemId]
+                        };
+                    }
+                }
+                return group;
+            })
+        );
+        toast.success("Item adicionado ao grupo.");
+    }
   
   // Funções de ação (precisam acessar savedItems store)
   function deleteItem(id: string) {
@@ -397,28 +432,79 @@
                 </Tooltip.Root>
               </Tooltip.Provider>
 
-              <!-- NOVO: Botão/Contador de Grupos -->
-              <Tooltip.Provider>
-                <Tooltip.Root>
-                  <Tooltip.Trigger>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      class="h-6 w-6 relative"
-                      onclick={() => { /* Placeholder para Gerenciar Grupos */ toast.info('Gerenciar Grupos (Não implementado)', { description: `Item: ${item.title}` }); }}
-                      aria-label="Grupos"
-                    >
-                      <Folder class="h-4 w-4" />
-                      {#if groupCount > 0}
-                        <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{groupCount}</span>
-                      {/if}
-                    </Button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>
-                    {groupCount === 0 ? 'Adicionar a Grupo' : groupCount === 1 ? '1 Grupo' : `${groupCount} Grupos`}
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              </Tooltip.Provider>
+              <!-- NOVO: Botão/Contador de Grupos com DIALOG DENTRO -->
+              <Dialog.Root> 
+                <Tooltip.Provider>
+                  <Tooltip.Root>
+                    <!-- Modificado para Dialog.Trigger -->
+                    <Dialog.Trigger>
+                      <Tooltip.Trigger>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            class="h-6 w-6 relative"
+                            aria-label="Grupos"
+                          >
+                            <Folder class="h-4 w-4" />
+                            {#if groupCount > 0}
+                              <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-[10px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center leading-none">{groupCount}</span>
+                            {/if}
+                          </Button>
+                      </Tooltip.Trigger>
+                    </Dialog.Trigger>
+                    <Tooltip.Content>
+                      {groupCount === 0 ? 'Adicionar a Grupo' : groupCount === 1 ? '1 Grupo' : `${groupCount} Grupos`}
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+                <!-- NOVO: Conteúdo do Dialog para Grupos -->
+                <Dialog.Content class="sm:max-w-[425px]">
+                  <Dialog.Header>
+                    <Dialog.Title>Gerenciar Grupos para</Dialog.Title>
+                    <Dialog.Description class="truncate text-xs text-muted-foreground pt-1" title={item.title}> {item.title || item.url}</Dialog.Description>
+                  </Dialog.Header>
+                  <div class="py-4">
+                    <div class="text-sm font-medium mb-2">Selecionar Grupos:</div>
+                     {#if allGroups && allGroups.length > 0}
+                        <ScrollArea class="h-48 w-full rounded-md border p-3">
+                           {#each allGroups as group (group.id)}
+                            {@const isChecked = item.groupIds?.includes(group.id) ?? false}
+                            <div class="flex items-center space-x-2 mb-2">
+                               <Checkbox 
+                                 id={`group-checkbox-${item.id}-${group.id}`} 
+                                 checked={isChecked}
+                                 onCheckedChange={(checked) => {
+                                    // --- DEBUG LOG ---
+                                    console.log(`[Checkbox Change] Item: ${item.id}, Group: ${group.id}, New Checked State: ${checked}, Currently in groupIds: ${isChecked}`);
+                                    if (checked) {
+                                        // Adicionar grupo ao item (Função addItemToGroup necessária)
+                                        console.log(`[Checkbox Change] Calling addItemToGroup for ${group.name}`);
+                                        addItemToGroup(item.id, group.id);
+                                    } else {
+                                        // Remover grupo do item (Função removeItemFromGroup já existe)
+                                        console.log(`[Checkbox Change] Calling removeItemFromGroup for ${group.name}`);
+                                        removeItemFromGroup(item.id, group.id);
+                                    }
+                                 }}
+                               />
+                               <label
+                                 for={`group-checkbox-${item.id}-${group.id}`}
+                                 class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                               >
+                                 {group.name}
+                               </label>
+                            </div>
+                           {/each}
+                        </ScrollArea>
+                     {:else}
+                        <p class="text-xs text-muted-foreground italic">Nenhum grupo criado ainda.</p>
+                        <!-- Link para criar grupo? -->
+                     {/if}
+                  </div>
+                  <!-- REMOVIDO Dialog.Footer -->
+                </Dialog.Content>
+              </Dialog.Root>
+               <!-- FIM DIALOG GRUPOS -->
 
               <!-- NOVO: Botão/Contador de Tags com DIALOG DENTRO -->
               <Dialog.Root>

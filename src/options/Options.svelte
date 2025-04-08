@@ -47,6 +47,8 @@
     } catch (error) {
       console.error('Erro ao acessar storage:', error);
     }
+
+    fixReferences();
   });
   
   function runFixReferences() {
