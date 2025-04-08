@@ -286,6 +286,14 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Novas Implementações
 
+### 1. Refatorar Sistema de Filtros e Ordenação (Prioridade: Alta)
+
+- **Feature**: Modernizar e tornar mais poderosa a funcionalidade de filtrar e ordenar os itens salvos na página de opções.
+- **Implementação**: Abordagem faseada (ver detalhes em `src/project/refatoracao-filtros-ordenacao.md`).
+  - **Fase 1:** Substituir barra de filtros atual por UI dedicada (`Sheet`), implementar multi-select para grupos (OR), mover controles, adicionar botão "Limpar Filtros" e exibição básica de filtros ativos.
+  - **Fases Subsequentes:** Implementar `Command` para seleção, `DatePicker`, pills removíveis, busca em tags, lógica OR/Negativa, multi-sort e persistência.
+- **Estimativa (Fase 1):** 3-5 dias
+
 ### 1. Verificação de Duplicatas
 
 - **Feature**: Ao salvar um item, verificar se a URL correspondente já existe no banco de dados.
