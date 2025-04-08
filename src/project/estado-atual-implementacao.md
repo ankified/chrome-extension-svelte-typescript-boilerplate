@@ -50,9 +50,9 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Organizar itens com tags e grupos com cores personalizadas
 - Filtrar e pesquisar itens salvos
 - Vincular notas e flashcards a itens salvos
-- Seleção múltipla de grupos com interface aprimorada usando DropdownMenu
-- Visualização aprimorada com cards modernos, favicon, menu dropdown para ações e gerenciamento simplificado de grupos e tags diretamente nos cards
-- Sincronização otimizada entre chrome.storage.local e componentes para atualização imediata
+- Seleção múltipla de grupos via DropdownMenu (no Popup) e diálogo modal (nos cards).
+- Visualização aprimorada com cards modernos, favicon, menu dropdown para ações.
+- Gerenciamento de grupos e tags nos cards via diálogos modais com pills clicáveis, contadores, cabeçalho informativo (Favicon/Título/URL) e criação de grupo integrada.
 
 ### Sistema de Notas
 
@@ -61,6 +61,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Personalizar notas com cores e tags
 - Visualizar notas agrupadas por item ou independentes
 - Pesquisar e filtrar notas por conteúdo e tags
+- Sistema avançado de seleção de tags com autocomplete (no Popup) e pills clicáveis de todas as tags existentes (no diálogo de gerenciamento dos cards).
+- Visualização aprimorada de tags como etiquetas visuais (pills) com animações suaves e transições elegantes.
 
 ### Sistema de Flashcards
 
@@ -78,8 +80,10 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Remoção de tags com um clique
 - Normalização automática de tags para evitar duplicação
 - Sistema avançado de seleção com autocomplete baseado em tags existentes
-- Visualização aprimorada de tags como etiquetas visuais com animações suaves e transições elegantes
-- Remoção de tags diretamente nas pills com animação de largura no hover
+- Visualização aprimorada de tags como etiquetas visuais com animações suaves e transições elegantes (Planejado refinamento do diálogo de gerenciamento para exibir todas as tags como pills clicáveis)
+- Seleção múltipla de grupos com interface aprimorada usando DropdownMenu
+- Visualização aprimorada com cards modernos, favicon, menu dropdown para ações e gerenciamento simplificado de grupos e tags diretamente nos cards (Planejado refinamento da UI dos diálogos de gerenciamento com pills clicáveis, contadores e criação de grupo)
+- Gerenciamento de grupos e tags nos cards via diálogos modais com pills clicáveis, contadores, cabeçalho informativo (Favicon/Título/URL) e criação de grupo integrada.
 
 ### Referências entre Itens
 
@@ -144,6 +148,8 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Correção de tipos para evitar erros em operações como `tags.forEach` e `tags.join`
 - Correção de problemas de navegação entre abas na página de opções
 - Correção de problemas de sincronização imediata no storage.local
+- **Correção no salvamento de `groupIds`**: Resolvido bug onde `groupIds` era salvo como objeto em vez de array no `SaveItemForm.svelte`, garantindo exibição correta nos cards.
+- **Correção nos botões do Carrossel**: Resolvido problema onde os botões de navegação para pills de grupos/tags em `SavedItemsCardView.svelte` não apareciam corretamente.
 
 ### Melhorias de UI/UX
 
@@ -166,6 +172,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Refinamento das pills de tag e grupo com animação de largura ao passar o mouse
 - Padronização dos ícones de exclusão para "X" em vez de "lixeira"
 - Garantia de truncamento adequado para URLs longas
+- **Melhorias de Acessibilidade (a11y)**: Corrigidos alertas em `SaveItemForm.svelte` e `SavedItemsCardView.svelte`, incluindo adição de `aria-label` a botões de ícone, associação correta de labels a inputs (`for`/`id`), e uso de elementos semanticamente corretos (ex: `<a>` para links clicáveis).
 
 ## Estado da Visualização de Flashcards e Notas
 
@@ -179,6 +186,8 @@ A visualização de flashcards e notas foi significativamente melhorada:
 - Itens sem vínculo válido são exibidos em uma seção dedicada
 - Correção de problemas de tipo e renderização na página de opções
 - Aprimoramento do acesso a variáveis reativas nos templates para maior estabilidade
+- **Interface de cartões de itens salvos**: Completamente redesenhada para maior clareza e usabilidade
+- **Botões de Navegação do Carrossel**: Corrigidos para aparecerem corretamente quando as pills de grupos/tags excedem a largura do card.
 
 ## Problemas Resolvidos Recentemente
 

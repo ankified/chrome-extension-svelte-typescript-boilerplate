@@ -4,6 +4,25 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Correções Críticas
 
+### Correção Urgente: Problema na Exibição/Gerenciamento de Grupos nos Cards
+
+- **Problema**:
+    - Pills de grupo não são exibidas no carrossel do card.
+    - Contador de grupos no botão do rodapé não aparece.
+    - Clicar no botão "Gerenciar Grupos" no rodapé causa erro no console (`TypeError: item.groupIds?.includes is not a function`).
+    - Diálogo de gerenciamento de grupos não abre devido ao erro.
+- **Causa Provável**: A propriedade `item.groupIds` em alguns `SavedItem` não está sendo tratada consistentemente como um array (`string[]`), sendo salva como um objeto `{ id: true }` ao criar o item no Popup.
+- **Ação**:
+    1.  Investigar e corrigir a tipagem/inicialização de `item.groupIds` em `storage.ts` (na criação de itens e na função `verifyAndFixGroupRelations`) para garantir que seja sempre `undefined` ou `string[]`.
+    2.  Adicionar verificações defensivas (`Array.isArray(item.groupIds)`) no template (`SavedItemsCardView.svelte`) antes de tentar iterar (`#each`) ou usar `.includes()` na propriedade `item.groupIds`.
+    3.  Depurar o valor de `item.groupIds` no momento da renderização do card e do diálogo para confirmar o tipo incorreto.
+- **Prioridade**: Alta (Impede funcionalidade central)
+
+**Detalhes da Resolução:**
+- **Data**: 2025-04-08
+- **Solução implementada**: Corrigido o problema na origem, dentro de `SaveItemForm.svelte`. Ao criar o objeto `newItem` na função `handleSave`, a atribuição de `groupIds` foi modificada de `groupIds: selectedGroups` para `groupIds: [...selectedGroups]`, garantindo que uma cópia "pura" do array seja passada para o `chrome.storage.local.set`, evitando a serialização incorreta como objeto. As verificações em `storage.ts` (`verifyAndFixGroupRelations` e `createPersistentStore`) já tratavam a correção na carga, mas a correção na origem previne o erro inicial.
+- **Resultado**: `groupIds` agora são salvos corretamente como `string[]` desde a criação do item. As pills, o contador e o diálogo de gerenciamento de grupos funcionam imediatamente na página de opções, sem necessidade de recarregar.
+
 ### ~~1. Problemas de Exibição na Página de Opções~~ (RESOLVIDO - 2025-04-02)
 
 - ~~**Problema**: Notas não estão sendo exibidas na aba "Notas" da página de opções, enquanto são exibidas corretamente no popup.~~
@@ -199,19 +218,22 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Refinado o indicador de agendamento nos cards (`SavedItemsCardView.svelte`). O ícone `<Info>` agora é sempre visível à esquerda. O ícone `<CalendarClock>` aparece apenas para itens agendados, à direita, como um botão clicável (chama `editSchedule` placeholder) com tooltip formatado (ex: "Hoje, às 15:30h").
 - **Resultado**: Exibição clara e consistente da data de adição e do status de agendamento, com interação preparada para edição futura.
 
-### 15. Remover Título Redundante (Itens Salvos)
+### ~~15. Remover Título Redundante (Itens Salvos)~~
+(CONCLUIDO - 2025-04-08)
 
 - **Melhoria**: Remover o título "Itens Salvos" do corpo principal da página (`SavedItemsView`), pois o título já existe na navegação.
 - **Implementação**:
     - Remover o elemento `<h1>Itens Salvos</h1>` do template de `SavedItemsView.svelte`.
 
-### 16. Reorganizar Layout Superior (Itens Salvos)
+### ~~16. Reorganizar Layout Superior (Itens Salvos)~~
+(CONCLUIDO - 2025-04-08)
 
 - **Melhoria**: Posicionar as abas de visualização (Tabela, Cartões, etc.) acima da barra de pesquisa e filtros.
 - **Implementação**:
     - Mover o bloco `<Tabs.Root>` para antes do `div` que contém `Input type="search"` e os `Select`/`DropdownMenu` de filtros/ordenação em `SavedItemsView.svelte`.
 
-### 17. Área de Rolagem para Cartões com Cabeçalho/Rodapé Fixos
+### ~~17. Área de Rolagem para Cartões com Cabeçalho/Rodapé Fixos~~
+(CONCLUIDO - 2025-04-08)
 
 - **Melhoria**: Fazer com que apenas a área dos cartões de itens salvos seja rolável, mantendo as abas, filtros e botões de gerenciamento global fixos.
 - **Implementação**:
@@ -219,20 +241,40 @@ Este documento registra as correções, melhorias e novas implementações que d
     - O cabeçalho (Abas + Filtros/Ordenação) e o rodapé (Botões Gerenciar Grupos/Tags) devem ter altura fixa (`flex-shrink-0`).
     - A área de conteúdo (`Tabs.Content`) que contém `SavedItemsCardView` deve ocupar o espaço restante (`flex-grow`) e ter `overflow-y-auto` ou ser envolvida por um componente `ScrollArea` configurado para ocupar o espaço disponível.
 
-### 18. Truncar Título do Card
+### ~~18. Truncar Título do Card~~
+(CONCLUIDO - 2025-04-08)
 
 - **Melhoria**: Garantir que títulos longos nos cartões sejam truncados em uma única linha com reticências.
 - **Implementação**:
     - No componente `SavedItemsCardView.svelte`, aplicar a classe `truncate` do TailwindCSS ao elemento `<h3>` que exibe `item.title` (substituindo ou complementando `line-clamp-2` se necessário).
 
-### 19. Refinar Rolagem Horizontal das Pills (Grupos/Tags)
+### ~~19. Refinar Rolagem Horizontal das Pills (Grupos/Tags)~~ (CONCLUIDO - 2025-04-08)
 
 - **Melhoria**: Aprimorar a experiência de rolagem horizontal para as pills de Grupos e Tags dentro dos cards quando excedem a largura.
 - **Implementação**:
-    - Em `SavedItemsCardView.svelte`, avaliar a solução atual com `overflow-x-auto`.
+    - Em `SavedItemsCardView.svelte`, a solução com `Carousel` e `overflow-x-auto` foi implementada.
+    - **Correção (2025-04-08):** Removida a condição (`> 3` itens) para renderização dos botões de navegação do carrossel (`Carousel.Previous`, `Carousel.Next`). Agora, os botões são sempre renderizados (mas ocultos por `opacity-0`) e a biblioteca do carrossel controla sua visibilidade (`disabled:opacity-0`) com base no overflow real, garantindo que apareçam quando necessário, independentemente do número de itens.
     - Considerar adicionar botões de navegação ("<" e ">") que aparecem condicionalmente para facilitar a rolagem.
     - Explorar a possibilidade de ocultar a barra de rolagem visualmente, mantendo a funcionalidade.
     - Como alternativa, implementar um indicador "+X mais" se a lista for muito longa.
+
+### ~~20. Refinar Diálogos de Gerenciamento de Grupos e Tags~~ (CONCLUÍDO - 2025-04-08)
+
+- **Melhoria**: ~~Aprimorar a UI/UX dos diálogos modais para gerenciar grupos e tags diretamente dos cards de itens salvos.~~
+- **Detalhes da Resolução:**
+  - **Data**: 2025-04-08
+  - **Solução implementada**: Refatorados os diálogos em `SavedItemsCardView.svelte`:
+     - **Geral (Ambos Diálogos):**
+        - Adicionado cabeçalho idêntico ao do card principal (Favicon 32px, Título, URL) com truncamento correto.
+        - Adicionados contadores (ex: "Grupos Selecionados: 2 / 5", "Tags Selecionadas: 3 / 10").
+     - **Diálogo de Grupos:**
+        - Implementada funcionalidade para criar novo grupo (nome + cor) diretamente no diálogo.
+        - Substituídos checkboxes por pills clicáveis (usando `button`) para selecionar/desselecionar grupos, com indicador visual (borda + ícone Check).
+     - **Diálogo de Tags:**
+        - Exibição de *todas* as tags do sistema (`getAllTags`) como pills clicáveis para seleção/desseleção, com indicador visual.
+        - Mantida a funcionalidade de adicionar novas tags via input.
+        - Corrigida lógica de abertura do diálogo e reatividade do contador.
+- **Resultado**: Diálogos de gerenciamento de grupos e tags nos cards mais informativos, consistentes com a UI geral e funcionais.
 
 ## Novas Implementações
 

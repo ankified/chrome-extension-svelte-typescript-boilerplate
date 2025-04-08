@@ -192,7 +192,7 @@
       dateAdded: Date.now(),
       comments,
       tags: selectedTags.filter(tag => typeof tag === 'string'), // Garantir que todas as tags são strings
-      groupIds: selectedGroups,
+      groupIds: [...selectedGroups],
       readLater: saveMode === "read_later",
       scheduledDate: saveMode === "read_later" && scheduledDate ? new Date(scheduledDate).getTime() : undefined,
       noteIds: [],
@@ -205,10 +205,10 @@
     
     // Obter itens atuais diretamente do storage para evitar duplicação
     chrome.storage.local.get(['savedItems'], (result) => {
-      const existingItems = result.savedItems || [];
+      const existingItems: SavedItem[] = result.savedItems || [];
       
       // Verificar se já existe um item com esta URL para evitar duplicação
-      const isDuplicate = existingItems.some(item => item.url === newItem.url);
+      const isDuplicate = existingItems.some((item: SavedItem) => item.url === newItem.url);
       
       if (isDuplicate) {
         console.log(`[SaveItemForm] Item já existe com esta URL: ${newItem.url}`);
@@ -233,8 +233,8 @@
           console.log("[SaveItemForm] Atualizando grupos com o novo item");
           
           chrome.storage.local.get(['groups'], (groupsResult) => {
-            const existingGroups = groupsResult.groups || [];
-            const updatedGroups = existingGroups.map(group => {
+            const existingGroups: Group[] = groupsResult.groups || [];
+            const updatedGroups = existingGroups.map((group: Group) => {
           if (selectedGroups.includes(group.id)) {
                 console.log(`[SaveItemForm] Adicionando item ao grupo: ${group.name}`);
                 // Certificar que o grupo tenha um array itemIds válido
@@ -351,6 +351,7 @@
                 type="button"
                 class="ml-1 text-blue-400 hover:text-blue-300"
                 onclick={() => removeTag(tag)}
+                aria-label="Remover tag {tag}"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -374,6 +375,7 @@
               type="button"
               class="ml-1 text-gray-400 hover:text-white"
               onclick={() => selectedGroups = selectedGroups.filter(id => id !== group.id)}
+              aria-label="Remover do grupo {group.name}"
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -405,12 +407,13 @@
             </Popover.Trigger>
             <Popover.Content class="w-72 bg-gray-800 border border-gray-700 text-white rounded-md p-4 shadow-md">
               <div class="mb-3">
-                <label class="block text-xs font-medium mb-1 text-gray-300">Adicionar Tag</label>
+                <label for="tag-input" class="block text-xs font-medium mb-1 text-gray-300">Adicionar Tag</label>
         <div class="input-with-button flex">
       <input 
         type="text" 
             bind:value={tagInput} 
             placeholder="Digite uma tag e pressione Enter"
+            id="tag-input"
                     class="flex-grow p-2 rounded-l border border-gray-600 bg-gray-700 text-white"
             onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
           />
@@ -439,7 +442,7 @@
       </div>
               
               <div class="border-t border-gray-700 pt-3">
-                <label class="block text-xs font-medium mb-2 text-gray-300">Tags Existentes</label>
+                <div class="block text-xs font-medium mb-2 text-gray-300">Tags Existentes</div>
                 <div class="max-h-40 overflow-y-auto">
                   {#if allAvailableTags.length === 0}
                     <div class="text-sm text-gray-400 italic p-2">Nenhuma tag disponível.</div>
@@ -484,7 +487,7 @@
             </Popover.Trigger>
             <Popover.Content class="w-72 bg-gray-800 border border-gray-700 text-white rounded-md p-4 shadow-md">
               <div class="mb-3">
-                <label class="block text-xs font-medium mb-1 text-gray-300">Selecionar Grupos</label>
+                <div class="block text-xs font-medium mb-1 text-gray-300">Selecionar Grupos</div>
                 <div class="max-h-32 overflow-y-auto mb-2 border border-gray-700 rounded-md">
                 {#if availableGroups.length === 0}
                   <div class="text-sm text-gray-400 italic p-3">Nenhum grupo disponível.</div>
@@ -512,7 +515,7 @@
                 </div>
                 
                 <div class="border-t border-gray-700 pt-3 mt-2">
-                  <label class="block text-xs font-medium mb-1 text-gray-300">Criar Novo Grupo</label>
+                  <div class="block text-xs font-medium mb-1 text-gray-300">Criar Novo Grupo</div>
                 <input 
                   type="text" 
                     class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded text-white"
@@ -526,6 +529,7 @@
                       class="w-6 h-6 rounded-full border {newGroupColor === clr ? 'border-white' : 'border-transparent'}"
                       style="background-color: {clr};"
                       onclick={() => newGroupColor = clr}
+                      aria-label="Selecionar cor {clr}"
                     ></button>
                   {/each}
                 </div>
@@ -554,10 +558,11 @@
               </Popover.Trigger>
               <Popover.Content class="w-72 bg-gray-800 border border-gray-700 text-white rounded-md p-4 shadow-md">
                 <div class="mb-3">
-                  <label class="block text-xs font-medium mb-1 text-gray-300">Quando ler?</label>
+                  <label for="schedule-date-input" class="block text-xs font-medium mb-1 text-gray-300">Quando ler?</label>
         <input 
           type="datetime-local" 
           bind:value={scheduledDate}
+          id="schedule-date-input"
                     class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-white"
         />
       </div>

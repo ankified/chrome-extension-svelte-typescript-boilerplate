@@ -21,7 +21,7 @@
   let isFixingReferences = $state(false);
   let fixResults = $state(null);
   let fixingGroupRelations = $state(false);
-  let lastFixResult = $state(null);
+  let lastFixResult = $state<string | null>(null);
   
   onMount(() => {
     // Tratamento para o erro "Extension context invalidated"
@@ -49,6 +49,7 @@
     }
 
     fixReferences();
+    verifyAndFixGroupRelations();
   });
   
   function runFixReferences() {
@@ -81,7 +82,7 @@
     }, 100);
   }
   
-  function changeTab(tabId) {
+  function changeTab(tabId: string) {
     console.log(`Alterando para a aba: ${tabId}`);
     activeTab = tabId;
   }

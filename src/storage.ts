@@ -69,7 +69,24 @@ function createPersistentStore<T>(key: string, initialValue: T) {
     chrome.storage.local.get([key]).then((result) => {
         console.log(`[Storage] Dados carregados do chrome.storage.local para "${key}":`, result[key]);
         if (result[key]) {
-            store.set(result[key]);
+            let valueToSet = result[key];
+            // --- ADICIONAR VALIDAÇÃO ESPECÍFICA PARA savedItems ---
+            if (key === 'savedItems' && Array.isArray(valueToSet)) {
+                console.log(`[Storage] Validando groupIds para ${valueToSet.length} itens.`);
+                let changed = false;
+                valueToSet = valueToSet.map((item: any) => { // Usar 'any' temporariamente para acesso seguro
+                    if (item && (!Array.isArray(item.groupIds) && item.groupIds !== undefined)) { 
+                         // Apenas corrige se existe mas NÃO é array (preserva undefined)
+                        console.warn(`[Storage] Corrigindo item.groupIds inválido durante a carga para item ${item.id}. Valor era:`, item.groupIds);
+                        changed = true;
+                        return { ...item, groupIds: [] };
+                    }
+                    return item;
+                });
+                if(changed) console.log(`[Storage] Validação de groupIds concluída, ${key} foi modificado.`);
+            }
+            // --- FIM DA VALIDAÇÃO ---
+            store.set(valueToSet); 
         }
         isInitialized = true;
     }).catch(error => {
@@ -467,6 +484,53 @@ export function getAllTags(): Promise<string[]> {
   });
 }
 
+// Nova função para criar um grupo
+export async function createGroup(name: string, color?: string): Promise<Group | null> {
+  if (!name?.trim()) {
+    console.error("[Storage] Tentativa de criar grupo sem nome.");
+    return null;
+  }
+  const trimmedName = name.trim();
+
+  // Obter grupos atuais para verificar duplicatas
+  let currentGroups: Group[] = [];
+  try {
+    // Usar a store Svelte diretamente é mais simples aqui se estivermos no contexto da extensão
+    currentGroups = get(groups); 
+  } catch (error) {
+    console.error("[Storage] Erro ao buscar grupos existentes para verificação:", error);
+    // Continuar mesmo se a verificação falhar? Ou retornar null? Por enquanto, continua.
+  }
+
+  // Verificar se já existe um grupo com o mesmo nome (case-insensitive)
+  const existingGroup = currentGroups.find(g => g.name.toLowerCase() === trimmedName.toLowerCase());
+  if (existingGroup) {
+    console.warn(`[Storage] Grupo com nome \"${trimmedName}\" já existe.`);
+    return null; // Indica que um *novo* grupo não foi criado
+  }
+
+  // Criar novo grupo
+  const newGroup: Group = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    color: color || '#cccccc', // Cor padrão se não fornecida
+    itemIds: [] // Inicializa vazio
+  };
+
+  console.log("[Storage] Criando novo grupo:", newGroup);
+
+  // Atualizar a store diretamente
+  try {
+    groups.update(allGroups => [...allGroups, newGroup]);
+    await groups.forceSync?.(); // Forçar salvamento no storage se a função existir
+    console.log("[Storage] Novo grupo salvo com sucesso.");
+    return newGroup; // Retorna o grupo recém-criado
+  } catch (error) {
+    console.error("[Storage] Erro ao salvar novo grupo:", error);
+    return null; // Retorna null em caso de erro no salvamento
+  }
+}
+
 // Função para verificar e corrigir a integridade das relações entre itens e grupos
 export function verifyAndFixGroupRelations() {
   console.log("[Storage] Iniciando verificação e correção das relações entre itens e grupos");
@@ -497,27 +561,22 @@ export function verifyAndFixGroupRelations() {
       
       // 1. Verificar e corrigir grupos referenciados em itens que não existem
       for (const item of allItems) {
-        if (!item.groupIds) {
+        // Garantir que groupIds seja SEMPRE um array (ou inicializado se não existir)
+        if (!item.groupIds || !Array.isArray(item.groupIds)) {
+          console.warn(`[Storage] Corrigindo item.groupIds inválido para item ${item.id}. Valor era:`, item.groupIds);
           item.groupIds = [];
           itemsUpdated++;
           itemsModified = true;
-          continue;
+          // Não continue aqui, precisamos verificar os IDs vazios a seguir
         }
         
-        // Garantir que groupIds seja um array
-        if (!Array.isArray(item.groupIds)) {
-          item.groupIds = [];
-          itemsUpdated++;
-          itemsModified = true;
-          continue;
-        }
-        
-        // Verificar se os grupos referenciados existem
+        // Verificar se os grupos referenciados existem (agora sabemos que groupIds é um array)
         const validGroupIds = item.groupIds.filter(groupId => 
           allGroups.some(group => group.id === groupId)
         );
         
         if (validGroupIds.length !== item.groupIds.length) {
+          console.warn(`[Storage] Removendo groupIds inválidos do item ${item.id}`);
           item.groupIds = validGroupIds;
           itemsUpdated++;
           itemsModified = true;
@@ -526,22 +585,16 @@ export function verifyAndFixGroupRelations() {
       
       // 2. Verificar e corrigir itens referenciados em grupos que não existem
       for (const group of allGroups) {
-        if (!group.itemIds) {
+         // Garantir que itemIds seja SEMPRE um array
+        if (!group.itemIds || !Array.isArray(group.itemIds)) {
+          console.warn(`[Storage] Corrigindo group.itemIds inválido para grupo ${group.id}. Valor era:`, group.itemIds);
           group.itemIds = [];
           groupsUpdated++;
           groupsModified = true;
-          continue;
+          // Não continue
         }
         
-        // Garantir que itemIds seja um array
-        if (!Array.isArray(group.itemIds)) {
-          group.itemIds = [];
-          groupsUpdated++;
-          groupsModified = true;
-          continue;
-        }
-        
-        // Verificar se os itens referenciados existem
+        // Verificar se os itens referenciados existem (agora sabemos que itemIds é um array)
         const validItemIds = group.itemIds.filter(itemId => 
           allItems.some(item => item.id === itemId)
         );
