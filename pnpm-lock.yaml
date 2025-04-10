@@ -30,6 +30,9 @@ importers:
       '@crxjs/vite-plugin':
         specifier: 2.0.0-beta.29
         version: 2.0.0-beta.29
+      '@internationalized/date':
+        specifier: ^3.7.0
+        version: 3.7.0
       '@lucide/svelte':
         specifier: ^0.485.0
         version: 0.485.0(svelte@5.25.3)
