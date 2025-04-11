@@ -28,9 +28,16 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 
 - **NotesView**: Visualização de notas agrupadas por item ou desvinculadas
 - **FlashcardsView**: Visualização de flashcards com filtros por tags
-- **SavedItemsView**: Componente principal para visualização de itens salvos. Agora utiliza o componente `Tabs` do `shadcn-svelte` para organizar diferentes modos de visualização (Tabela, Cartões, Kanban, Fluxo). Mantém a lógica de filtros e ordenação.
-- **SavedItemsCardView**: Novo componente dedicado à visualização de itens salvos no formato de grade de cartões. Contém a lógica de renderização e ações específicas dos cards (incluindo tooltip refinado para data de adição).
+- **SavedItemsView**: Componente principal para visualização de itens salvos. Utiliza `Tabs` do `shadcn-svelte` para organizar diferentes modos de visualização (Tabela, Cartões, Kanban, Fluxo). Orquestra a lógica de filtros e ordenação, delegando a UI específica das abas para componentes filhos.
+- **SavedItemsCardView**: Componente dedicado à visualização de itens salvos no formato de grade de cartões.
 - **SettingsView**: Configurações da extensão, incluindo backup/exportação de dados
+
+### Componentes Auxiliares / UI Específica
+
+- **FilterSheet**: Painel lateral (`Sheet`) dedicado aos controles de filtro (tags, grupos, data) e ordenação para `SavedItemsView`.
+- **SavedItemsCardsTab**: Componente que encapsula a UI da aba "Cartões" em `SavedItemsView`, incluindo busca, escopo, badges de filtro e a grade de cards.
+- **TagFilterDialog**: Diálogo modal para seleção/exclusão múltipla de tags.
+- **GroupFilterDialog**: Diálogo modal para seleção/exclusão múltipla de grupos.
 
 ### Componentes UI Avançados
 
@@ -173,6 +180,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Padronização dos ícones de exclusão para "X" em vez de "lixeira"
 - Garantia de truncamento adequado para URLs longas
 - **Melhorias de Acessibilidade (a11y)**: Corrigidos alertas em `SaveItemForm.svelte` e `SavedItemsCardView.svelte`, incluindo adição de `aria-label` a botões de ícone, associação correta de labels a inputs (`for`/`id`), e uso de elementos semanticamente corretos (ex: `<a>` para links clicáveis).
+- **Modularidade da UI em `SavedItemsView`**: A interface de filtros/ordenação (`Sheet`) e o conteúdo da aba "Cartões" foram extraídos para componentes dedicados (`FilterSheet.svelte`, `SavedItemsCardsTab.svelte`), tornando `SavedItemsView.svelte` mais limpo e focado na orquestração dos dados e da estrutura geral.
 
 ## Estado da Visualização de Flashcards e Notas
 
