@@ -58,4 +58,33 @@ export interface Flashcard {
   tags: string[];
   color?: string; // Cor de fundo do flashcard
   position?: { x: number, y: number }; // Para SvelteFlow
-} 
+}
+
+// ---- NOVOS TIPOS PARA FILTROS/ORDENAÇÃO ----
+
+// Usado para ordenação (multi-nível)
+export type SortDescriptor = {
+  criterion: string; // Ex: 'dateAdded', 'title', 'url', 'scheduledDate', 'noteCount', 'flashcardCount'
+  direction: 'asc' | 'desc';
+};
+
+// Define a estrutura das configurações de filtro/ordenação salvas
+export type FilterSettings = {
+  searchQuery: string;
+  searchScope: 'content' | 'tags' | 'groups';
+  includedTags: string[];
+  excludedTags: string[];
+  tagMatchLogic: 'AND' | 'OR';
+  includedGroups: string[];
+  excludedGroups: string[];
+  groupMatchLogic: 'AND' | 'OR';
+  selectedDateRange?: { start?: string; end?: string; }; // Serializado como 'YYYY-MM-DD'
+  sortDescriptors: SortDescriptor[];
+};
+
+// Define a estrutura de um conjunto de filtros nomeado e salvo
+export type NamedFilterSet = {
+  id: string;
+  name: string;
+  settings: FilterSettings;
+}; 

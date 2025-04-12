@@ -1,12 +1,24 @@
 <script lang="ts">
   // Importações Essenciais
-  import { savedItems, groups } from "../../storage"; // remover notes, flashcards se não usados aqui
+  import { savedItems, groups, knownTags } from "../../storage"; // ADICIONAR knownTags
+  import { 
+      createGroup, 
+      updateGroup, 
+      deleteGroup, 
+      renameTagGlobally, 
+      deleteTagGlobally, 
+      deleteAllTagsGlobally, 
+      deleteAllGroupsGlobally, // Descomentar quando implementado e exportado
+      addKnownTagIfNotExists // ADICIONAR importação
+  } from "../../storage";
   import type { SavedItem, Group } from "../../types";
+  // Importar os novos tipos
+  import type { SortDescriptor, FilterSettings, NamedFilterSet } from "../../types";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
   import { format, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
   import { ptBR } from "date-fns/locale";
-  import { getLocalTimeZone, type DateValue } from "@internationalized/date";
+  import { getLocalTimeZone, type DateValue, parseDate } from "@internationalized/date";
   import type { DateRange } from 'bits-ui';
   import { Input } from "../../lib/components/ui/input/index.js";
   // import { cn } from "../../lib/utils"; // Remover se não usado em outro lugar
@@ -38,6 +50,17 @@
   // import ConfirmDialog from "../components/ConfirmDialog.svelte"; // Comentado 
   import FilterSheet from "../components/FilterSheet.svelte";
   import SavedItemsCardsTab from "../components/SavedItemsCardsTab.svelte"; // <-- NOVO import
+  // NOVO: Importar diálogos
+  import SaveFilterDialog from "../components/SaveFilterDialog.svelte";
+  import LoadFilterDialog from "../components/LoadFilterDialog.svelte";
+  // Adicionar importações dos diálogos de gerenciamento
+  import ManageGroupsDialog from "../components/ManageGroupsDialog.svelte";
+  import ManageTagsDialog from "../components/ManageTagsDialog.svelte";
+
+  // Novo estado para ordenação múltipla
+  let sortDescriptors = $state<SortDescriptor[]>([
+    { criterion: 'dateAdded', direction: 'desc' } // Padrão inicial
+  ]);
 
   // --- Estados de Filtros e Ordenação ---
   let searchQuery = $state("");
@@ -49,23 +72,28 @@
   let excludedGroups = $state<string[]>([]);
   let groupMatchLogic: 'AND' | 'OR' = $state('AND'); // Lógica para inclusão de grupos
   let selectedDateRange = $state<DateRange | undefined>(undefined);
-  let currentSortCriterion = $state<string>('dateAdded');
-  let currentSortDirection = $state<string>('desc');
 
   // --- Estados de Diálogos/Modais ---
-  let showTagFilterDialog = $state(false); // Para novo diálogo de tags
-  let showGroupFilterDialog = $state(false); // Para novo diálogo de grupos
-  let showRemoveTagDialog = $state(false); // Este é usado por um AlertDialog local, mantém
-  let tagToRemoveGlobally = $state(""); // Mantém o estado
-  let showEditTagDialog = $state(false); // Mantém o estado, mas o diálogo não será chamado daqui por enquanto
-  let tagToEditGlobally = $state(""); // Mantém o estado
-  let newTagNameGlobally = $state(""); // Gerenciamento global
-  let showRemoveAllTagsDialog = $state(false); // Este é usado por um AlertDialog local, mantém
-  let showConfirmDialog = $state(false); // Estado geral de confirmação (pode ser usado por outros diálogos no futuro)
+  let showTagFilterDialog = $state(false);
+  let showGroupFilterDialog = $state(false);
+  let showRemoveTagDialog = $state(false);
+  let tagToRemoveGlobally = $state("");
+  let showEditTagDialog = $state(false);
+  let tagToEditGlobally = $state("");
+  let newTagNameGlobally = $state("");
+  let showRemoveAllTagsDialog = $state(false);
+  let showConfirmDialog = $state(false);
   let isFilterSheetOpen = $state(false);
+  let showSaveFilterDialog = $state(false);
+  let showLoadFilterDialog = $state(false);
+  let showManageGroupsDialog = $state(false);
+  let showManageTagsDialog = $state(false);
+
+  // --- NOVO: Estado para Filtros Nomeados ---
+  let namedFilterSets = $state<NamedFilterSet[]>([]);
 
   // --- Dados Derivados ---
-  let availableTags = $derived(getAllTags($savedItems));
+  let availableTags = $derived($knownTags);
   let filteredItems = $derived(
     filterItems(
       $savedItems,
@@ -80,7 +108,7 @@
       selectedDateRange
     )
   );
-  let sortedItems = $derived(sortItems(filteredItems, currentSortCriterion, currentSortDirection));
+  let sortedItems = $derived(sortItems(filteredItems, sortDescriptors));
 
   // --- Funções de Filtragem e Ordenação ---
 
@@ -186,26 +214,41 @@
     });
   }
 
-  function sortItems(items: SavedItem[], criteria: string, direction: string): SavedItem[] {
+  function sortItems(items: SavedItem[], descriptors: SortDescriptor[]): SavedItem[] {
     return [...items].sort((a, b) => {
-      let comparison = 0;
-      // (Lógica de comparação existente permanece igual)
-       if (criteria === "dateAdded") {
-        comparison = (a.dateAdded || 0) - (b.dateAdded || 0);
-      } else if (criteria === "title") {
-        comparison = (a.title || "").localeCompare(b.title || "");
-      } else if (criteria === "url") {
-         comparison = (a.url || "").localeCompare(b.url || "");
-      } else if (criteria === "scheduledDate") {
-         const dateA = a.readLater && a.scheduledDate ? a.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
-         const dateB = b.readLater && b.scheduledDate ? b.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
-         comparison = dateA - dateB;
-      } else if (criteria === "noteCount") {
+      for (const descriptor of descriptors) {
+        const { criterion, direction } = descriptor;
+        let comparison = 0;
+
+        // Bloco de comparação (igual ao anterior, mas dentro do loop)
+        if (criterion === "dateAdded") {
+          comparison = (a.dateAdded || 0) - (b.dateAdded || 0);
+        } else if (criterion === "title") {
+          comparison = (a.title || "").localeCompare(b.title || "");
+        } else if (criterion === "url") {
+          comparison = (a.url || "").localeCompare(b.url || "");
+        } else if (criterion === "scheduledDate") {
+          // Lógica para tratar não agendados (Infinity/ -Infinity)
+          const dateA = a.readLater && a.scheduledDate ? a.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
+          const dateB = b.readLater && b.scheduledDate ? b.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
+          comparison = dateA - dateB;
+        } else if (criterion === "noteCount") {
           comparison = (a.noteIds?.length || 0) - (b.noteIds?.length || 0);
-      } else if (criteria === "flashcardCount") {
+        } else if (criterion === "flashcardCount") {
           comparison = (a.flashcardIds?.length || 0) - (b.flashcardIds?.length || 0);
+        }
+
+        // Aplica a direção e verifica se é diferente de 0
+        const directedComparison = direction === "desc" ? -comparison : comparison;
+
+        if (directedComparison !== 0) {
+          // Se os itens são diferentes neste nível, retorna o resultado
+          return directedComparison;
+        }
+        // Se forem iguais (comparison === 0), o loop continua para o próximo descriptor
       }
-      return direction === "desc" ? -comparison : comparison;
+      // Se todos os níveis resultarem em 0, os itens são considerados iguais
+      return 0;
     });
   }
 
@@ -289,8 +332,8 @@
     excludedGroups = [];
     groupMatchLogic = 'AND';
     selectedDateRange = undefined;
-    currentSortCriterion = "dateAdded";
-    currentSortDirection = "desc";
+    // Resetar para o padrão de ordenação
+    sortDescriptors = [{ criterion: 'dateAdded', direction: 'desc' }];
     toast.info("Filtros e ordenação redefinidos.");
     isFilterSheetOpen = false; // Fecha o sheet ao limpar
   }
@@ -328,6 +371,325 @@
       selectedDateRange = undefined;
   }
 
+  // --- NOVO: Helper para obter configurações atuais ---
+  function getCurrentSettingsObject(): FilterSettings {
+    return {
+      searchQuery,
+      searchScope,
+      includedTags,
+      excludedTags,
+      tagMatchLogic,
+      includedGroups,
+      excludedGroups,
+      groupMatchLogic,
+      selectedDateRange: selectedDateRange ? {
+          start: selectedDateRange.start?.toString(),
+          end: selectedDateRange.end?.toString()
+      } : undefined,
+      sortDescriptors
+    };
+  }
+
+  // --- Carregar Filtros Salvos ao Montar --- (MODIFICADO)
+  onMount(async () => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      try {
+        // Carregar ambos: último filtro usado E filtros nomeados
+        const result = await chrome.storage.sync.get([
+          'savedItemsViewFilters', 
+          'namedFilterSets'
+        ]);
+        
+        // Carregar último filtro usado (lógica existente, ligeiramente melhorada)
+        const lastUsedSettings = result.savedItemsViewFilters;
+        if (lastUsedSettings) {
+          // console.log('Carregando último filtro:', lastUsedSettings);
+          searchQuery = typeof lastUsedSettings.searchQuery === 'string' ? lastUsedSettings.searchQuery : "";
+          searchScope = ['content', 'tags', 'groups'].includes(lastUsedSettings.searchScope) ? lastUsedSettings.searchScope : 'content';
+          includedTags = Array.isArray(lastUsedSettings.includedTags) ? lastUsedSettings.includedTags.filter((t: any) => typeof t === 'string') : [];
+          excludedTags = Array.isArray(lastUsedSettings.excludedTags) ? lastUsedSettings.excludedTags.filter((t: any) => typeof t === 'string') : [];
+          tagMatchLogic = lastUsedSettings.tagMatchLogic === 'OR' ? 'OR' : 'AND';
+          includedGroups = Array.isArray(lastUsedSettings.includedGroups) ? lastUsedSettings.includedGroups.filter((g: any) => typeof g === 'string') : [];
+          excludedGroups = Array.isArray(lastUsedSettings.excludedGroups) ? lastUsedSettings.excludedGroups.filter((g: any) => typeof g === 'string') : [];
+          groupMatchLogic = lastUsedSettings.groupMatchLogic === 'OR' ? 'OR' : 'AND';
+          sortDescriptors = Array.isArray(lastUsedSettings.sortDescriptors) && lastUsedSettings.sortDescriptors.length > 0
+                           ? lastUsedSettings.sortDescriptors.filter((d: any) => d && typeof d.criterion === 'string' && ['asc', 'desc'].includes(d.direction))
+                           : [{ criterion: 'dateAdded', direction: 'desc' }];
+          if (sortDescriptors.length === 0) sortDescriptors = [{ criterion: 'dateAdded', direction: 'desc' }];
+
+          if (lastUsedSettings.selectedDateRange?.start && typeof lastUsedSettings.selectedDateRange.start === 'string') {
+              try {
+                  const start = parseDate(lastUsedSettings.selectedDateRange.start);
+                  const end = lastUsedSettings.selectedDateRange.end && typeof lastUsedSettings.selectedDateRange.end === 'string'
+                                ? parseDate(lastUsedSettings.selectedDateRange.end)
+                                : undefined;
+                  selectedDateRange = { start, end };
+              } catch (e) { console.error("Erro ao reconstruir DateRange do último filtro:", e); selectedDateRange = undefined; }
+          } else { selectedDateRange = undefined; }
+        }
+
+        // Carregar filtros nomeados
+        const loadedNamedFilters = result.namedFilterSets;
+        if (Array.isArray(loadedNamedFilters)) {
+          // Validar estrutura básica (poderia ser mais robusto)
+          namedFilterSets = loadedNamedFilters.filter(f => f && typeof f.id === 'string' && typeof f.name === 'string' && f.settings);
+          // console.log('Filtros nomeados carregados:', namedFilterSets);
+        }
+
+      } catch (error) {
+          console.error("Erro ao carregar filtros do storage:", error);
+      }
+    }
+  });
+
+  // --- Salvar Filtros Automaticamente com $effect --- (MODIFICADO)
+  $effect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      // Salvar último filtro usado
+      const lastUsedSettingsToSave = getCurrentSettingsObject();
+      chrome.storage.sync.set({ savedItemsViewFilters: lastUsedSettingsToSave });
+      // console.log('Último filtro salvo:', lastUsedSettingsToSave); // Debug
+
+      // Salvar filtros nomeados (já são atualizados nas funções abaixo)
+      // Não precisamos salvar aqui, mas é bom ter o effect para o último filtro.
+    }
+  });
+
+  // --- Funções para Gerenciar Filtros Nomeados ---
+  async function saveNamedFilterSet(name: string) {
+    if (!name.trim()) {
+      toast.error("Por favor, insira um nome para o filtro.");
+      return;
+    }
+    name = name.trim();
+    const existingIndex = namedFilterSets.findIndex(set => set.name.toLowerCase() === name.toLowerCase());
+    const currentSettings = getCurrentSettingsObject();
+
+    let proceed = true;
+    if (existingIndex > -1) {
+      proceed = window.confirm(`Já existe um filtro chamado "${namedFilterSets[existingIndex].name}". Deseja sobrescrevê-lo?`);
+    }
+
+    if (proceed) {
+      const newSet: NamedFilterSet = {
+        id: existingIndex > -1 ? namedFilterSets[existingIndex].id : Date.now().toString(), // Reusa ID se sobrescrever
+        name: name, // Mantém capitalização do usuário
+        settings: currentSettings
+      };
+
+      let updatedSets: NamedFilterSet[];
+      if (existingIndex > -1) {
+        updatedSets = namedFilterSets.map((set, index) => index === existingIndex ? newSet : set);
+      } else {
+        updatedSets = [...namedFilterSets, newSet];
+      }
+      
+      namedFilterSets = updatedSets.sort((a, b) => a.name.localeCompare(b.name)); // Atualiza estado local ordenado
+
+      try {
+        await chrome.storage.sync.set({ namedFilterSets: namedFilterSets });
+        toast.success(`Filtro "${name}" salvo com sucesso.`);
+      } catch (error) {
+        toast.error("Erro ao salvar o filtro nomeado.");
+        console.error("Erro ao salvar namedFilterSets:", error);
+        // Reverter estado local? (Opcional)
+      }
+    }
+    showSaveFilterDialog = false; // Fecha o diálogo após salvar
+  }
+
+  function applyNamedFilterSet(id: string) {
+    const setToApply = namedFilterSets.find(set => set.id === id);
+    if (!setToApply) {
+      toast.error("Filtro selecionado não encontrado.");
+      return;
+    }
+
+    const settings = setToApply.settings;
+    // console.log("Aplicando filtro:", setToApply.name, settings);
+
+    searchQuery = settings.searchQuery ?? "";
+    searchScope = settings.searchScope ?? 'content';
+    includedTags = settings.includedTags ?? [];
+    excludedTags = settings.excludedTags ?? [];
+    tagMatchLogic = settings.tagMatchLogic ?? 'AND';
+    includedGroups = settings.includedGroups ?? [];
+    excludedGroups = settings.excludedGroups ?? [];
+    groupMatchLogic = settings.groupMatchLogic ?? 'AND';
+    sortDescriptors = settings.sortDescriptors ?? [{ criterion: 'dateAdded', direction: 'desc' }];
+    if (sortDescriptors.length === 0) sortDescriptors = [{ criterion: 'dateAdded', direction: 'desc' }];
+
+    if (settings.selectedDateRange?.start) {
+        try {
+            const start = parseDate(settings.selectedDateRange.start);
+            const end = settings.selectedDateRange.end ? parseDate(settings.selectedDateRange.end) : undefined;
+            selectedDateRange = { start, end };
+        } catch (e) { console.error("Erro ao aplicar DateRange:", e); selectedDateRange = undefined; }
+    } else { selectedDateRange = undefined; }
+
+    toast.info(`Filtro "${setToApply.name}" aplicado.`);
+    isFilterSheetOpen = false; // Fecha o sheet ao aplicar um filtro salvo
+    showLoadFilterDialog = false; // Fecha o diálogo após aplicar
+  }
+
+  async function deleteNamedFilterSet(id: string) {
+    const setToDelete = namedFilterSets.find(set => set.id === id);
+    if (!setToDelete) return;
+
+    if (window.confirm(`Tem certeza que deseja excluir o filtro salvo "${setToDelete.name}"?`)) {
+      const updatedSets = namedFilterSets.filter(set => set.id !== id);
+      namedFilterSets = updatedSets; // Atualiza estado local
+
+      try {
+        await chrome.storage.sync.set({ namedFilterSets: updatedSets });
+        toast.success(`Filtro "${setToDelete.name}" excluído.`);
+      } catch (error) {
+        toast.error("Erro ao excluir o filtro nomeado.");
+        console.error("Erro ao salvar namedFilterSets após exclusão:", error);
+         // Mantém o diálogo de carregar aberto após excluir
+      }
+    }
+  }
+
+  // --- NOVO: Funções para abrir os diálogos --- 
+  function handleOpenSaveFilterDialog() {
+    showSaveFilterDialog = true;
+  }
+  function handleOpenLoadFilterDialog() {
+    showLoadFilterDialog = true;
+  }
+
+  // --- Adicionar Funções para abrir os diálogos de gerenciamento --- 
+  function handleOpenManageGroupsDialog() {
+    showManageGroupsDialog = true;
+  }
+  function handleOpenManageTagsDialog() {
+    showManageTagsDialog = true;
+  }
+
+  // --- Funções de Gerenciamento para Diálogos --- (MODIFICADO com lógica real)
+  async function handleGroupCreate(name: string, color?: string): Promise<Group | null> {
+    try {
+      const newGroup = await createGroup(name, color);
+      if (newGroup) {
+        return newGroup;
+      } else {
+        toast.warning(`Grupo "${name}" já existe ou ocorreu um erro.`);
+        return null;
+      }
+    } catch (error) {
+      console.error("Erro ao criar grupo:", error);
+      toast.error(`Falha ao criar o grupo "${name}".`);
+      return null;
+    }
+  }
+
+  async function handleGroupUpdate(id: string, updates: { name?: string; color?: string }): Promise<boolean> {
+    try {
+      await updateGroup(id, updates);
+      return true;
+    } catch (error) {
+      console.error("Erro ao atualizar grupo:", error);
+      toast.error(`Falha ao atualizar o grupo.`);
+      return false;
+    }
+  }
+
+  async function handleGroupDelete(id: string): Promise<boolean> {
+    try {
+      await deleteGroup(id);
+       includedGroups = includedGroups.filter(gId => gId !== id);
+       excludedGroups = excludedGroups.filter(gId => gId !== id);
+      return true;
+    } catch (error) {
+      console.error("Erro ao excluir grupo:", error);
+      toast.error(`Falha ao excluir o grupo.`);
+      return false;
+    }
+  }
+
+  // NOVA FUNÇÃO para excluir todos os grupos (MODIFICADA)
+  async function handleDeleteAllGroups(): Promise<boolean> {
+    console.log("Tentativa de exclusão de TODOS os grupos...");
+    try {
+      // TODO: Implementar e exportar deleteAllGroupsGlobally em src/storage.ts
+      await deleteAllGroupsGlobally(); 
+      toast.success("Todos os grupos foram removidos.");
+      includedGroups = []; 
+      excludedGroups = [];
+      showManageGroupsDialog = false; 
+      return true;
+      
+      /* Lógica após implementação:
+      toast.success("Todos os grupos foram removidos.");
+      includedGroups = []; 
+      excludedGroups = [];
+      showManageGroupsDialog = false; 
+      return true;
+      */
+    } catch (error) {
+      console.error("Erro ao excluir todos os grupos:", error);
+      toast.error("Erro ao remover todos os grupos.");
+      return false;
+    }
+  }
+
+  async function handleTagRename(oldName: string, newName: string): Promise<boolean> {
+    try {
+      await renameTagGlobally(oldName, newName);
+      includedTags = includedTags.map(t => t === oldName ? newName : t);
+      excludedTags = excludedTags.map(t => t === oldName ? newName : t);
+      toast.success(`Tag "${oldName}" renomeada para "${newName}".`);
+      return true;
+    } catch (error) {
+      console.error("Erro ao renomear tag globalmente:", error);
+      toast.error(`Falha ao renomear a tag "${oldName}".`);
+      return false;
+    }
+  }
+
+  async function handleTagDelete(tagName: string): Promise<boolean> {
+    try {
+      await deleteTagGlobally(tagName);
+      includedTags = includedTags.filter(t => t !== tagName);
+      excludedTags = excludedTags.filter(t => t !== tagName);
+      toast.success(`Tag "${tagName}" excluída de todos os itens.`);
+      return true;
+    } catch (error) {
+      console.error("Erro ao excluir tag globalmente:", error);
+      toast.error(`Falha ao excluir a tag "${tagName}".`);
+      return false;
+    }
+  }
+
+  // NOVA FUNÇÃO para excluir todas as tags (MODIFICADA)
+  async function handleDeleteAllTags(): Promise<boolean> {
+    console.log("Executando exclusão de TODAS as tags...");
+    try {
+      await deleteAllTagsGlobally();
+      toast.success("Todas as tags foram removidas de todos os itens.");
+      includedTags = [];
+      excludedTags = [];
+      showManageTagsDialog = false; 
+      return true;
+    } catch (error) {
+      console.error("Erro ao excluir todas as tags globalmente:", error);
+      toast.error("Erro ao remover todas as tags.");
+      return false;
+    }
+  }
+
+  // Função para adicionar tag (exemplo, pode já existir ou precisar ser criada)
+  // Esta função seria chamada, por exemplo, ao criar um item com uma nova tag
+  async function handleAddItem(itemData: Omit<SavedItem, 'id' | 'dateAdded'>) {
+      // ... (lógica para criar o item em $savedItems) ...
+      // Após criar o item, garantir que as novas tags sejam adicionadas à lista conhecida
+      if (itemData.tags) {
+          itemData.tags.forEach(tag => addKnownTagIfNotExists(tag));
+      }
+      // ...
+  }
+
 </script>
 
 <div class="flex flex-col h-full p-4 md:p-6 space-y-0">
@@ -361,7 +723,7 @@
     </Tabs.Content>
 
     <!-- {/* Conteúdo da Aba Cartões - AGORA USA O COMPONENTE */} -->
-    <Tabs.Content value="cards">
+    <Tabs.Content value="cards" class="flex-grow overflow-auto p-4">
         <SavedItemsCardsTab
           searchQuery={searchQuery}
           searchScope={searchScope}
@@ -371,7 +733,8 @@
           {excludedGroups}
           {selectedDateRange}
           sortedItems={sortedItems}
-          groups={$groups}
+          groups={$groups ?? []}
+          availableSystemTags={availableTags}
           
           onSearchQueryChange={handleSearchQueryChange}
           onSearchScopeChange={handleSearchScopeChange}
@@ -487,6 +850,24 @@
     </AlertDialog.Content>
   </AlertDialog.Root>
 
+  <!-- ---- NOVO: Diálogos para Filtros Nomeados ---- --> 
+  {#if showSaveFilterDialog}
+    <SaveFilterDialog
+       bind:open={showSaveFilterDialog}
+       onSave={saveNamedFilterSet} 
+    />
+  {/if}
+
+  {#if showLoadFilterDialog}
+     <LoadFilterDialog
+        bind:open={showLoadFilterDialog}
+        filterSets={namedFilterSets}
+        onApply={applyNamedFilterSet}
+        onDelete={deleteNamedFilterSet}
+     />
+  {/if}
+  <!-- ---- Fim Diálogos Filtros Nomeados ---- --> 
+
   <!-- FilterSheet Externo -->
   <FilterSheet 
     open={isFilterSheetOpen}
@@ -495,29 +876,52 @@
     {includedGroups}
     {excludedGroups}
     {selectedDateRange}
-    {currentSortCriterion}
-    {currentSortDirection}
+    bind:sortDescriptors={sortDescriptors}
     searchQuery={searchQuery}
     availableTags={availableTags}
     availableGroups={$groups ?? []}
+    namedFilterSets={namedFilterSets}
     
     onClose={() => isFilterSheetOpen = false}
     onTagFilterOpen={() => {
       showTagFilterDialog = true;
-      isFilterSheetOpen = false;
     }}
     onGroupFilterOpen={() => {
       showGroupFilterDialog = true;
-      isFilterSheetOpen = false;
     }}
     onDateChange={(range: DateRange | undefined) => selectedDateRange = range}
-    onSortCriterionChange={(criterion: string) => currentSortCriterion = criterion}
-    onSortDirectionChange={(direction: string) => currentSortDirection = direction}
     onClearFilters={clearFiltersAndSort}
-    onManageGroupClick={() => toast.info('Gerenciamento de Grupos ainda não implementado.')} 
-    onEditTagClick={(tag: string) => openEditTagDialog(tag)} 
-    onRemoveTagClick={(tag: string) => openRemoveTagDialog(tag)} 
-    onRemoveAllTagsClick={removeAllTags} 
+    onOpenSaveFilterDialog={handleOpenSaveFilterDialog} 
+    onOpenLoadFilterDialog={handleOpenLoadFilterDialog}
+    onOpenManageGroupsDialog={handleOpenManageGroupsDialog}
+    onOpenManageTagsDialog={handleOpenManageTagsDialog}
   />
+
+  <!-- ---- Diálogos para Gerenciamento Global ---- --> 
+  <!-- DEBUG LOG -->
+  {console.log("[Template Debug] Checking ManageGroupsDialog. showManageGroupsDialog =", showManageGroupsDialog)}
+  {#if showManageGroupsDialog}
+    <ManageGroupsDialog
+       bind:open={showManageGroupsDialog}
+       allGroups={$groups ?? []}
+       onCreate={handleGroupCreate}
+       onUpdate={handleGroupUpdate}
+       onDelete={handleGroupDelete}
+       onDeleteAll={handleDeleteAllGroups}
+    />
+  {/if}
+
+  <!-- DEBUG LOG -->
+  {console.log("[Template Debug] Checking ManageTagsDialog. showManageTagsDialog =", showManageTagsDialog)}
+  {#if showManageTagsDialog}
+     <ManageTagsDialog
+        bind:open={showManageTagsDialog}
+        allTags={availableTags}
+        onRename={handleTagRename}
+        onDelete={handleTagDelete}
+        onDeleteAll={handleDeleteAllTags}
+     />
+  {/if}
+  <!-- ---- Fim Diálogos Gerenciamento ---- --> 
 
 </div>

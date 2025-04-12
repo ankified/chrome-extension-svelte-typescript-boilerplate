@@ -15,11 +15,10 @@
   import * as Dialog from "../../../lib/components/ui/dialog/index.js";
   import { Input } from "../../../lib/components/ui/input/index.js";
   import { Check } from "@lucide/svelte";
-  import { createGroup } from "../../../storage";
-  import { getAllTags } from "../../../storage";
+  import { createGroup, addKnownTagIfNotExists } from "../../../storage";
 
   // Props recebidos de SavedItemsView
-  let { data, groups: allGroups }: { data: SavedItem[], groups: Group[] } = $props();
+  let { data, groups: allGroups, availableSystemTags }: { data: SavedItem[], groups: Group[], availableSystemTags: string[] } = $props();
 
   // Garantir que newTagInput existe
   let newTagInput = $state("");
@@ -145,7 +144,7 @@
                 return group;
             })
         );
-        toast.success("Item adicionado ao grupo.");
+        // toast.success("Item adicionado ao grupo.");
   }
   
   // Funções de ação (precisam acessar savedItems store)
@@ -234,85 +233,56 @@
     }
   }
 
-  // Estado para controlar a abertura do diálogo de Tags
-  let tagsDialogOpen = $state(false);
-
-  // Estado para todas as tags do sistema no diálogo de tags
-  let allSystemTags = $state<string[]>([]);
-
-  // Função para carregar todas as tags quando o diálogo abrir
-  async function loadAllSystemTags() {
-    try {
-      allSystemTags = await getAllTags();
-      console.log("[TagsDialog] Tags do sistema carregadas:", allSystemTags);
-    } catch (error) {
-      console.error("[TagsDialog] Erro ao carregar tags do sistema:", error);
-      // Mostra o erro no console, mas evita toast excessivo se falhar repetidamente
-    }
-  }
-
   // Função para adicionar/remover tag via clique na pill
   function toggleTagForItem(item: SavedItem, tag: string) {
     if (!item || !tag) return;
+    const lowerCaseTag = tag.toLowerCase(); // Normalizar para comparação
+    const currentTags = Array.isArray(item.tags) ? item.tags : [];
+    // Verificar se a tag (case-insensitive) já existe no item
+    const tagIndex = currentTags.findIndex(t => t.toLowerCase() === lowerCaseTag);
 
-    const currentTags = Array.isArray(item.tags) ? [...item.tags] : [];
-    const tagIndex = currentTags.indexOf(tag);
+    let updatedTags: string[];
+    let toastMessage = "";
+    let isNewTagForSystem = false;
 
     if (tagIndex > -1) {
       // Tag existe, remover
-      removeTagFromItem(item, tag); 
+      updatedTags = currentTags.filter((_, index) => index !== tagIndex);
+      toastMessage = `Tag "${currentTags[tagIndex]}" removida.`;
     } else {
       // Tag não existe, adicionar
-      savedItems.update(items => {
-        return items.map(i => {
-          if (i.id === item.id) {
-            return {
-              ...i,
-              tags: [...currentTags, tag]
-            };
-          }
-          return i;
-        });
-      });
-      toast.success(`Tag "${tag}" adicionada.`);
+      // Usar a versão da prop `availableSystemTags` se existir (preserva capitalização), senão usar a digitada
+      const existingSystemTag = availableSystemTags.find(t => t.toLowerCase() === lowerCaseTag);
+      const tagToAddProperCase = existingSystemTag || tag;
+      updatedTags = [...currentTags, tagToAddProperCase];
+      toastMessage = `Tag "${tagToAddProperCase}" adicionada.`;
+      if (!existingSystemTag) {
+           toastMessage += " (Nova tag)"; 
+           isNewTagForSystem = true; // Marca se a tag é nova para o sistema
+      }
+    }
+
+    savedItems.update(items => 
+      items.map(i => i.id === item.id ? { ...i, tags: updatedTags } : i)
+    );
+    toast.success(toastMessage);
+
+    // Se a tag era nova para o sistema, adiciona à lista mestra
+    if (isNewTagForSystem) {
+        addKnownTagIfNotExists(tag); // Chama a função do storage
     }
   }
 
-  // Ajustar saveNewTag para atualizar allSystemTags se necessário
-  function saveNewTagAndUpdateSystem(item: SavedItem) {
-    if (!newTagInput.trim()) {
-      return;
-    }
-    const newTag = newTagInput.trim();
-    // Verificar se a tag JÁ EXISTE NO SISTEMA (case-insensitive)
-    const systemTagExists = allSystemTags.some(tag => tag.toLowerCase() === newTag.toLowerCase());
-
-    if (systemTagExists) {
-      toast.warning(`A tag "${newTag}" já existe no sistema.`);
-      newTagInput = ''; // Limpar input mesmo se não adicionar
-      return; // Não fazer mais nada
-    }
-
-    // Se chegou aqui, a tag é NOVA para o sistema. Adicionar ao item e ao sistema.
-    savedItems.update(items => {
-      return items.map(i => {
-        if (i.id === item.id) {
-          const currentTags = Array.isArray(i.tags) ? [...i.tags] : [];
-          // Como já sabemos que a tag é nova no sistema, podemos adicioná-la diretamente ao item
-          // (a verificação anterior já garante que não é duplicada no sistema)
-          return {
-            ...i,
-            tags: [...currentTags, newTag] 
-          }; 
-        }
-        return i;
-      });
-    });
-
-    // Atualizar a lista local de tags do sistema e mostrar sucesso
-    allSystemTags = [...allSystemTags, newTag].sort();
-    toast.success(`Tag "${newTag}" criada e adicionada.`);
-    newTagInput = ''; 
+  // Simplificar função para adicionar tag do input
+  function handleAddTagFromInput(item: SavedItem) {
+    if (!newTagInput.trim()) return;
+    const tagToAdd = newTagInput.trim();
+    // Chama a função principal que já lida com adicionar/remover e toasts
+    toggleTagForItem(item, tagToAdd);
+    newTagInput = ''; // Limpa o input
+    // A lógica de verificar se existe no sistema é feita implicitamente
+    // ao usar availableSystemTags dentro de toggleTagForItem para preservar capitalização.
+    // Não é mais necessário criar a tag globalmente aqui.
   }
 
   // Estados para o diálogo de criação de grupo
@@ -678,7 +648,7 @@
               <Dialog.Root>
                  <Tooltip.Provider>
                    <Tooltip.Root>
-                     <Dialog.Trigger onpointerdown={() => { if (allSystemTags.length === 0) loadAllSystemTags(); }}>
+                     <Dialog.Trigger>
                         <Tooltip.Trigger>
                            <Button 
                              variant="ghost" 
@@ -698,7 +668,6 @@
                      </Tooltip.Content>
                    </Tooltip.Root>
                  </Tooltip.Provider>
-                 <!-- MOVIDO: Conteúdo do Dialog para cá -->
                  <Dialog.Content class="max-w-[625px]">
                    <Dialog.Header class="p-0 max-w-[625px]">
                      <Dialog.Title>Gerenciar Tags para</Dialog.Title>
@@ -732,42 +701,42 @@
                      </div>
                    </Dialog.Header>
                    <div class="grid gap-4 py-4">
-                     <!-- Input para adicionar nova tag -->
+                     <!-- Input chama handleAddTagFromInput -->
                      <div class="flex items-center space-x-2">
                        <Input 
                          id="new-tag-input-{item.id}" 
-                         placeholder="Adicionar nova tag..." 
+                         placeholder="Adicionar tag..." 
                          bind:value={newTagInput} 
-                         onkeydown={(e) => { if(e.key === 'Enter') { saveNewTagAndUpdateSystem(item); } }}
+                         onkeydown={(e) => { if(e.key === 'Enter') { handleAddTagFromInput(item); } }}
                        />
-                       <Button onclick={() => saveNewTagAndUpdateSystem(item)} disabled={!newTagInput.trim()}>Adicionar</Button>
+                       <Button onclick={() => handleAddTagFromInput(item)} disabled={!newTagInput.trim()}>Adicionar</Button>
                      </div>
                      
-                     <!-- NOVO: Contador -->
+                     <!-- Contador usa a prop -->
                      <div class="text-sm font-medium mb-1 text-center text-muted-foreground">
-                         Tags Selecionadas: {tagCount} / {allSystemTags?.length ?? 0}
+                         Tags Selecionadas: {tagCount} / {availableSystemTags?.length ?? 0}
                      </div>
                      
-                     <!-- MODIFICADO: Lista de TODAS as tags do sistema -->
+                     <!-- Lista usa a prop -->
                      <div class="text-sm font-medium mb-1">Selecionar Tags:</div>
-                     {#if allSystemTags && allSystemTags.length > 0}
+                     {#if availableSystemTags && availableSystemTags.length > 0}
                        <ScrollArea class="h-36 w-full rounded-md border p-2">
                            <div class="flex flex-wrap gap-2">
-                           {#each allSystemTags as tag}
-                              {@const isSelected = Array.isArray(item.tags) && item.tags.includes(tag)}
+                           {#each availableSystemTags as systemTag (systemTag)}
+                              {@const isSelected = Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase() === systemTag.toLowerCase())}
                                <button
                                 type="button"
                                 class={`tag-pill text-xs py-1 px-3 rounded-full flex items-center gap-1.5 cursor-pointer transition-all duration-150 ease-in-out relative border
                                         ${isSelected ? 'bg-primary text-primary-foreground border-primary-foreground/80 shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-transparent hover:opacity-80'}
                                       `}
-                                title={tag}
-                                onclick={() => toggleTagForItem(item, tag)}
+                                title={systemTag}
+                                onclick={() => toggleTagForItem(item, systemTag)}
                                  >
                                  {#if isSelected}
                                    <Check class="h-3.5 w-3.5 absolute -left-1 -top-1 bg-background text-foreground rounded-full p-0.5 border border-border" />
                                  {/if}
                                  <Tag class="h-3 w-3 opacity-75 flex-shrink-0" />
-                                 {tag}
+                                 {systemTag}
                                </button>
                            {/each}
                            </div>

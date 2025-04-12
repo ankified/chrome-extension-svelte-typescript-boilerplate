@@ -16,8 +16,37 @@
   import * as Select from "../../lib/components/ui/select/index.js";
   import * as DropdownMenu from "../../lib/components/ui/dropdown-menu/index.js";
   import {
-      Tags, Folder, Edit, Trash2, FilterX, CalendarIcon
+      Tags, Folder, Edit, Trash2, FilterX, CalendarIcon, ArrowUp, ArrowDown, Plus, Save, Trash, ChevronDown, Check, FolderOpen, Info, X
   } from "@lucide/svelte";
+  import { Input } from "../../lib/components/ui/input/index.js";
+  import * as Tooltip from "../../lib/components/ui/tooltip/index.js";
+  import { ScrollArea } from "../../lib/components/ui/scroll-area/index.js";
+
+  // Definir tipo SortDescriptor (pode ser movido para types.ts eventualmente)
+  type SortDescriptor = {
+    criterion: string;
+    direction: 'asc' | 'desc';
+  };
+
+  // --- NOVO: Tipos para Filtros Nomeados (espelhar SavedItemsView) ---
+  type FilterSettings = {
+    searchQuery: string;
+    searchScope: 'content' | 'tags' | 'groups';
+    includedTags: string[];
+    excludedTags: string[];
+    tagMatchLogic: 'AND' | 'OR';
+    includedGroups: string[];
+    excludedGroups: string[];
+    groupMatchLogic: 'AND' | 'OR';
+    selectedDateRange?: { start?: string; end?: string; };
+    sortDescriptors: SortDescriptor[];
+  };
+  type NamedFilterSet = {
+    id: string;
+    name: string;
+    settings: FilterSettings;
+  };
+  // --- Fim Tipos Filtros Nomeados ---
 
   type Props = {
     open: boolean;
@@ -26,24 +55,22 @@
     includedGroups: string[];
     excludedGroups: string[];
     selectedDateRange: DateRange | undefined;
-    currentSortCriterion: string;
-    currentSortDirection: string;
-    searchQuery: string; // Necessário para habilitar/desabilitar "Limpar Tudo"
+    sortDescriptors: SortDescriptor[];
+    searchQuery: string;
     availableTags: string[];
     availableGroups: Group[];
+    namedFilterSets: NamedFilterSet[];
 
     // Callbacks
     onClose: () => void;
     onTagFilterOpen: () => void;
     onGroupFilterOpen: () => void;
     onDateChange: (range: DateRange | undefined) => void;
-    onSortCriterionChange: (criterion: string) => void;
-    onSortDirectionChange: (direction: string) => void;
     onClearFilters: () => void;
-    onManageGroupClick: () => void;
-    onEditTagClick: (tag: string) => void;
-    onRemoveTagClick: (tag: string) => void;
-    onRemoveAllTagsClick: () => void;
+    onOpenSaveFilterDialog: () => void;
+    onOpenLoadFilterDialog: () => void;
+    onOpenManageGroupsDialog: () => void;
+    onOpenManageTagsDialog: () => void;
   };
 
   let { 
@@ -53,22 +80,20 @@
     includedGroups,
     excludedGroups,
     selectedDateRange,
-    currentSortCriterion,
-    currentSortDirection,
+    sortDescriptors = $bindable(),
     searchQuery,
     availableTags,
     availableGroups,
+    namedFilterSets,
     onClose,
     onTagFilterOpen,
     onGroupFilterOpen,
     onDateChange,
-    onSortCriterionChange,
-    onSortDirectionChange,
     onClearFilters,
-    onManageGroupClick,
-    onEditTagClick,
-    onRemoveTagClick,
-    onRemoveAllTagsClick
+    onOpenSaveFilterDialog,
+    onOpenLoadFilterDialog,
+    onOpenManageGroupsDialog,
+    onOpenManageTagsDialog
    } = $props();
 
    function toDateOrNull(dateValue: DateValue | undefined): Date | null {
@@ -85,10 +110,34 @@
       selectedDateRange
   );
 
+  // Função para adicionar um novo nível de ordenação
+  function addSortLevel() {
+    // Adiciona um padrão (ex: Título Ascendente)
+    // Poderia ser mais inteligente e sugerir um critério não usado
+    sortDescriptors = [...sortDescriptors, { criterion: 'title', direction: 'asc' }];
+  }
+
+  // Função para remover um nível de ordenação
+  function removeSortLevel(index: number) {
+    if (sortDescriptors.length > 1) { // Só permite remover se houver mais de um nível
+      sortDescriptors = sortDescriptors.filter((_: SortDescriptor, i: number) => i !== index);
+    }
+  }
+
+  // Opções de critério (para os Selects)
+  const sortCriteriaOptions = [
+    { value: "dateAdded", label: "Data Adição" },
+    { value: "title", label: "Título" },
+    { value: "url", label: "URL" },
+    { value: "scheduledDate", label: "Data Agendada" },
+    { value: "noteCount", label: "Nº Notas" },
+    { value: "flashcardCount", label: "Nº Flashcards" },
+  ];
+
 </script>
 
 <Sheet.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-    <Sheet.Content side="right" class="w-[300px] sm:w-[400px] flex flex-col">
+    <Sheet.Content side="right" class="w-[300px] sm:w-[400px] flex flex-col p-3 space-y-0">
       <Sheet.Header>
         <Sheet.Title>Filtros e Ordenação</Sheet.Title>
         <Sheet.Description>
@@ -96,10 +145,18 @@
         </Sheet.Description>
       </Sheet.Header>
 
-      <div class="py-4 space-y-4 flex-grow overflow-y-auto px-1">
+      <div class="py-1 space-y-3 flex-grow overflow-y-auto px-1">
         <Separator />
          <div>
-            <h4 class="text-sm font-medium leading-none mb-2">Filtros</h4>
+            <div class="flex items-center gap-1 mb-2">
+              <h4 class="text-sm font-medium leading-none">Filtros</h4>
+              <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+                <Tooltip.Trigger class="cursor-help">
+                   <Info class="h-3.5 w-3.5 text-muted-foreground" />
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top"><p class="max-w-xs">Clique nos botões abaixo para abrir diálogos<br/>e selecionar Tags ou Grupos para incluir ou excluir<br/>da sua visualização.</p></Tooltip.Content>
+              </Tooltip.Root></Tooltip.Provider>
+            </div>
              <div class="flex gap-2">
                   <!-- {/* Botão para abrir Diálogo de Filtro de Tags */} -->
                   <Button variant="outline" class="w-full justify-between" onclick={onTagFilterOpen}>
@@ -126,7 +183,15 @@
          </div>
         <Separator />
          <div> 
-            <h4 class="text-sm font-medium leading-none mb-2">Data de Adição</h4>
+            <div class="flex items-center gap-1 mb-2">
+               <h4 class="text-sm font-medium leading-none">Data de Adição</h4>
+               <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+                <Tooltip.Trigger class="cursor-help">
+                   <Info class="h-3.5 w-3.5 text-muted-foreground" />
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top"><p class="max-w-xs">Selecione um intervalo de datas para filtrar<br/>os itens pela data em que foram adicionados.</p></Tooltip.Content>
+              </Tooltip.Root></Tooltip.Provider>
+            </div>
             <Popover.Root>
               <Popover.Trigger>
                 <Button variant="outline" class={cn("w-full justify-start text-left font-normal", !selectedDateRange && "text-muted-foreground")}>
@@ -146,116 +211,173 @@
 
         <Separator />
          <div> 
-            <h4 class="text-sm font-medium leading-none mb-2">Ordenação</h4>
-            <div class="grid grid-cols-2 gap-2">
-              <Select.Root type="multiple"
-                  value={[currentSortCriterion]}
-                  onValueChange={(v) => { 
-                     if (v && v.length > 0) onSortCriterionChange(v[0]);
-                  }}
-              >
-                <Select.Trigger class="w-full">
-                   {currentSortCriterion === 'dateAdded' ? 'Data Adição' :
-                    currentSortCriterion === 'title' ? 'Título' :
-                    currentSortCriterion === 'url' ? 'URL' :
-                    currentSortCriterion === 'scheduledDate' ? 'Data Agendada' :
-                    currentSortCriterion === 'noteCount' ? 'Nº Notas' :
-                    currentSortCriterion === 'flashcardCount' ? 'Nº Flashcards' : 'Ordenar por'}
+            <div class="flex items-center justify-between mb-2">
+               <div class="flex items-center gap-1">
+                 <h4 class="text-sm font-medium leading-none">Ordenação</h4>
+                 <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+                   <Tooltip.Trigger class="cursor-help">
+                      <Info class="h-3.5 w-3.5 text-muted-foreground" />
+                   </Tooltip.Trigger>
+                   <Tooltip.Content side="top"><p class="max-w-xs">Defina um ou mais critérios para ordenar a lista de itens.<br/>A ordenação é aplicada sequencialmente.</p></Tooltip.Content>
+                 </Tooltip.Root></Tooltip.Provider>
+               </div>
+
+               <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+                   <Tooltip.Trigger>
+                       <Button 
+                         variant="ghost" 
+                         size="icon" 
+                         class="h-8 w-8 flex-shrink-0"
+                         onclick={addSortLevel}
+                         disabled={sortDescriptors.length >= 3}
+                         aria-label="Adicionar Nível de Ordenação"
+                       >
+                         <Plus class="h-4 w-4" />
+                       </Button>
+                   </Tooltip.Trigger>
+                   <Tooltip.Content side="top"><p>Adicionar Nível de Ordenação</p></Tooltip.Content>
+               </Tooltip.Root></Tooltip.Provider>
+             </div>
+             
+             <ScrollArea class="h-[160px] rounded-md border p-2">
+               <div class="space-y-1">
+                 {#if sortDescriptors.length === 0}
+                   <p class="text-sm text-muted-foreground text-center py-4">Clique em '+' para adicionar um critério.</p>
+                 {:else}
+                   {#each sortDescriptors as descriptor, index (descriptor.criterion + index)} 
+                     <div class="flex items-center gap-1">
+                       <Select.Root
+                         type="single"
+                         value={descriptor.criterion}
+                         onValueChange={(value: string | null) => {
+                           if (value) {
+                             sortDescriptors[index].criterion = value;
+                             sortDescriptors = sortDescriptors; 
+                           }
+                         }}
+                       >
+                         <Select.Trigger class="flex-grow">
+                           {sortCriteriaOptions.find(opt => opt.value === descriptor.criterion)?.label || 'Critério...'}
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Item value="dateAdded">Data Adição</Select.Item>
-                  <Select.Item value="title">Título</Select.Item>
-                  <Select.Item value="url">URL</Select.Item>
-                  <Select.Item value="scheduledDate">Data Agendada</Select.Item>
-                  <Select.Item value="noteCount">Nº Notas</Select.Item>
-                  <Select.Item value="flashcardCount">Nº Flashcards</Select.Item>
+                           {#each sortCriteriaOptions as option}
+                             <Select.Item value={option.value}>{option.label}</Select.Item>
+                           {/each}
                 </Select.Content>
               </Select.Root>
-              <Select.Root type="multiple"
-                  value={[currentSortDirection]}
-                  onValueChange={(v) => { 
-                     if (v && v.length > 0) onSortDirectionChange(v[0]);
-                  }}
-              >
-                <Select.Trigger class="w-full">
-                    {currentSortDirection === 'asc' ? 'Ascendente' : 'Descendente'}
+                       
+                       <Select.Root
+                         type="single"
+                         value={descriptor.direction}
+                         onValueChange={(value: string | null) => {
+                            if (value && (value === 'asc' || value === 'desc')) {
+                              sortDescriptors[index].direction = value;
+                              sortDescriptors = sortDescriptors; 
+                            }
+                         }}
+                       >
+                         <Select.Trigger class="w-[110px]">
+                            {descriptor.direction === 'asc' ? 'Ascendente' : 'Descendente'}
                 </Select.Trigger>
                 <Select.Content>
                   <Select.Item value="asc">Ascendente</Select.Item>
                   <Select.Item value="desc">Descendente</Select.Item>
                 </Select.Content>
               </Select.Root>
+
+                       <Button 
+                         variant="ghost" 
+                         size="icon" 
+                         class="h-8 w-8 flex-shrink-0"
+                         onclick={() => removeSortLevel(index)}
+                         disabled={sortDescriptors.length <= 1}
+                         aria-label="Remover Nível"
+                       >
+                         <Trash2 class="h-4 w-4 text-muted-foreground" />
+                       </Button>
+                     </div>
+                   {/each}
+                 {/if}
             </div>
+             </ScrollArea>
          </div>
 
         <Separator />
          <div> 
-            <h4 class="text-sm font-medium leading-none mb-2">Gerenciamento Global</h4>
-             <div class="flex gap-2">
+            <div class="flex items-center gap-1 mb-4">
+               <h4 class="text-sm font-medium leading-none">Gerenciamento Global</h4>
+               <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+                 <Tooltip.Trigger class="cursor-help">
+                    <Info class="h-3.5 w-3.5 text-muted-foreground" />
+                 </Tooltip.Trigger>
+                 <Tooltip.Content side="top"><p class="max-w-xs">Gerencie todos os Grupos e Tags existentes no sistema,<br/>renomeando ou removendo-os globalmente.</p></Tooltip.Content>
+               </Tooltip.Root></Tooltip.Provider>
+            </div>
+             <div class="grid grid-cols-2 gap-2">
                 <!-- {/* Botão Gerenciar Grupos */} -->
                 <Button
                   variant="outline"
                   class="w-full justify-start" 
-                  onclick={onManageGroupClick} 
+                  onclick={onOpenManageGroupsDialog}
                   disabled={!availableGroups || availableGroups.length === 0}
                 >
                   <Folder class="mr-2 h-4 w-4" />
                   Grupos ({availableGroups?.length ?? 0})
                 </Button>
           
-                <!-- {/* Dropdown Gerenciar Tags */} -->
-                <DropdownMenu.Root>
-                 <DropdownMenu.Trigger>
-                   <Button variant="outline" class="w-full justify-start" disabled={availableTags.length === 0}> 
+                <!-- {/* Botão Gerenciar Tags */} -->
+                <Button 
+                  variant="outline" 
+                  class="w-full justify-start" 
+                  onclick={onOpenManageTagsDialog}
+                  disabled={availableTags.length === 0}
+                > 
                      <Tags class="mr-2 h-4 w-4" />
                       Tags ({availableTags.length})
                    </Button>
-                 </DropdownMenu.Trigger>
-                 <DropdownMenu.Content align="end" class="w-64 max-h-80 overflow-y-auto">
-                   <DropdownMenu.Label>Gerenciamento Global de Tags</DropdownMenu.Label>
-                   <DropdownMenu.Separator />
-                   {#if availableTags.length > 0}
-                      <DropdownMenu.Label class="text-xs font-normal text-muted-foreground px-2">Clique para Renomear ou Remover</DropdownMenu.Label>
-                      {#each availableTags as tag}
-                        <DropdownMenu.Sub>
-                          <DropdownMenu.SubTrigger>{tag}</DropdownMenu.SubTrigger>
-                          <DropdownMenu.SubContent>
-                              <DropdownMenu.Item onclick={() => onEditTagClick(tag)}>
-                                <Edit class="mr-2 h-3.5 w-3.5"/> Renomear "{tag}"...
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Separator/>
-                              <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:text-red-700 dark:focus:text-red-500" onclick={() => onRemoveTagClick(tag)}>
-                                <Trash2 class="mr-2 h-3.5 w-3.5"/> Remover "{tag}" de tudo...
-                              </DropdownMenu.Item>
-                          </DropdownMenu.SubContent>
-                        </DropdownMenu.Sub>
-                      {/each}
-                      <DropdownMenu.Separator />
-                      <DropdownMenu.Item
-                        class="text-red-600 dark:text-red-500 focus:text-red-700 dark:focus:text-red-500"
-                        onclick={onRemoveAllTagsClick} 
-                      >
-                        <Trash2 class="mr-2 h-3.5 w-3.5"/> Remover TODAS as Tags...
-                      </DropdownMenu.Item>
-                   {:else}
-                     <DropdownMenu.Item disabled>Nenhuma tag para gerenciar</DropdownMenu.Item>
-                   {/if}
-                 </DropdownMenu.Content>
-               </DropdownMenu.Root>
              </div>
          </div>
 
       </div> 
 
-      <Sheet.Footer class="mt-auto flex flex-row justify-between gap-2 pt-4 border-t">
-          <!-- {/* Botão Limpar Tudo */} -->  
-          <Button variant="outline" class="w-auto" onclick={onClearFilters}
-              disabled={!hasActiveFilters}>
-              <FilterX class="mr-2 h-4 w-4"/> Limpar Tudo
+      <Sheet.Footer class="mt-auto grid grid-cols-4 gap-1 pt-4 border-t">
+          <!-- {/* Novos Botões na primeira linha */}  -->
+          <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+            <Tooltip.Trigger>
+              <Button variant="outline" size="icon" class="h-9 w-full" onclick={onOpenSaveFilterDialog} aria-label="Salvar Filtro Atual">
+                <Save class="h-4 w-4" />
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top"><p><b>Salvar Filtro Atual</b><br/>Abre um diálogo para nomear e salvar<br/>o conjunto atual de filtros e ordenação.</p></Tooltip.Content>
+          </Tooltip.Root></Tooltip.Provider>
+           <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+             <Tooltip.Trigger>
+                <Button variant="outline" size="icon" class="h-9 w-full" onclick={onOpenLoadFilterDialog} disabled={namedFilterSets.length === 0} aria-label="Carregar/Gerenciar Filtros Salvos">
+                  <FolderOpen class="h-4 w-4" />
+                </Button>
+             </Tooltip.Trigger>
+             <Tooltip.Content side="top"><p><b>Carregar/Gerenciar Filtros</b><br/>Abre um diálogo para aplicar ou excluir<br/>filtros que você salvou anteriormente.</p></Tooltip.Content>
+           </Tooltip.Root></Tooltip.Provider>
+           <!-- {/* Botões existentes na segunda linha */}  -->
+          <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+            <Tooltip.Trigger>
+               <Button variant="outline" size="icon" class="h-9 w-full" onclick={onClearFilters}
+                   disabled={!hasActiveFilters && sortDescriptors.length === 1 && sortDescriptors[0].criterion === 'dateAdded' && sortDescriptors[0].direction === 'desc'} aria-label="Limpar Tudo">
+                   <FilterX class="h-4 w-4"/>
           </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top"><p><b>Limpar Tudo</b><br/>Redefine todos os filtros e a ordenação<br/>para os valores padrão.</p></Tooltip.Content>
+          </Tooltip.Root></Tooltip.Provider>
+          <Tooltip.Provider><Tooltip.Root delayDuration={100}>
+            <Tooltip.Trigger>
           <Sheet.Close>
-           <Button variant="outline">Fechar</Button>
+                 <Button variant="outline" size="icon" class="h-9 w-full px-2" aria-label="Fechar Painel">
+                    Fechar
+                 </Button>
         </Sheet.Close>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="top"><p><b>Fechar</b><br/>Fecha este painel lateral.</p></Tooltip.Content>
+          </Tooltip.Root></Tooltip.Provider>
       </Sheet.Footer>
     </Sheet.Content>
 </Sheet.Root> 

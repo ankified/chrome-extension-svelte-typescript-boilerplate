@@ -30,6 +30,7 @@
     selectedDateRange: DateRange | undefined;
     sortedItems: SavedItem[];
     groups: Group[] | undefined; // Passar o valor resolvido da store
+    availableSystemTags: string[];
 
     // Callbacks para comunicação com o componente pai
     onSearchQueryChange: (query: string) => void;
@@ -53,6 +54,7 @@
     selectedDateRange,
     sortedItems,
     groups,
+    availableSystemTags,
     onSearchQueryChange,
     onSearchScopeChange,
     onOpenFilterSheet,
@@ -182,7 +184,7 @@
 <!-- Área de Exibição dos Cards -->
 <div class="flex-grow overflow-y-auto border rounded-lg dark:border-gray-700">
   {#if sortedItems.length > 0}
-    <SavedItemsCardView data={sortedItems} {groups} />
+    <SavedItemsCardView data={sortedItems} groups={groups ?? []} {availableSystemTags} />
   {:else}
     <div class="text-center py-10 text-muted-foreground border rounded-lg dark:border-gray-700">
       <p class="font-medium">Nenhum item encontrado</p>
