@@ -124,9 +124,8 @@
           <Tabs.Trigger value="include">Incluir Tags ({currentIncludedTags.length})</Tabs.Trigger>
           <Tabs.Trigger value="exclude">Excluir Tags ({currentExcludedTags.length})</Tabs.Trigger>
         </Tabs.List>
-        <!-- {# Usar key para garantir reset visual #} -->
-        {#key open}
-        <Tabs.Content value="include" class="flex-grow overflow-hidden flex flex-col mt-2">
+        
+        <Tabs.Content value="include">
            <Command.Root class="flex-grow overflow-hidden flex flex-col border rounded-md">
               <Command.Input placeholder="Buscar tag para incluir..." bind:value={includeSearchQuery} />
                <Command.Separator/>
@@ -205,7 +204,7 @@
            </div>
         </Tabs.Content>
   
-        <Tabs.Content value="exclude" class="flex-grow overflow-hidden flex flex-col mt-2">
+        <Tabs.Content value="exclude">
           <Command.Root class="flex-grow overflow-hidden flex flex-col border rounded-md">
               <Command.Input placeholder="Buscar tag para excluir..." bind:value={excludeSearchQuery}/>
                <Command.Separator/>
@@ -267,7 +266,6 @@
            <!-- {# Placeholder #} -->
            <div class="flex-shrink-0 h-[44px]"></div> 
         </Tabs.Content>
-        {/key}
       </Tabs.Root>
   
       <Dialog.Footer class="mt-auto pt-4 pb-6 px-6 border-t flex-shrink-0 flex flex-col sm:flex-row gap-2">

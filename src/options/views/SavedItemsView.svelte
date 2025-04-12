@@ -353,15 +353,15 @@
     </Tabs.List>
 
     <!-- {/* Conteúdo da Aba Tabela */} -->
-     <Tabs.Content value="table" class="flex-grow overflow-y-auto p-1">
-      <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
+     <Tabs.Content value="table">
+      <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
         <p class="font-medium">Visualização em Tabela</p>
         <p class="text-sm">(Em desenvolvimento)</p>
       </div>
     </Tabs.Content>
 
     <!-- {/* Conteúdo da Aba Cartões - AGORA USA O COMPONENTE */} -->
-    <Tabs.Content value="cards" class="flex flex-col flex-grow overflow-hidden">
+    <Tabs.Content value="cards">
         <SavedItemsCardsTab
           searchQuery={searchQuery}
           searchScope={searchScope}
@@ -383,18 +383,17 @@
           onRemoveExcludedTag={handleRemoveExcludedTag}
           onClearDateRange={handleClearDateRange}
         />
-        <!-- CONTEÚDO HTML ANTERIOR REMOVIDO DAQUI -->
     </Tabs.Content>
 
     <!-- {/* Conteúdo das Abas Kanban e Fluxo */} -->
-     <Tabs.Content value="kanban" class="flex-grow overflow-y-auto p-1">
-       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
+     <Tabs.Content value="kanban">
+       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
          <p class="font-medium">Visualização Kanban</p>
          <p class="text-sm">(Em desenvolvimento)</p>
        </div>
     </Tabs.Content>
-    <Tabs.Content value="flow" class="flex-grow overflow-y-auto p-1">
-       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700">
+    <Tabs.Content value="flow">
+       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
          <p class="font-medium">Visualização em Fluxo</p>
          <p class="text-sm">(Em desenvolvimento)</p>
        </div>

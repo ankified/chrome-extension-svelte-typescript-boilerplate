@@ -83,12 +83,12 @@
 ~~1.  **Busca em Tags com `ToggleGroup`:**~~ (CONCLUÍDO - 2025-04-09)
     *   ~~Adicionar um `ToggleGroup` (de `shadcn-svelte`) próximo à barra de pesquisa principal, com opções como "Título/URL/Comentários" (padrão), "Tags", "Grupos".~~
     *   ~~Modificar a lógica de `filterItems` para considerar o estado do `ToggleGroup` e incluir busca nos campos `item.tags` ou `item.groupIds` (pelo nome do grupo) quando as respectivas opções estiverem ativas.~~
-2.  **Lógica OR para Tags:**
-    *   Adicionar um `Switch` ou `ToggleGroup` na seção de Tags do `Sheet` para alternar entre lógica "E" (padrão atual) e "OU".
-    *   Modificar a condição `matchesTags` em `filterItems` para usar `tags.some(...)` (lógica OU) quando apropriado.
-3.  **Filtros Negativos:**
-    *   Definir como o usuário indicará um filtro negativo (ex: prefixo `-` na busca do `Command`? Opção "não contém" no `DropdownMenu`/`Command`?).
-    *   Modificar `filterItems` para lidar com a lógica de exclusão para grupos e tags.
+~~2.  **Lógica OR para Tags:**~~ (CONCLUÍDO - 2025-04-11)
+    *   ~~Adicionar um `Switch` ou `ToggleGroup` na seção de Tags do `Sheet` para alternar entre lógica "E" (padrão atual) e "OU".~~
+    *   ~~Modificar a condição `matchesTags` em `filterItems` para usar `tags.some(...)` (lógica OU) quando apropriado.~~
+~~3.  **Filtros Negativos:**~~ (CONCLUÍDO - 2025-04-11)
+    *   ~~Definir como o usuário indicará um filtro negativo (ex: prefixo `-` na busca do `Command`? Opção "não contém" no `DropdownMenu`/`Command`?).~~
+    *   ~~Modificar `filterItems` para lidar com a lógica de exclusão para grupos e tags.~~
 
 ---
 

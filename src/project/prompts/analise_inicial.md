@@ -16,6 +16,7 @@ Analise o projeto para entender sua estrutura, propósito e tecnologias utilizad
 2. Leia detalhadamente os arquivos:
    - src/project/estado-atual-implementacao.md
    - src/project/plano-acoes-prioritarias.md
+   - src/project/refatoracao-filtros-ordenacao.md
 
 3. Com base nessa análise:
    - Apresente um resumo do estado atual do projeto
