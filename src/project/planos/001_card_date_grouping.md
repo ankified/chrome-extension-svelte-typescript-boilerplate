@@ -10,6 +10,31 @@ Implementar agrupamento visual e sub-ordenação na visualização de cards (`Sa
 - Os cards devem ser agrupados em seções com títulos de data relativos/recentes (Hoje, Ontem, Esta Semana, etc.) ou por Mês/Ano para datas mais antigas.
 - Os critérios de ordenação secundários e terciários definidos no `FilterSheet` devem ser aplicados *dentro* de cada grupo de data.
 
+---
+
+## Status da Implementação
+
+**CONCLUÍDO em 2025-04-15**
+
+- O agrupamento visual por data foi implementado na visualização de cards.
+- A lógica de agrupamento utiliza categorias relativas (Hoje, Ontem, Esta Semana, etc.) e agrupa corretamente por mês/ano para datas antigas.
+- A sub-ordenação dentro de cada grupo respeita os critérios secundários e terciários definidos pelo usuário.
+- O utilitário `getSortedDateGroupKeys` foi aprimorado para aceitar a direção de ordenação e inverter a ordem dos grupos conforme o usuário alterna entre ascendente/descendente.
+- O componente de visualização de cards foi atualizado para passar a direção correta ao utilitário de agrupamento.
+- Refatoração para uso correto de `$derived` em Svelte 5, eliminando autodependências e problemas de reatividade.
+- Ajustes de tipagem explícita para garantir compatibilidade com TypeScript e Svelte 5.
+- Correção de diversos erros de linter relacionados a stores, reatividade e tipagem.
+- **Novidade (2025-04-15 19:29:36):** Os tooltips dos títulos dos grupos de data agora exibem o intervalo real de datas para todos os agrupamentos, incluindo grupos dinâmicos de mês (ex: "Abril de 2025") e ano (ex: "2024"). Veja registro detalhado no diário.
+
+## Próximos Passos
+
+- Refinar estilos visuais dos títulos dos grupos de data.
+- Adicionar tooltips ou informações complementares nos agrupamentos.
+- Implementar visualização Kanban e Fluxo.
+- Realizar testes de performance com grandes volumes de dados.
+
+---
+
 ## 2. Estratégia de Agrupamento de Datas
 
 Será utilizada a estratégia **Relativo/Recente + Datas**:

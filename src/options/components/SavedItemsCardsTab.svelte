@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SavedItem, Group } from "../../types";
   import type { DateRange } from 'bits-ui';
-  import { format } from 'date-fns';
+  import { format, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, parse, isValid, startOfYear, endOfYear } from 'date-fns';
   import { ptBR } from "date-fns/locale";
   import { getLocalTimeZone, type DateValue } from "@internationalized/date";
   import { cn } from "../../lib/utils";
@@ -13,7 +13,10 @@
   import { Button } from "../../lib/components/ui/button/index.js";
   import { Badge } from "../../lib/components/ui/badge/index.js";
   import {
-      Search, TextSearch, Tags, Folder, Filter, X
+      Search, TextSearch, Tags, Folder, Filter, X,
+
+      CalendarDays
+
   } from "@lucide/svelte";
   
   // Importação do componente de Card
@@ -81,6 +84,20 @@
       selectedDateRange
   );
 
+  // Cálculo do intervalo da semana atual (segunda a domingo, ptBR)
+  const semanaAtualStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const semanaAtualEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
+  // Semana passada
+  const semanaPassadaStart = startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 });
+  const semanaPassadaEnd = endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 });
+  // Este mês
+  const mesAtualStart = startOfMonth(new Date());
+  const mesAtualEnd = endOfMonth(new Date());
+  // Mês passado
+  const mesPassadoDate = subMonths(new Date(), 1);
+  const mesPassadoStart = startOfMonth(mesPassadoDate);
+  const mesPassadoEnd = endOfMonth(mesPassadoDate);
+
   // Agrupamento e sub-ordenação
   let groupedAndSortedData = $derived(() => {
     if (!sortDescriptors || sortDescriptors.length === 0) {
@@ -106,6 +123,31 @@
   import type { SortDescriptor } from "../../types";
   import { sortItems } from '../../lib/utils/sorting';
   import { groupItemsByDate, getSortedDateGroupKeys } from '../../lib/utils/dateGrouping';
+    import { Separator } from "../../lib/components/ui/separator";
+
+  function getIntervalTooltip(groupTitle: string): string | null {
+    // Mês dinâmico: "Abril de 2025"
+    const mesAnoMatch = groupTitle.match(/^([A-Za-zçãéíóúâêôûõÇÃÉÍÓÚÂÊÔÛÕ]+) de (\d{4})$/i);
+    if (mesAnoMatch) {
+      const [_, mesStr, anoStr] = mesAnoMatch;
+      // Tenta parsear o mês em ptBR
+      const data = parse(`01/${mesStr}/${anoStr}`, 'dd/MMMM/yyyy', new Date(), { locale: ptBR });
+      if (isValid(data)) {
+        const start = startOfMonth(data);
+        const end = endOfMonth(data);
+        return `Itens adicionados em ${mesStr} de ${anoStr} (${format(start, 'dd/MM', { locale: ptBR })} - ${format(end, 'dd/MM', { locale: ptBR })})`;
+      }
+    }
+    // Ano dinâmico: "2024"
+    const anoMatch = groupTitle.match(/^(\d{4})$/);
+    if (anoMatch) {
+      const ano = Number(anoMatch[1]);
+      const start = startOfYear(new Date(ano, 0, 1));
+      const end = endOfYear(new Date(ano, 0, 1));
+      return `Itens adicionados em ${ano} (${format(start, 'dd/MM', { locale: ptBR })} - ${format(end, 'dd/MM', { locale: ptBR })})`;
+    }
+    return null;
+  }
 
 </script>
 
@@ -215,7 +257,35 @@
     {#each groupedAndSortedData() as group (group.groupTitle)}
       {#if group.groupTitle}
         <div class="px-4 pt-6 pb-2">
-          <h2 class="text-lg font-semibold text-primary mb-2">{group.groupTitle}</h2>
+          <Separator class="mb-2" />
+          <Tooltip.Provider>
+            <Tooltip.Root delayDuration={150}>
+              <Tooltip.Trigger class="flex items-center gap-2 group cursor-help">
+                <CalendarDays class="h-5 w-5 text-primary/80 group-hover:text-primary" />
+                <span class="text-lg font-semibold text-primary truncate max-w-xs">{group.groupTitle}</span>
+                <Badge variant="outline" class="ml-2 text-xs font-medium">{group.items.length} itens</Badge>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="top" class="text-xs max-w-xs">
+                {#if group.groupTitle === 'Hoje'}
+                  Itens adicionados hoje ({format(new Date(), 'dd/MM/yyyy', { locale: ptBR })})
+                {:else if group.groupTitle === 'Ontem'}
+                  Itens adicionados ontem ({format(new Date(Date.now() - 86400000), 'dd/MM/yyyy', { locale: ptBR })})
+                {:else if group.groupTitle === 'Esta Semana'}
+                  Itens adicionados nesta semana ({format(semanaAtualStart, 'dd/MM', { locale: ptBR })} - {format(semanaAtualEnd, 'dd/MM', { locale: ptBR })})
+                {:else if group.groupTitle === 'Semana Passada'}
+                  Itens adicionados na semana passada ({format(semanaPassadaStart, 'dd/MM', { locale: ptBR })} - {format(semanaPassadaEnd, 'dd/MM', { locale: ptBR })})
+                {:else if group.groupTitle === 'Este Mês'}
+                  Itens adicionados neste mês ({format(mesAtualStart, 'dd/MM', { locale: ptBR })} - {format(mesAtualEnd, 'dd/MM', { locale: ptBR })})
+                {:else if group.groupTitle === 'Mês Passado'}
+                  Itens adicionados no mês passado ({format(mesPassadoStart, 'dd/MM', { locale: ptBR })} - {format(mesPassadoEnd, 'dd/MM', { locale: ptBR })})
+                {:else if getIntervalTooltip(group.groupTitle)}
+                  {getIntervalTooltip(group.groupTitle)}
+                {:else}
+                  {group.groupTitle}
+                {/if}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </Tooltip.Provider>
         </div>
       {/if}
       <SavedItemsCardView data={group.items} groups={groups ?? []} {availableSystemTags} />

@@ -248,7 +248,7 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Implementação**:
     - No componente `SavedItemsCardView.svelte`, aplicar a classe `truncate` do TailwindCSS ao elemento `<h3>` que exibe `item.title` (substituindo ou complementando `line-clamp-2` se necessário).
 
-### ~~19. Refinar Rolagem Horizontal das Pills (Grupos/Tags)~~ (CONCLUIDO - 2025-04-08)
+### ~~19. Refinar Rolagem Horizontal das Pills (Grupos/Tags)~~ (CONCLUÍDO - 2025-04-08)
 
 - **Melhoria**: Aprimorar a experiência de rolagem horizontal para as pills de Grupos e Tags dentro dos cards quando excedem a largura.
 - **Implementação**:
@@ -286,21 +286,34 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Novas Implementações
 
-### 1. Refatorar Sistema de Filtros e Ordenação (Prioridade: Alta) (EM ANDAMENTO)
+### 1. Refatorar Sistema de Filtros e Ordenação (Prioridade: Alta) (CONCLUÍDO)
 
 - **Feature**: Modernizar e tornar mais poderosa a funcionalidade de filtrar e ordenar os itens salvos na página de opções.
 - **Implementação**: Abordagem faseada (ver detalhes no plano original `refatoracao-filtros-ordenacao.md`, agora arquivado/integrado aqui e no diário).
-  - ~~**Fase 1 (Fundação UI Sheet):** Concluída (2025-04-11).~~ 
-  - ~~**Fase 2 (Componentes Avançados + Pills):** Concluída (2025-04-09).~~
-  - ~~**Fase 3 (Lógica Avançada - Busca, OR, Negativo):** Concluída (2025-04-11).~~
-  - ~~**Fase 4 (Ordenação Múltipla):** Concluída (2025-04-14).~~ 
+  - ~~Fase 1 (Fundação UI Sheet): Concluída (2025-04-11).~~ 
+  - ~~Fase 2 (Componentes Avançados + Pills): Concluída (2025-04-09).~~
+  - ~~Fase 3 (Lógica Avançada - Busca, OR, Negativo): Concluída (2025-04-11).~~
+  - ~~Fase 4 (Ordenação Múltipla): Concluída (2025-04-14).~~ 
     - ~~UI com múltiplos níveis, add/remove, ScrollArea.~~
     - ~~Lógica de ordenação multi-nível funcional.~~
     - ~~Implementada exclusão mútua (Data/Data, Título/URL) e prevenção de repetição na seleção de critérios.~~
     - ~~Removido critério padrão ao adicionar novo nível.~~
-  - ~~**Fase 5 (Persistência - Filtros Nomeados):** Concluída (2025-04-12).~~
-  - **Próximo Passo (Ordenação):** Implementar agrupamento visual por data (ver plano `src/project/plans/001_card_date_grouping.md`).
-- **Estimativa (Original Fase 1):** ~~3-5 dias~~ (Concluído)
+  - ~~Fase 5 (Persistência - Filtros Nomeados): Concluída (2025-04-12).~~
+  - ~~Agrupamento visual por data: Concluído (2025-04-15).~~
+    - ~~Implementado agrupamento visual por data na visualização de cards quando o critério primário é `dateAdded` ou `scheduledDate`.~~
+    - ~~A lógica de agrupamento utiliza categorias relativas (Hoje, Ontem, Esta Semana, etc.) e agrupa corretamente por mês/ano para datas antigas.~~
+    - ~~A sub-ordenação dentro de cada grupo respeita os critérios secundários e terciários definidos pelo usuário.~~
+    - ~~O utilitário `getSortedDateGroupKeys` foi aprimorado para aceitar a direção de ordenação e inverter a ordem dos grupos conforme o usuário alterna entre ascendente/descendente.~~
+    - ~~O componente de visualização de cards foi atualizado para passar a direção correta ao utilitário de agrupamento.~~
+    - ~~Refatoração para uso correto de `$derived` em Svelte 5, eliminando autodependências e problemas de reatividade.~~
+    - ~~Ajustes de tipagem explícita para garantir compatibilidade com TypeScript e Svelte 5.~~
+    - ~~Correção de diversos erros de linter relacionados a stores, reatividade e tipagem.~~
+    - **Novidade (2025-04-15 19:29:36):** Os tooltips dos títulos dos grupos de data agora exibem o intervalo real de datas para todos os agrupamentos, incluindo grupos dinâmicos de mês (ex: "Abril de 2025") e ano (ex: "2024"). Veja registro detalhado no diário.
+- **Próximos Passos:**
+  - Refinar estilos visuais dos títulos dos grupos de data.
+  - Adicionar tooltips ou informações complementares nos agrupamentos.
+  - Implementar visualização Kanban e Fluxo.
+  - Realizar testes de performance com grandes volumes de dados.
 
 ### 2. Verificação de Duplicatas 
 // Renumerado (era NI#1 duplicado)

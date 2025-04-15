@@ -110,7 +110,22 @@
     *   ~~Implementada prevenção de repetição (critério já selecionado em outro nível é desabilitado).~~
     *   ~~Removido critério padrão ("Título") ao adicionar novo nível; agora exibe placeholder "Critério...".~~
 
-**Próximo Passo (Relacionado à Ordenação):** Implementar agrupamento visual por data quando o critério primário for `dateAdded` ou `scheduledDate` (ver plano `001_card_date_grouping.md`).
+4.  **Agrupamento Visual por Data:** (CONCLUÍDO - 2025-04-15)
+    *   ~~Implementado agrupamento visual por data na visualização de cards quando o critério primário é `dateAdded` ou `scheduledDate`.~~
+    *   ~~A lógica de agrupamento utiliza categorias relativas (Hoje, Ontem, Esta Semana, etc.) e agrupa corretamente por mês/ano para datas antigas.~~
+    *   ~~A sub-ordenação dentro de cada grupo respeita os critérios secundários e terciários definidos pelo usuário.~~
+    *   ~~O utilitário `getSortedDateGroupKeys` foi aprimorado para aceitar a direção de ordenação e inverter a ordem dos grupos conforme o usuário alterna entre ascendente/descendente.~~
+    *   ~~O componente de visualização de cards foi atualizado para passar a direção correta ao utilitário de agrupamento.~~
+    *   ~~Refatoração para uso correto de `$derived` em Svelte 5, eliminando autodependências e problemas de reatividade.~~
+    *   ~~Ajustes de tipagem explícita para garantir compatibilidade com TypeScript e Svelte 5.~~
+    *   ~~Correção de diversos erros de linter relacionados a stores, reatividade e tipagem.~~
+    *   **Novidade (2025-04-15 19:29:36):** Os tooltips dos títulos dos grupos de data agora exibem o intervalo real de datas para todos os agrupamentos, incluindo grupos dinâmicos de mês (ex: "Abril de 2025") e ano (ex: "2024"). Veja registro detalhado no diário.
+
+**Próximos Passos:**
+- Refinar estilos visuais dos títulos dos grupos de data.
+- Adicionar tooltips ou informações complementares nos agrupamentos.
+- Implementar visualização Kanban e Fluxo.
+- Realizar testes de performance com grandes volumes de dados.
 
 ---
 
