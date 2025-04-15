@@ -94,7 +94,7 @@
     // Agrupar por data
     const grouped = groupItemsByDate(sortedItems, primary.criterion);
     const keys = Array.from(grouped.keys());
-    const sortedKeys = getSortedDateGroupKeys(keys);
+    const sortedKeys = getSortedDateGroupKeys(keys, primary.direction);
     const secondarySort = sortDescriptors.slice(1);
     return sortedKeys.map(key => {
       const groupItems = grouped.get(key) ?? [];

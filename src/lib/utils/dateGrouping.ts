@@ -56,10 +56,11 @@ const groupOrder = [
   'Sem Data'
 ];
 
-export function getSortedDateGroupKeys(keys: string[]): string[] {
+export function getSortedDateGroupKeys(keys: string[], direction: 'asc' | 'desc' = 'desc'): string[] {
   // Ordena conforme ordem lógica, depois meses/anos decrescentes
-  const fixed = groupOrder.filter(k => keys.includes(k));
-  const mesesAnos = keys.filter(k => !groupOrder.includes(k) && k.match(/^[A-Za-zçãé]+ de \d{4}$/)).sort((a, b) => {
+  let fixed = groupOrder.filter(k => keys.includes(k));
+  if (direction === 'asc') fixed = [...fixed].reverse();
+  let mesesAnos = keys.filter(k => !groupOrder.includes(k) && k.match(/^[A-Za-zçãé]+ de \d{4}$/)).sort((a, b) => {
     // Mais recentes primeiro
     const [ma, ya] = a.split(' de ');
     const [mb, yb] = b.split(' de ');
@@ -68,6 +69,8 @@ export function getSortedDateGroupKeys(keys: string[]): string[] {
     const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     return meses.indexOf(mb.toLowerCase()) - meses.indexOf(ma.toLowerCase());
   });
-  const anos = keys.filter(k => k.match(/^\d{4}$/)).sort((a, b) => Number(b) - Number(a));
+  if (direction === 'asc') mesesAnos = [...mesesAnos].reverse();
+  let anos = keys.filter(k => k.match(/^\d{4}$/)).sort((a, b) => Number(b) - Number(a));
+  if (direction === 'asc') anos = [...anos].reverse();
   return [...fixed, ...mesesAnos, ...anos];
 } 
