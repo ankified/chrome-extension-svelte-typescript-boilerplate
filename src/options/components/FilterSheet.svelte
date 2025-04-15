@@ -112,9 +112,8 @@
 
   // Função para adicionar um novo nível de ordenação
   function addSortLevel() {
-    // Adiciona um padrão (ex: Título Ascendente)
-    // Poderia ser mais inteligente e sugerir um critério não usado
-    sortDescriptors = [...sortDescriptors, { criterion: 'title', direction: 'asc' }];
+    // Modificar para adicionar com critério vazio
+    sortDescriptors = [...sortDescriptors, { criterion: '', direction: 'asc' }];
   }
 
   // Função para remover um nível de ordenação
@@ -261,7 +260,24 @@
                 </Select.Trigger>
                 <Select.Content>
                            {#each sortCriteriaOptions as option}
-                             <Select.Item value={option.value}>{option.label}</Select.Item>
+                             {@const otherDescriptors = sortDescriptors.filter((_: SortDescriptor, i: number) => i !== index)}
+                             
+                             {@const isDisabledByDate = 
+                               (option.value === "dateAdded" && otherDescriptors.some((d: SortDescriptor) => d.criterion === "scheduledDate")) ||
+                               (option.value === "scheduledDate" && otherDescriptors.some((d: SortDescriptor) => d.criterion === "dateAdded"))
+                             }
+                             {@const isDisabledByText = 
+                               (option.value === "title" && otherDescriptors.some((d: SortDescriptor) => d.criterion === "url")) ||
+                               (option.value === "url" && otherDescriptors.some((d: SortDescriptor) => d.criterion === "title"))
+                             }
+                             {@const isDisabledBySelection = otherDescriptors.some((d: SortDescriptor) => d.criterion === option.value)}
+                             
+                             <Select.Item 
+                               value={option.value} 
+                               disabled={isDisabledByDate || isDisabledByText || isDisabledBySelection}
+                             >
+                               {option.label}
+                             </Select.Item>
                            {/each}
                 </Select.Content>
               </Select.Root>

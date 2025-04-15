@@ -92,26 +92,42 @@
 
 ---
 
-## Fase 4: Ordenação Múltipla
+## Fase 4: Ordenação Múltipla (CONCLUÍDO - 2025-04-14)
 
-**Meta:** Permitir ao usuário ordenar por mais de um critério.
+**Meta:** Permitir ao usuário ordenar por mais de um critério com regras de seleção inteligentes.
 
 **Passos:**
 
-1.  **UI de Ordenação:** Modificar a UI na seção "Ordenação" do `Sheet` para permitir adicionar/remover/reordenar múltiplos critérios de ordenação (cada um com sua direção). (Ex: Lista reordenável de `Select`s).
-2.  **Lógica de Ordenação:** Modificar a função `sortItems` para iterar sobre a lista de critérios de ordenação. Se a comparação para o primeiro critério for 0, passar para o próximo, e assim por diante.
+~~1.  **UI de Ordenação:** Modificar a UI na seção "Ordenação" do `Sheet` para permitir adicionar/remover/reordenar múltiplos critérios de ordenação (cada um com sua direção).~~
+    *   ~~Implementado em `FilterSheet.svelte` usando um loop `#each` para os `sortDescriptors`.~~
+    *   ~~Botão "+" adicionado ao cabeçalho da seção.~~
+    *   ~~Botão "Remover" adicionado a cada nível (exceto o último).~~
+    *   ~~Níveis contidos em uma `ScrollArea`.~~
+~~2.  **Lógica de Ordenação:** Modificar a função `sortItems` para iterar sobre a lista de critérios de ordenação. Se a comparação para o primeiro critério for 0, passar para o próximo, e assim por diante.~~
+    *   ~~Lógica já existente em `sortItems` em `SavedItemsView.svelte` (agora recomendada para refatoração para `src/utils/sorting.ts`).~~
+3.  **Melhorias na Seleção de Critérios:**
+    *   ~~Implementada exclusão mútua para os pares "Data Adição"/"Data Agendada" e "Título"/"URL" (opções desabilitadas no `<Select.Item>`).~~
+    *   ~~Implementada prevenção de repetição (critério já selecionado em outro nível é desabilitado).~~
+    *   ~~Removido critério padrão ("Título") ao adicionar novo nível; agora exibe placeholder "Critério...".~~
+
+**Próximo Passo (Relacionado à Ordenação):** Implementar agrupamento visual por data quando o critério primário for `dateAdded` ou `scheduledDate` (ver plano `001_card_date_grouping.md`).
 
 ---
 
-## Fase 5: Persistência de Filtros
+## Fase 5: Persistência de Filtros (CONCLUÍDO - 2025-04-12)
 
 **Meta:** Salvar as configurações de filtro/ordenação do usuário.
 
 **Passos:**
 
-1.  **Salvar Estado Atual:** Usar `chrome.storage.sync` ou `local` para salvar o estado das variáveis (`searchQuery`, `selectedGroup`, `selectedTags`, `sortCriteria`, `sortDirection`, filtro de data, lógica AND/OR, etc.) sempre que forem modificados.
-2.  **Carregar Estado:** Ao montar `SavedItemsView`, carregar os valores salvos e aplicá-los aos estados `$state`.
-3.  **(Opcional) Filtros Nomeados:** Implementar UI (talvez no `Sheet`) para salvar o conjunto atual de filtros/ordenação com um nome e depois carregar rapidamente esses conjuntos salvos.
+~~1.  **Salvar Estado Atual:** Usar `chrome.storage.sync` ou `local` para salvar o estado das variáveis (`searchQuery`, `selectedGroup`, `selectedTags`, `sortCriteria`, `sortDirection`, filtro de data, lógica AND/OR, etc.) sempre que forem modificados.~~
+    *   *Nota: A persistência individual de cada estado não foi explicitamente implementada nesta fase, mas a funcionalidade de "Filtros Nomeados" cobre a necessidade principal.*
+~~2.  **Carregar Estado:** Ao montar `SavedItemsView`, carregar os valores salvos e aplicá-los aos estados `$state`.~~
+    *   *Nota: A persistência individual de cada estado não foi explicitamente implementada.*
+~~3.  **(Opcional) Filtros Nomeados:** Implementar UI (talvez no `Sheet`) para salvar o conjunto atual de filtros/ordenação com um nome e depois carregar rapidamente esses conjuntos salvos.~~
+    *   ~~Implementado com `SaveFilterDialog` e `LoadFilterDialog` acionados por botões no `SheetFooter`.~~
+    *   ~~Estado `namedFilterSets` adicionado a `SavedItemsView.svelte`.~~
+    *   ~~Funções `saveNamedFilterSet`, `applyNamedFilterSet`, `deleteNamedFilterSet` implementadas.~~
 
 ---
 

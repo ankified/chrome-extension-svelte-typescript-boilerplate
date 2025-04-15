@@ -31,6 +31,7 @@
     sortedItems: SavedItem[];
     groups: Group[] | undefined; // Passar o valor resolvido da store
     availableSystemTags: string[];
+    sortDescriptors: SortDescriptor[];
 
     // Callbacks para comunicação com o componente pai
     onSearchQueryChange: (query: string) => void;
@@ -55,6 +56,7 @@
     sortedItems,
     groups,
     availableSystemTags,
+    sortDescriptors,
     onSearchQueryChange,
     onSearchScopeChange,
     onOpenFilterSheet,
@@ -78,6 +80,32 @@
       excludedGroups.length > 0 || 
       selectedDateRange
   );
+
+  // Agrupamento e sub-ordenação
+  let groupedAndSortedData = $derived(() => {
+    if (!sortDescriptors || sortDescriptors.length === 0) {
+      return [{ groupTitle: null, items: sortedItems as SavedItem[] }];
+    }
+    const primary = sortDescriptors[0];
+    const isDateSort = primary.criterion === 'dateAdded' || primary.criterion === 'scheduledDate';
+    if (!isDateSort) {
+      return [{ groupTitle: null, items: sortedItems as SavedItem[] }];
+    }
+    // Agrupar por data
+    const grouped = groupItemsByDate(sortedItems, primary.criterion);
+    const keys = Array.from(grouped.keys());
+    const sortedKeys = getSortedDateGroupKeys(keys);
+    const secondarySort = sortDescriptors.slice(1);
+    return sortedKeys.map(key => {
+      const groupItems = grouped.get(key) ?? [];
+      const subSorted = secondarySort.length > 0 ? sortItems(groupItems, secondarySort) : groupItems;
+      return { groupTitle: key, items: subSorted as SavedItem[] };
+    });
+  });
+
+  import type { SortDescriptor } from "../../types";
+  import { sortItems } from '../../lib/utils/sorting';
+  import { groupItemsByDate, getSortedDateGroupKeys } from '../../lib/utils/dateGrouping';
 
 </script>
 
@@ -184,7 +212,14 @@
 <!-- Área de Exibição dos Cards -->
 <div class="flex-grow overflow-y-auto border rounded-lg dark:border-gray-700">
   {#if sortedItems.length > 0}
-    <SavedItemsCardView data={sortedItems} groups={groups ?? []} {availableSystemTags} />
+    {#each groupedAndSortedData() as group (group.groupTitle)}
+      {#if group.groupTitle}
+        <div class="px-4 pt-6 pb-2">
+          <h2 class="text-lg font-semibold text-primary mb-2">{group.groupTitle}</h2>
+        </div>
+      {/if}
+      <SavedItemsCardView data={group.items} groups={groups ?? []} {availableSystemTags} />
+    {/each}
   {:else}
     <div class="text-center py-10 text-muted-foreground border rounded-lg dark:border-gray-700">
       <p class="font-medium">Nenhum item encontrado</p>

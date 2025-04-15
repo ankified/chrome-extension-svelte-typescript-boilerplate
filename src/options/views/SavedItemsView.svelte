@@ -41,7 +41,7 @@
       Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, // Remover X, Search, Filter, TextSearch
       List, LayoutGrid, KanbanSquare, Waypoints, CalendarIcon, FilterX // Manter CalendarIcon (Sheet), FilterX (Sheet)
   } from "@lucide/svelte";
-
+  import { sortItems } from '../../lib/utils/sorting';
   // Importações de Componentes Customizados
   // import SavedItemsCardView from "./card/SavedItemsCardView.svelte"; // Remover
   import TagFilterDialog from "../components/TagFilterDialog.svelte"; 
@@ -211,44 +211,6 @@
              matchesIncludedGroupFilter && matchesExcludedGroupFilter &&
              matchesIncludedTagsFilter && matchesExcludedTagsFilter &&
              matchesDate;
-    });
-  }
-
-  function sortItems(items: SavedItem[], descriptors: SortDescriptor[]): SavedItem[] {
-    return [...items].sort((a, b) => {
-      for (const descriptor of descriptors) {
-        const { criterion, direction } = descriptor;
-        let comparison = 0;
-
-        // Bloco de comparação (igual ao anterior, mas dentro do loop)
-        if (criterion === "dateAdded") {
-          comparison = (a.dateAdded || 0) - (b.dateAdded || 0);
-        } else if (criterion === "title") {
-          comparison = (a.title || "").localeCompare(b.title || "");
-        } else if (criterion === "url") {
-          comparison = (a.url || "").localeCompare(b.url || "");
-        } else if (criterion === "scheduledDate") {
-          // Lógica para tratar não agendados (Infinity/ -Infinity)
-          const dateA = a.readLater && a.scheduledDate ? a.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
-          const dateB = b.readLater && b.scheduledDate ? b.scheduledDate : (direction === 'desc' ? -Infinity : Infinity);
-          comparison = dateA - dateB;
-        } else if (criterion === "noteCount") {
-          comparison = (a.noteIds?.length || 0) - (b.noteIds?.length || 0);
-        } else if (criterion === "flashcardCount") {
-          comparison = (a.flashcardIds?.length || 0) - (b.flashcardIds?.length || 0);
-        }
-
-        // Aplica a direção e verifica se é diferente de 0
-        const directedComparison = direction === "desc" ? -comparison : comparison;
-
-        if (directedComparison !== 0) {
-          // Se os itens são diferentes neste nível, retorna o resultado
-          return directedComparison;
-        }
-        // Se forem iguais (comparison === 0), o loop continua para o próximo descriptor
-      }
-      // Se todos os níveis resultarem em 0, os itens são considerados iguais
-      return 0;
     });
   }
 
@@ -735,7 +697,7 @@
           sortedItems={sortedItems}
           groups={$groups ?? []}
           availableSystemTags={availableTags}
-          
+          sortDescriptors={sortDescriptors}
           onSearchQueryChange={handleSearchQueryChange}
           onSearchScopeChange={handleSearchScopeChange}
           onOpenFilterSheet={handleOpenFilterSheet}

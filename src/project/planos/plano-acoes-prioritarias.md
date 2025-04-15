@@ -286,15 +286,24 @@ Este documento registra as correções, melhorias e novas implementações que d
 
 ## Novas Implementações
 
-### 1. Refatorar Sistema de Filtros e Ordenação (Prioridade: Alta)
+### 1. Refatorar Sistema de Filtros e Ordenação (Prioridade: Alta) (EM ANDAMENTO)
 
 - **Feature**: Modernizar e tornar mais poderosa a funcionalidade de filtrar e ordenar os itens salvos na página de opções.
-- **Implementação**: Abordagem faseada (ver detalhes em `src/project/refatoracao-filtros-ordenacao.md`).
-  - **Fase 1:** Substituir barra de filtros atual por UI dedicada (`Sheet`), implementar multi-select para grupos (OR), mover controles, adicionar botão "Limpar Filtros" e exibição básica de filtros ativos.
-  - **Fases Subsequentes:** Implementar `Command` para seleção, `DatePicker`, pills removíveis, busca em tags, lógica OR/Negativa, multi-sort e persistência.
-- **Estimativa (Fase 1):** 3-5 dias
+- **Implementação**: Abordagem faseada (ver detalhes no plano original `refatoracao-filtros-ordenacao.md`, agora arquivado/integrado aqui e no diário).
+  - ~~**Fase 1 (Fundação UI Sheet):** Concluída (2025-04-11).~~ 
+  - ~~**Fase 2 (Componentes Avançados + Pills):** Concluída (2025-04-09).~~
+  - ~~**Fase 3 (Lógica Avançada - Busca, OR, Negativo):** Concluída (2025-04-11).~~
+  - ~~**Fase 4 (Ordenação Múltipla):** Concluída (2025-04-14).~~ 
+    - ~~UI com múltiplos níveis, add/remove, ScrollArea.~~
+    - ~~Lógica de ordenação multi-nível funcional.~~
+    - ~~Implementada exclusão mútua (Data/Data, Título/URL) e prevenção de repetição na seleção de critérios.~~
+    - ~~Removido critério padrão ao adicionar novo nível.~~
+  - ~~**Fase 5 (Persistência - Filtros Nomeados):** Concluída (2025-04-12).~~
+  - **Próximo Passo (Ordenação):** Implementar agrupamento visual por data (ver plano `src/project/plans/001_card_date_grouping.md`).
+- **Estimativa (Original Fase 1):** ~~3-5 dias~~ (Concluído)
 
-### 1. Verificação de Duplicatas
+### 2. Verificação de Duplicatas 
+// Renumerado (era NI#1 duplicado)
 
 - **Feature**: Ao salvar um item, verificar se a URL correspondente já existe no banco de dados.
 - **Implementação**:
@@ -302,7 +311,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar diálogo de confirmação com opções para atualizar o item existente ou criar um novo
   - Garantir que metadados como data de modificação sejam atualizados apropriadamente
 
-### 2. Visualização em Modo KanBan
+### 3. Visualização em Modo KanBan 
+// Renumerado (era NI#2)
 
 - **Feature**: Implementar visualização de itens salvos em modo KanBan.
 - **Implementação**:
@@ -311,7 +321,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar funcionalidade de drag-and-drop para mover itens entre colunas
   - Salvar o estado das colunas nas preferências do usuário
 
-### 3. Sidebar para Painel de Opções
+### 4. Sidebar para Painel de Opções 
+// Renumerado (era NI#3)
 
 - **Feature**: Implementar sidebar para o painel de opções usando o componente sidebar do shadcn-svelte.
 - **Implementação**:
@@ -319,7 +330,7 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Reorganizar a navegação do painel de opções para usar a sidebar
   - Garantir responsividade para diferentes tamanhos de tela
 
-### 4. Seletor de Tema Aprimorado
+### 5. Seletor de Tema Aprimorado
 
 - **Feature**: Na aba Configurações, seção Aparência, substituir a implementação atual por um switch entre modo claro, modo escuro e padrão do navegador.
 - **Implementação**:
@@ -327,7 +338,7 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar lógica para aplicar o tema selecionado imediatamente
   - Garantir persistência da preferência entre sessões
 
-### 5. Dashboard de Atividades
+### 6. Dashboard de Atividades
 
 - **Feature**: No painel de opções, adicionar aba para exibir atividade em heatmap, próximas revisões, leituras agendadas e estatísticas gerais.
 - **Implementação**:
@@ -337,7 +348,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Criar dashboards com estatísticas gerais de uso (total de itens, notas, flashcards, etc.)
   - Implementar gráficos de progresso de estudo com flashcards
 
-### 6. Visualização de Flashcards em KanBan
+### 7. Visualização de Flashcards em KanBan
+// Renumerado (era NI#4)
 
 - **Feature**: Adicionar ao switch de opções de exibição de flashcards a visualização em KanBan.
 - **Implementação**:
@@ -345,7 +357,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Criar opções para agrupar por dificuldade, tags ou datas de revisão
   - Implementar funcionalidade para mover flashcards entre grupos (por exemplo, de "Para revisar" para "Revisados")
 
-### 7. Dashboard de Flashcards
+### 8. Dashboard de Flashcards
+// Renumerado (era NI#5)
 
 - **Feature**: Adicionar a visualização de atividade, desempenho, agendamento, etc., na aba de flashcards no painel de opções.
 - **Implementação**:
@@ -354,7 +367,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Adicionar estatísticas sobre retenção e progresso
   - Criar um sistema visual para identificar flashcards que precisam de atenção
 
-### 8. Respostas a Notas
+### 9. Respostas a Notas
+// Renumerado (era NI#6)
 
 - **Feature**: Adicionar a possibilidade de "responder" às notas.
 - **Implementação**:
@@ -363,7 +377,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Implementar um sistema de notificações para novas respostas
   - Adicionar funcionalidades para ordenar e filtrar respostas
 
-### 9. Anotações de Texto Selecionado
+### 10. Anotações de Texto Selecionado
+// Renumerado (era NI#7)
 
 - **Feature**: Adicionar a possibilidade de criar anotações relativas a trechos de texto selecionado em páginas da web (similar ao Hypothesis).
 - **Implementação**:
@@ -372,7 +387,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Desenvolver um mecanismo para destacar texto anotado quando a página é revisitada
   - Criar uma visualização agregada de todas as anotações por página
 
-### 10. Anotações em Vídeos
+### 11. Anotações em Vídeos
+// Renumerado (era NI#8)
 
 - **Feature**: Adicionar a possibilidade de adicionar anotações a vídeos (similar ao Annotate.tv).
 - **Implementação**:
@@ -381,7 +397,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Desenvolver funcionalidade para buscar e navegar entre anotações
   - Adicionar suporte para exportar anotações de vídeo
 
-### 11. Editor Rich Text (TipTap)
+### 12. Editor Rich Text (TipTap)
+// Renumerado (era NI#9)
 
 - **Feature**: Implementar o TipTap aos campos de criação e edição de Notas e Flashcards.
 - **Implementação**:
@@ -390,7 +407,8 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Adaptar o armazenamento para suportar conteúdo formatado
   - Garantir que a renderização preserve a formatação em todos os contextos
 
-### 12. Visualizações Múltiplas para Itens Salvos (Tabela, Cartões, Kanban, Fluxo)
+### 13. Visualizações Múltiplas para Itens Salvos (Tabela, Cartões, Kanban, Fluxo)
+// Renumerado (era NI#10)
 
 - **Feature**: Refatorar a `SavedItemsView` para oferecer múltiplos modos de visualização dos itens salvos.
 - **Implementação**:

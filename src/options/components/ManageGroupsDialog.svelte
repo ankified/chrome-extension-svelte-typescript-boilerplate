@@ -178,8 +178,8 @@
                           <AlertDialog.Root>
                               <AlertDialog.Trigger>
                                    <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:text-destructive" title="Excluir">
-                                      <Trash2 class="h-4 w-4" />
-                                  </Button>
+                              <Trash2 class="h-4 w-4" />
+                          </Button>
                               </AlertDialog.Trigger>
                               <AlertDialog.Content>
                                   <AlertDialog.Header>
