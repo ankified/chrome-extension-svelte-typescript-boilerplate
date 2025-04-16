@@ -288,7 +288,7 @@
     {#each groupedAndSortedData() as group (group.groupTitle)}
       {#if group.groupTitle}
         <div class="px-4 pt-6 pb-2">
-          <Separator class="mb-2" />
+          
           <Tooltip.Provider>
             <Tooltip.Root delayDuration={150}>
               <Tooltip.Trigger class="flex items-center gap-2 group cursor-help">
@@ -320,6 +320,7 @@
         </div>
       {/if}
       <SavedItemsCardView data={group.items} groups={groups ?? []} {availableSystemTags} />
+      <Separator class="my-2" />
     {/each}
   {:else}
     <div class="text-center py-10 text-muted-foreground border rounded-lg dark:border-gray-700">

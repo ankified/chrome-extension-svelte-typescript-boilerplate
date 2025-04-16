@@ -54,7 +54,7 @@
 							{#each savedSubTabs as sub}
 								{@const Icon = sub.icon}
 								<Sidebar.MenuSubItem>
-									<Sidebar.MenuSubButton isActive={activeTab === sub.id} onclick={() => handleTabClick(sub.id)}>
+									<Sidebar.MenuSubButton isActive={activeTab === sub.id} onclick={() => handleTabClick(sub.id)} class="cursor-pointer">
 										{#if Icon}
 											<Icon class="size-4 mr-2" />
 										{/if}

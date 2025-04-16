@@ -703,75 +703,6 @@
     <!-- {/* Título removido anteriormente */} -->
   </header>
 
-  <Tabs.Root value="cards" class="w-full flex flex-col flex-grow h-full min-h-0 overflow-hidden">
-    <!-- {/* Navegação por Abas */} -->
-    <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 flex-shrink-0">
-      <Tabs.Trigger value="table" class="flex items-center justify-center gap-1 text-xs sm:text-sm">
-        <List class="h-4 w-4" /> Tabela
-      </Tabs.Trigger>
-      <Tabs.Trigger value="cards" class="flex items-center justify-center gap-1 text-xs sm:text-sm">
-        <LayoutGrid class="h-4 w-4"/> Cartões
-      </Tabs.Trigger>
-      <Tabs.Trigger value="kanban" disabled class="flex items-center justify-center gap-1 text-xs sm:text-sm">
-        <KanbanSquare class="h-4 w-4"/> Kanban
-      </Tabs.Trigger>
-      <Tabs.Trigger value="flow" disabled class="flex items-center justify-center gap-1 text-xs sm:text-sm">
-        <Waypoints class="h-4 w-4"/> Fluxo
-      </Tabs.Trigger>
-    </Tabs.List>
-
-    <!-- {/* Conteúdo da Aba Tabela */} -->
-     <Tabs.Content value="table">
-      <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-        <p class="font-medium">Visualização em Tabela</p>
-        <p class="text-sm">(Em desenvolvimento)</p>
-      </div>
-    </Tabs.Content>
-
-    <!-- {/* Conteúdo da Aba Cartões - AGORA USA O COMPONENTE */} -->
-    <Tabs.Content value="cards" class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-2">
-        <SavedItemsCardsTab
-          searchQuery={searchQuery}
-          searchScope={searchScope}
-          {includedTags}
-          {excludedTags}
-          {includedGroups}
-          {excludedGroups}
-          {selectedDateRange}
-          sortedItems={sortedItems}
-          groups={$groups ?? []}
-          availableSystemTags={availableTags}
-          sortDescriptors={sortDescriptors}
-          onSearchQueryChange={handleSearchQueryChange}
-          onSearchScopeChange={handleSearchScopeChange}
-          onOpenFilterSheet={handleOpenFilterSheet}
-          onClearSearch={handleClearSearch}
-          onRemoveIncludedGroup={handleRemoveIncludedGroup}
-          onRemoveExcludedGroup={handleRemoveExcludedGroup}
-          onRemoveIncludedTag={handleRemoveIncludedTag}
-          onRemoveExcludedTag={handleRemoveExcludedTag}
-          onClearDateRange={handleClearDateRange}
-        />
-    </Tabs.Content>
-
-    <!-- {/* Conteúdo das Abas Kanban e Fluxo */} -->
-     <Tabs.Content value="kanban">
-       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-         <p class="font-medium">Visualização Kanban</p>
-         <p class="text-sm">(Em desenvolvimento)</p>
-       </div>
-    </Tabs.Content>
-    <Tabs.Content value="flow">
-       <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-         <p class="font-medium">Visualização em Fluxo</p>
-         <p class="text-sm">(Em desenvolvimento)</p>
-       </div>
-    </Tabs.Content>
-
-  </Tabs.Root>
-
-  <!-- {/* **** DIÁLOGOS **** */} -->
-
   {#if showTagFilterDialog}
       <TagFilterDialog
         open={showTagFilterDialog}
@@ -806,7 +737,6 @@
       />
     {/if}
 
-  <!-- {/* Diálogos de Gerenciamento Global de Tags (AlertDialogs locais) */} -->
    <AlertDialog.Root bind:open={showRemoveTagDialog}>
     <AlertDialog.Content>
       <AlertDialog.Header>
@@ -856,7 +786,6 @@
     </AlertDialog.Content>
   </AlertDialog.Root>
 
-  <!-- ---- NOVO: Diálogos para Filtros Nomeados ---- --> 
   {#if showSaveFilterDialog}
     <SaveFilterDialog
        bind:open={showSaveFilterDialog}
@@ -872,9 +801,7 @@
         onDelete={deleteNamedFilterSet}
      />
   {/if}
-  <!-- ---- Fim Diálogos Filtros Nomeados ---- --> 
 
-  <!-- FilterSheet Externo -->
   <FilterSheet 
     open={isFilterSheetOpen}
     {includedTags}
@@ -903,9 +830,6 @@
     onOpenManageTagsDialog={handleOpenManageTagsDialog}
   />
 
-  <!-- ---- Diálogos para Gerenciamento Global ---- --> 
-  <!-- DEBUG LOG -->
-  {console.log("[Template Debug] Checking ManageGroupsDialog. showManageGroupsDialog =", showManageGroupsDialog)}
   {#if showManageGroupsDialog}
     <ManageGroupsDialog
        bind:open={showManageGroupsDialog}
@@ -917,8 +841,6 @@
     />
   {/if}
 
-  <!-- DEBUG LOG -->
-  {console.log("[Template Debug] Checking ManageTagsDialog. showManageTagsDialog =", showManageTagsDialog)}
   {#if showManageTagsDialog}
      <ManageTagsDialog
         bind:open={showManageTagsDialog}
@@ -928,6 +850,5 @@
         onDeleteAll={handleDeleteAllTags}
      />
   {/if}
-  <!-- ---- Fim Diálogos Gerenciamento ---- --> 
 
 </div>

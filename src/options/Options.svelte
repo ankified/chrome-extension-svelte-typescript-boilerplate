@@ -9,7 +9,8 @@
   import { Toaster } from "../lib/components/ui/sonner/index.js";
   import AppSidebar from '../lib/components/app-sidebar.svelte';
   import * as Sidebar from '../lib/components/ui/sidebar/index.js';
-  
+  import * as Breadcrumb from '../lib/components/ui/breadcrumb/index.js';
+  import { Separator } from '../lib/components/ui/separator/index.js';
   // Definição das abas de navegação
   const tabs = [
     { id: 'saved', label: 'Itens Salvos', icon: 'bookmark' },
@@ -140,10 +141,36 @@
 <Sidebar.Provider>
   <AppSidebar {activeTab} onTabChange={changeTab} />
   <Sidebar.Inset>
-    <header class="bg-white dark:bg-gray-800 shadow px-6 py-0 flex justify-between items-center">
-      <!-- Título removido conforme solicitado -->
+    <header class="bg-white dark:bg-gray-800 shadow px-6 py-2 flex items-center gap-2">
+      <Sidebar.Trigger class="-ml-1" />
+      <Separator orientation="vertical" class="mr-2 h-4" />
+      <Breadcrumb.Root>
+        <Breadcrumb.List>
+          {#if activeTab.startsWith('saved')}
+            <Breadcrumb.Item>
+              <Breadcrumb.Link href="#">Itens Salvos</Breadcrumb.Link>
+            </Breadcrumb.Item>
+            <Breadcrumb.Separator />
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>{getSavedViewMode(activeTab).charAt(0).toUpperCase() + getSavedViewMode(activeTab).slice(1)}</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          {:else if activeTab === 'notes'}
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>Notas</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          {:else if activeTab === 'flashcards'}
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>Flashcards</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          {:else if activeTab === 'settings'}
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>Configurações</Breadcrumb.Page>
+            </Breadcrumb.Item>
+          {/if}
+        </Breadcrumb.List>
+      </Breadcrumb.Root>
     </header>
-    <main class="flex-1 h-full overflow-auto p-1">
+    <main class="flex-1 flex-grow h-full overflow-auto p-1">
       {#if activeTab.startsWith('saved')}
         <SavedItemsView viewMode={getSavedViewMode(activeTab)} />
       {:else if activeTab === 'notes'}
