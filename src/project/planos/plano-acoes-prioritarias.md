@@ -450,6 +450,15 @@ Este documento registra as correções, melhorias e novas implementações que d
     - Todos os erros de linter de tipagem e uso de stores foram eliminados no componente de cartões.
 - **Resultado**: Interface de filtros mais moderna, flexível e sem erros de tipagem, proporcionando melhor experiência ao usuário.
 
+### 24. Modernização da Tela de Configurações (CONCLUÍDO - 2025-04-16)
+
+- **Melhoria**: Refatorar a tela de configurações para utilizar `ScrollArea` envolvendo todo o conteúdo e encapsular cada seção (Visualizar Dados, Aparência, Sincronização e Notificações, Backup e Restauração, Sobre, Manutenção de Dados) em um componente `Card` do Shadcn-Svelte.
+- **Implementação**:
+    - Envolver todo o conteúdo da tela de configurações em um `ScrollArea` para melhor usabilidade e rolagem suave.
+    - Encapsular cada seção em um `Card` do Shadcn-Svelte, garantindo visual moderno, organizado e consistente com o restante da interface.
+    - Ajustar espaçamentos, títulos e descrições para padronizar a experiência visual.
+- **Resultado**: Tela de configurações mais moderna, organizada, responsiva e alinhada ao padrão visual do projeto.
+
 ## Plano de Execução
 
 ### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-04)

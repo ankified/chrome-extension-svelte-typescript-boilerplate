@@ -56,6 +56,8 @@
   // Adicionar importações dos diálogos de gerenciamento
   import ManageGroupsDialog from "../components/ManageGroupsDialog.svelte";
   import ManageTagsDialog from "../components/ManageTagsDialog.svelte";
+  // Importação do componente de tabela
+  import SavedItemsTableView from "./table/SavedItemsTableView.svelte";
 
   // Novo estado para ordenação múltipla
   let sortDescriptors = $state<SortDescriptor[]>([
@@ -657,9 +659,8 @@
 </script>
 
 {#if viewMode === 'table'}
-  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-    <p class="font-medium">Visualização em Tabela</p>
-    <p class="text-sm">(Em desenvolvimento)</p>
+  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
+    <SavedItemsTableView data={sortedItems} />
   </div>
 {:else if viewMode === 'cards'}
   <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">

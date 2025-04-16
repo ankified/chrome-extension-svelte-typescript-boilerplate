@@ -30,7 +30,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **FlashcardsView**: Visualização de flashcards com filtros por tags
 - **SavedItemsView**: Componente principal para visualização de itens salvos. Utiliza `Tabs` do `shadcn-svelte` para organizar diferentes modos de visualização (Tabela, Cartões, Kanban, Fluxo). Orquestra a lógica de filtros e ordenação, delegando a UI específica das abas para componentes filhos.
 - **SavedItemsCardView**: Componente dedicado à visualização de itens salvos no formato de grade de cartões.
-- **SettingsView**: Configurações da extensão, incluindo backup/exportação de dados
+- **SettingsView**: Tela de configurações totalmente refatorada, agora com todo o conteúdo envolvido por `ScrollArea` e cada seção (Visualizar Dados, Aparência, Sincronização e Notificações, Backup e Restauração, Sobre, Manutenção de Dados) encapsulada em um componente `Card` do Shadcn-Svelte, proporcionando visual moderno, organizado e consistente.
 
 ### Componentes Auxiliares / UI Específica
 
@@ -185,6 +185,7 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **Adicionado ToggleGroup para filtrar cartões por tipo: Todos, Ler Mais Tarde, Bookmark.**
 - **Refatoração completa do uso de stores derivados e $derived para compatibilidade total com Svelte 5 (Rune), acessando stores como função e tipando corretamente agrupamentos.**
 - **Todos os erros de linter de tipagem e uso de stores foram eliminados no componente de cartões.**
+- **Modernização da tela de configurações**: A tela de configurações (`SettingsView.svelte`) foi totalmente reorganizada, utilizando `ScrollArea` para rolagem suave e Cards do Shadcn-Svelte para cada seção, melhorando a usabilidade, organização visual e consistência com o restante da interface.
 
 ### Ajuste Definitivo da Rolagem dos Cartões na Aba Itens Salvos (2025-04-15)
 
