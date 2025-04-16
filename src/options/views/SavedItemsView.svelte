@@ -662,7 +662,7 @@
     <p class="text-sm">(Em desenvolvimento)</p>
   </div>
 {:else if viewMode === 'cards'}
-  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-2">
+  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
     <SavedItemsCardsTab
       searchQuery={searchQuery}
       searchScope={searchScope}

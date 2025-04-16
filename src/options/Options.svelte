@@ -147,37 +147,39 @@
 
 <Sidebar.Provider>
   <AppSidebar {activeTab} onTabChange={changeTab} />
-  <Sidebar.Inset>
-    <header class="bg-white dark:bg-gray-800 shadow px-6 py-2 flex items-center gap-2">
-      <Sidebar.Trigger class="-ml-1" />
-      <Separator orientation="vertical" class="mr-2 h-4" />
-      <Breadcrumb.Root>
-        <Breadcrumb.List>
-          {#if activeTab.startsWith('saved')}
-            <Breadcrumb.Item>
-              <Breadcrumb.Link href="#">Itens Salvos</Breadcrumb.Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Separator />
-            <Breadcrumb.Item>
-              <Breadcrumb.Page>{viewModeLabels[getSavedViewMode(activeTab)] ?? ''}</Breadcrumb.Page>
-            </Breadcrumb.Item>
-          {:else if activeTab === 'notes'}
-            <Breadcrumb.Item>
-              <Breadcrumb.Page>Notas</Breadcrumb.Page>
-            </Breadcrumb.Item>
-          {:else if activeTab === 'flashcards'}
-            <Breadcrumb.Item>
-              <Breadcrumb.Page>Flashcards</Breadcrumb.Page>
-            </Breadcrumb.Item>
-          {:else if activeTab === 'settings'}
-            <Breadcrumb.Item>
-              <Breadcrumb.Page>Configurações</Breadcrumb.Page>
-            </Breadcrumb.Item>
-        {/if}
-        </Breadcrumb.List>
-      </Breadcrumb.Root>
+  <Sidebar.Inset class="!h-2 min-h-0 p-1">
+    <header class="flex h-8 shrink-0 items-center gap-2">
+      <div class="flex items-center gap-2 px-4 py-4">
+        <Sidebar.Trigger class="-ml-1" />
+        <Separator orientation="vertical" class="mr-2 h-4" />
+        <Breadcrumb.Root>
+          <Breadcrumb.List>
+            {#if activeTab.startsWith('saved')}
+              <Breadcrumb.Item>
+                <Breadcrumb.Link href="#">Itens Salvos</Breadcrumb.Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Separator />
+              <Breadcrumb.Item>
+                <Breadcrumb.Page>{viewModeLabels[getSavedViewMode(activeTab)] ?? ''}</Breadcrumb.Page>
+              </Breadcrumb.Item>
+            {:else if activeTab === 'notes'}
+              <Breadcrumb.Item>
+                <Breadcrumb.Page>Notas</Breadcrumb.Page>
+              </Breadcrumb.Item>
+            {:else if activeTab === 'flashcards'}
+              <Breadcrumb.Item>
+                <Breadcrumb.Page>Flashcards</Breadcrumb.Page>
+              </Breadcrumb.Item>
+            {:else if activeTab === 'settings'}
+              <Breadcrumb.Item>
+                <Breadcrumb.Page>Configurações</Breadcrumb.Page>
+              </Breadcrumb.Item>
+          {/if}
+          </Breadcrumb.List>
+        </Breadcrumb.Root>
+      </div>
   </header>
-    <main class="flex-1 flex-grow h-full overflow-auto p-1">
+    <main class="flex-1 flex-grow !h-2 min-h-0 overflow-hidden p-0">
       {#if activeTab.startsWith('saved')}
         <SavedItemsView viewMode={getSavedViewMode(activeTab)} />
       {:else if activeTab === 'notes'}
