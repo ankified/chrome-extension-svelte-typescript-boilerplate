@@ -654,12 +654,12 @@
 
 </script>
 
-<div class="flex flex-col h-full p-4 md:p-6 space-y-0">
+<div class="flex flex-col h-full min-h-0 p-1 md:p-2 space-y-0">
   <header class="mb-0 flex-shrink-0">
     <!-- {/* Título removido anteriormente */} -->
   </header>
 
-  <Tabs.Root value="cards" class="w-full flex flex-col flex-grow overflow-hidden">
+  <Tabs.Root value="cards" class="w-full flex flex-col flex-grow h-full min-h-0 overflow-hidden">
     <!-- {/* Navegação por Abas */} -->
     <Tabs.List class="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 flex-shrink-0">
       <Tabs.Trigger value="table" class="flex items-center justify-center gap-1 text-xs sm:text-sm">
@@ -685,7 +685,7 @@
     </Tabs.Content>
 
     <!-- {/* Conteúdo da Aba Cartões - AGORA USA O COMPONENTE */} -->
-    <Tabs.Content value="cards" class="flex-grow overflow-auto p-4">
+    <Tabs.Content value="cards" class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-2">
         <SavedItemsCardsTab
           searchQuery={searchQuery}
           searchScope={searchScope}

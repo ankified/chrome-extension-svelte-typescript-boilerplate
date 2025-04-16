@@ -193,7 +193,7 @@
     </aside>
     
     <!-- Conteúdo principal -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 h-full overflow-auto p-1">
       {#if activeTab === 'saved'}
         <SavedItemsView />
       {:else if activeTab === 'notes'}

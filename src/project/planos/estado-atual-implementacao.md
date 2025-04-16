@@ -182,6 +182,13 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - **Melhorias de Acessibilidade (a11y)**: Corrigidos alertas em `SaveItemForm.svelte` e `SavedItemsCardView.svelte`, incluindo adição de `aria-label` a botões de ícone, associação correta de labels a inputs (`for`/`id`), e uso de elementos semanticamente corretos (ex: `<a>` para links clicáveis).
 - **Modularidade da UI em `SavedItemsView`**: A interface de filtros/ordenação (`Sheet`) e o conteúdo da aba "Cartões" foram extraídos para componentes dedicados (`FilterSheet.svelte`, `SavedItemsCardsTab.svelte`), tornando `SavedItemsView.svelte` mais limpo e focado na orquestração dos dados e da estrutura geral.
 
+### Ajuste Definitivo da Rolagem dos Cartões na Aba Itens Salvos (2025-04-15)
+
+- Refatoração do layout dos containers principais da aba Itens Salvos usando flexbox moderno (`flex flex-col h-full min-h-0`).
+- Aplicação de `flex-grow`, `min-h-0` e `overflow-hidden` para garantir que a `ScrollArea` dos cartões respeite o limite visual da tab.
+- Remoção de alturas fixas e backgrounds de debug após validação visual.
+- Resultado: rolagem dos cartões perfeita, sem overflow, com barra de rolagem visível apenas na área correta, proporcionando experiência profissional e responsiva.
+
 ## Estado da Visualização de Flashcards e Notas
 
 A visualização de flashcards e notas foi significativamente melhorada:

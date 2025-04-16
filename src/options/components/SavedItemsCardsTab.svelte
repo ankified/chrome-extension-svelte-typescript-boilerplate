@@ -124,6 +124,7 @@
   import { sortItems } from '../../lib/utils/sorting';
   import { groupItemsByDate, getSortedDateGroupKeys } from '../../lib/utils/dateGrouping';
     import { Separator } from "../../lib/components/ui/separator";
+    import { ScrollArea } from "../../lib/components/ui/scroll-area/index.js";
 
   function getIntervalTooltip(groupTitle: string): string | null {
     // Mês dinâmico: "Abril de 2025"
@@ -252,7 +253,7 @@
 {/if}
 
 <!-- Área de Exibição dos Cards -->
-<div class="flex-grow overflow-y-auto border rounded-lg dark:border-gray-700">
+<ScrollArea class="flex-grow h-full min-h-0 border rounded-lg dark:border-gray-700 scrollarea-content">
   {#if sortedItems.length > 0}
     {#each groupedAndSortedData() as group (group.groupTitle)}
       {#if group.groupTitle}
@@ -297,4 +298,4 @@
       <!-- Botão limpar tudo geral pode ser adicionado no pai se desejado -->
     </div>
   {/if}
-</div> 
+</ScrollArea> 

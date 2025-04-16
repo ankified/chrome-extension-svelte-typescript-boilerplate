@@ -432,6 +432,15 @@ Este documento registra as correções, melhorias e novas implementações que d
     - **Visualização em Fluxo**: Implementar usando a biblioteca `@xyflow/svelte` para visualizar conexões entre itens (ver item existente no `planejamento.md`).
     - Cada visualização será implementada em um componente Svelte separado (`SavedItemsTableView`, `SavedItemsCardView`, `SavedItemsKanbanView`, `SavedItemsFlowView`).
 
+### 22. Ajuste Definitivo da Rolagem dos Cartões na Aba Itens Salvos (CONCLUÍDO - 2025-04-15)
+
+- **Melhoria**: Garantir que apenas a área dos cartões seja rolável, sem ultrapassar o limite visual da tab.
+- **Implementação**:
+    - Refatoração do layout usando flexbox moderno (`flex flex-col h-full min-h-0` nos containers principais).
+    - Uso de `flex-grow`, `min-h-0` e `overflow-hidden` para garantir que a `ScrollArea` dos cartões respeite o espaço da tab.
+    - Remoção de alturas fixas e backgrounds de debug após validação visual.
+- **Resultado**: A rolagem dos cartões está perfeita, sem overflow, com barra de rolagem visível apenas na área correta, proporcionando experiência profissional e responsiva.
+
 ## Plano de Execução
 
 ### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-04)

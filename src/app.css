@@ -119,3 +119,16 @@ textarea::placeholder {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
 }
+
+/* Em um arquivo global ou <style> */
+:global(.scrollarea-content) {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #18181b;
+}
+:global(.scrollarea-content::-webkit-scrollbar) {
+  width: 8px;
+}
+:global(.scrollarea-content::-webkit-scrollbar-thumb) {
+  background: #6366f1;
+  border-radius: 4px;
+}
