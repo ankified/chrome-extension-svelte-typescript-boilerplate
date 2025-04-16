@@ -652,7 +652,51 @@
       // ...
   }
 
+  let { viewMode = "cards" } = $props();
+
 </script>
+
+{#if viewMode === 'table'}
+  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
+    <p class="font-medium">Visualização em Tabela</p>
+    <p class="text-sm">(Em desenvolvimento)</p>
+  </div>
+{:else if viewMode === 'cards'}
+  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-2">
+    <SavedItemsCardsTab
+      searchQuery={searchQuery}
+      searchScope={searchScope}
+      {includedTags}
+      {excludedTags}
+      {includedGroups}
+      {excludedGroups}
+      {selectedDateRange}
+      sortedItems={sortedItems}
+      groups={$groups ?? []}
+      availableSystemTags={availableTags}
+      sortDescriptors={sortDescriptors}
+      onSearchQueryChange={handleSearchQueryChange}
+      onSearchScopeChange={handleSearchScopeChange}
+      onOpenFilterSheet={handleOpenFilterSheet}
+      onClearSearch={handleClearSearch}
+      onRemoveIncludedGroup={handleRemoveIncludedGroup}
+      onRemoveExcludedGroup={handleRemoveExcludedGroup}
+      onRemoveIncludedTag={handleRemoveIncludedTag}
+      onRemoveExcludedTag={handleRemoveExcludedTag}
+      onClearDateRange={handleClearDateRange}
+    />
+  </div>
+{:else if viewMode === 'kanban'}
+  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
+    <p class="font-medium">Visualização Kanban</p>
+    <p class="text-sm">(Em desenvolvimento)</p>
+  </div>
+{:else if viewMode === 'flow'}
+  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
+    <p class="font-medium">Visualização em Fluxo</p>
+    <p class="text-sm">(Em desenvolvimento)</p>
+  </div>
+{/if}
 
 <div class="flex flex-col h-full min-h-0 p-1 md:p-2 space-y-0">
   <header class="mb-0 flex-shrink-0">

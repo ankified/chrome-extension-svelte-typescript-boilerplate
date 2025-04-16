@@ -18,8 +18,8 @@
     { id: 'settings', label: 'Configurações', icon: 'settings' }
   ];
   
-  // Usando $state para variáveis de estado em vez de let
-  let activeTab = $state('saved');
+  // Agora o valor padrão é 'saved-cards'
+  let activeTab = $state('saved-cards');
   let isFixingReferences = $state(false);
   let fixResults = $state(null);
   let fixingGroupRelations = $state(false);
@@ -40,7 +40,7 @@
     // Verificar se há uma aba específica para abrir
     try {
     chrome.storage.local.get(['activeOptionsTab'], (result) => {
-      if (result.activeOptionsTab && tabs.find(tab => tab.id === result.activeOptionsTab)) {
+      if (result.activeOptionsTab) {
         activeTab = result.activeOptionsTab;
         // Limpar a preferência para não influenciar aberturas futuras
         chrome.storage.local.remove(['activeOptionsTab']);
@@ -85,8 +85,17 @@
   }
   
   function changeTab(tabId: string) {
-    console.log(`Alterando para a aba: ${tabId}`);
     activeTab = tabId;
+  }
+  
+  function getSavedViewMode(tab: string): 'cards' | 'table' | 'kanban' | 'flow' {
+    if (tab.startsWith('saved-')) {
+      const mode = tab.replace('saved-', '');
+      if (["cards", "table", "kanban", "flow"].includes(mode)) {
+        return mode as 'cards' | 'table' | 'kanban' | 'flow';
+      }
+    }
+    return 'cards';
   }
   
   // Função para corrigir as relações entre grupos e itens
@@ -131,12 +140,12 @@
 <Sidebar.Provider>
   <AppSidebar {activeTab} onTabChange={changeTab} />
   <Sidebar.Inset>
-    <header class="bg-white dark:bg-gray-800 shadow px-6 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Extensor de Navegador</h1>
+    <header class="bg-white dark:bg-gray-800 shadow px-6 py-0 flex justify-between items-center">
+      <!-- Título removido conforme solicitado -->
     </header>
     <main class="flex-1 h-full overflow-auto p-1">
-      {#if activeTab === 'saved'}
-        <SavedItemsView />
+      {#if activeTab.startsWith('saved')}
+        <SavedItemsView viewMode={getSavedViewMode(activeTab)} />
       {:else if activeTab === 'notes'}
         <NotesView />
       {:else if activeTab === 'flashcards'}
