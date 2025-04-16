@@ -283,7 +283,7 @@
 {/if}
 
 <!-- Área de Exibição dos Cards -->
-<ScrollArea class="flex-grow h-full min-h-0 border rounded-lg dark:border-gray-700 scrollarea-content">
+<ScrollArea class="flex-grow h-full bg-lime-500 min-h-0 border rounded-lg dark:border-gray-700 scrollarea-content">
   {#if sortedItems.length > 0}
     {#each groupedAndSortedData() as group (group.groupTitle)}
       {#if group.groupTitle}

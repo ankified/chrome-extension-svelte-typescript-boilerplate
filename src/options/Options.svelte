@@ -26,6 +26,13 @@
   let fixingGroupRelations = $state(false);
   let lastFixResult = $state<string | null>(null);
   
+  const viewModeLabels: Record<string, string> = {
+    cards: 'Cartões',
+    table: 'Tabela',
+    kanban: 'Kanban',
+    flow: 'Fluxo',
+  };
+  
   onMount(() => {
     // Tratamento para o erro "Extension context invalidated"
     window.addEventListener('error', (event) => {
@@ -152,7 +159,7 @@
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Breadcrumb.Page>{getSavedViewMode(activeTab).charAt(0).toUpperCase() + getSavedViewMode(activeTab).slice(1)}</Breadcrumb.Page>
+              <Breadcrumb.Page>{viewModeLabels[getSavedViewMode(activeTab)] ?? ''}</Breadcrumb.Page>
             </Breadcrumb.Item>
           {:else if activeTab === 'notes'}
             <Breadcrumb.Item>
@@ -166,10 +173,10 @@
             <Breadcrumb.Item>
               <Breadcrumb.Page>Configurações</Breadcrumb.Page>
             </Breadcrumb.Item>
-          {/if}
+        {/if}
         </Breadcrumb.List>
       </Breadcrumb.Root>
-    </header>
+  </header>
     <main class="flex-1 flex-grow h-full overflow-auto p-1">
       {#if activeTab.startsWith('saved')}
         <SavedItemsView viewMode={getSavedViewMode(activeTab)} />
