@@ -4,10 +4,12 @@
   import * as Dialog from "../../lib/components/ui/dialog/index.js";
   import type { SavedItem, Note, Flashcard, Group } from '../../types';
   import { toast } from "svelte-sonner";
+  import { ScrollArea } from '../../lib/components/ui/scroll-area';
+  import * as Card from '../../lib/components/ui/card/index.js';
   
-  let darkMode = false;
-  let syncEnabled = false;
-  let notificationEnabled = false;
+  let darkMode = $state(false);
+  let syncEnabled = $state(false);
+  let notificationEnabled = $state(false);
   let showDataDialog = $state(false);
   let currentData = $state<{
     savedItems: SavedItem[],
@@ -249,18 +251,22 @@
   }
 </script>
 
-<div class="settings-view">
-  <h1 class="text-2xl font-bold mb-6">Configurações</h1>
-  
-  <div class="settings-sections space-y-8">
+<!-- <div class="settings-view"> -->
+ 
+  <ScrollArea class="min-h-0 h-full">
     <!-- Visualizar Dados -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-      <h2 class="text-xl font-semibold mb-4">Visualizar Dados</h2>
-      
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Visualizar Dados</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
           Visualize todos os dados armazenados pela extensão. Esta opção é útil para fins de diagnóstico.
-        </p>
+        </Card.Description>
+      </Card.Header>
+      
+      <Card.Content class="space-y-4">
+        <!-- <p class="text-sm text-gray-600 dark:text-gray-400">
+          Visualize todos os dados armazenados pela extensão. Esta opção é útil para fins de diagnóstico.
+        </p> -->
         
         <button
           class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded flex items-center space-x-2"
@@ -272,7 +278,7 @@
           </svg>
           <span>Visualizar Dados Armazenados</span>
         </button>
-      </div>
+      </Card.Content>
       
       <Dialog.Root bind:open={showDataDialog}>
         <Dialog.Content class="max-w-[90vw] max-h-[90vh] overflow-auto">
@@ -285,7 +291,7 @@
           
           <div class="data-view space-y-6 py-4">
             <!-- Itens salvos -->
-            <div class="data-section">
+            <div class="data-Card.Root">
               <h3 class="text-lg font-medium mb-2">Itens Salvos ({currentData.savedItems.length})</h3>
               {#if currentData.savedItems.length === 0}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhum item salvo.</p>
@@ -318,7 +324,7 @@
             </div>
             
             <!-- Notas -->
-            <div class="data-section">
+            <div class="data-Card.Root">
               <h3 class="text-lg font-medium mb-2">Notas ({currentData.notes.length})</h3>
               {#if currentData.notes.length === 0}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma nota.</p>
@@ -351,7 +357,7 @@
             </div>
             
             <!-- Flashcards -->
-            <div class="data-section">
+            <div class="data-Card.Root">
               <h3 class="text-lg font-medium mb-2">Flashcards ({currentData.flashcards.length})</h3>
               {#if currentData.flashcards.length === 0}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">Nenhum flashcard.</p>
@@ -384,7 +390,7 @@
             </div>
             
             <!-- Estatísticas de armazenamento -->
-            <div class="data-section bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <div class="data-Card.Root bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <h3 class="text-lg font-medium mb-2">Estatísticas de Armazenamento</h3>
               <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div class="stat-card p-3 bg-white dark:bg-gray-700 rounded shadow-sm">
@@ -417,11 +423,16 @@
           </Dialog.Footer>
         </Dialog.Content>
       </Dialog.Root>
-    </section>
+    </Card.Root>
     
     <!-- Aparência -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-      <h2 class="text-xl font-semibold mb-4">Aparência</h2>
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Aparência</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
+          Personalize a aparência da extensão.
+        </Card.Description>
+      </Card.Header>
       
       <div class="option-row flex items-center mb-4">
         <label class="flex items-center cursor-pointer">
@@ -441,11 +452,16 @@
       <p class="text-sm text-gray-600 dark:text-gray-400">
         Por padrão, a extensão segue o tema do seu navegador. Esta configuração substitui o comportamento padrão.
       </p>
-    </section>
+    </Card.Root>
     
     <!-- Sincronização e Notificações -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-      <h2 class="text-xl font-semibold mb-4">Sincronização e Notificações</h2>
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Sincronização e Notificações</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
+          Configure a sincronização entre dispositivos e as notificações.
+        </Card.Description>
+      </Card.Header>
       
       <div class="option-row flex items-center mb-4">
         <label class="flex items-center cursor-pointer">
@@ -476,11 +492,16 @@
           (Receber lembretes de items para "Ler mais tarde")
         </span>
       </div>
-    </section>
+    </Card.Root>
     
     <!-- Backup e Restauração -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-      <h2 class="text-xl font-semibold mb-4">Backup e Restauração</h2>
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Backup e Restauração</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
+          Faça backup dos seus dados e restaure-os em caso de perda.
+        </Card.Description>
+      </Card.Header>
       
       <div class="actions space-y-4">
         <div>
@@ -524,11 +545,16 @@
           </p>
         </div>
       </div>
-    </section>
+    </Card.Root>
     
     <!-- Sobre -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-      <h2 class="text-xl font-semibold mb-4">Sobre</h2>
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Sobre</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
+          Informações sobre a extensão e como ela funciona.
+        </Card.Description>
+      </Card.Header>
       
       <div class="about-info">
         <p class="mb-2">
@@ -544,16 +570,18 @@
           <p><a href="#" target="_blank" rel="noopener noreferrer">Reportar um Problema</a></p>
         </div>
       </div>
-    </section>
+    </Card.Root>
 
     <!-- Manutenção de Dados -->
-    <section class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8">
-      <h2 class="text-xl font-semibold mb-4">Manutenção de Dados</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Ferramentas para manutenção e correção de dados
-      </p>
+    <Card.Root class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8">
+      <Card.Header class="text-xl font-semibold mb-4">
+        <Card.Title>Manutenção de Dados</Card.Title>
+        <Card.Description class="text-sm text-gray-600 dark:text-gray-400">
+          Ferramentas para manutenção e correção de dados
+        </Card.Description>
+      </Card.Header>
       
-      <div class="space-y-4">
+      <Card.Content class="space-y-4">
         <div>
           <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
             Corrija referências entre notas, flashcards e itens salvos.
@@ -579,13 +607,13 @@
             {fixingGroupRelations ? "Corrigindo..." : "Corrigir Relações de Grupos"}
           </button>
         </div>
-      </div>
+      </Card.Content>
       
       {#if lastFixResult}
         <div class="mt-4 p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
           <p><strong>Resultado:</strong> {lastFixResult}</p>
         </div>
       {/if}
-    </section>
-  </div>
-</div> 
+    </Card.Root>
+  </ScrollArea>
+<!-- </div>  -->
