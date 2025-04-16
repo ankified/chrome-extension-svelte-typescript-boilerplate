@@ -441,6 +441,15 @@ Este documento registra as correções, melhorias e novas implementações que d
     - Remoção de alturas fixas e backgrounds de debug após validação visual.
 - **Resultado**: A rolagem dos cartões está perfeita, sem overflow, com barra de rolagem visível apenas na área correta, proporcionando experiência profissional e responsiva.
 
+### 23. Filtros Visuais e Refatoração Svelte 5 na Aba Cartões (CONCLUÍDO - 2025-04-15)
+
+- **Melhoria**: Unificação visual do input de busca e ToggleGroup de escopo em um único container, com borda e background comuns, na aba de cartões.
+- **Implementação**:
+    - Adicionado ToggleGroup para filtrar cartões por tipo: Todos, Ler Mais Tarde, Bookmark.
+    - Refatoração completa do uso de stores derivados e $derived para compatibilidade total com Svelte 5 (Rune), acessando stores como função e tipando corretamente agrupamentos.
+    - Todos os erros de linter de tipagem e uso de stores foram eliminados no componente de cartões.
+- **Resultado**: Interface de filtros mais moderna, flexível e sem erros de tipagem, proporcionando melhor experiência ao usuário.
+
 ## Plano de Execução
 
 ### ~~Fase 1: Correções Críticas (Prioridade Alta)~~ (CONCLUÍDA em 2025-04-04)

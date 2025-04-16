@@ -15,7 +15,7 @@
   import {
       Search, TextSearch, Tags, Folder, Filter, X,
 
-      CalendarDays
+      CalendarDays, LayoutGrid, Bookmark
 
   } from "@lucide/svelte";
   
@@ -98,18 +98,33 @@
   const mesPassadoStart = startOfMonth(mesPassadoDate);
   const mesPassadoEnd = endOfMonth(mesPassadoDate);
 
-  // Agrupamento e sub-ordenação
-  let groupedAndSortedData = $derived(() => {
+  let cardTypeFilter = $state<'all' | 'readLater' | 'bookmark'>('all');
+
+  // Novo derivado para filtrar por tipo de cartão
+  let filteredByType = $derived((): SavedItem[] => {
+    if (cardTypeFilter === 'all') return sortedItems;
+    if (cardTypeFilter === 'readLater') return sortedItems.filter((item: SavedItem) => item.scheduledDate);
+    if (cardTypeFilter === 'bookmark') return sortedItems.filter((item: SavedItem) => !item.scheduledDate);
+    return sortedItems;
+  });
+
+  interface CardGroup {
+    groupTitle: string | null;
+    items: SavedItem[];
+  }
+
+  let groupedAndSortedData = $derived((): CardGroup[] => {
+    const items: SavedItem[] = filteredByType();
     if (!sortDescriptors || sortDescriptors.length === 0) {
-      return [{ groupTitle: null, items: sortedItems as SavedItem[] }];
+      return [{ groupTitle: null, items }];
     }
     const primary = sortDescriptors[0];
     const isDateSort = primary.criterion === 'dateAdded' || primary.criterion === 'scheduledDate';
     if (!isDateSort) {
-      return [{ groupTitle: null, items: sortedItems as SavedItem[] }];
+      return [{ groupTitle: null, items }];
     }
     // Agrupar por data
-    const grouped = groupItemsByDate(sortedItems, primary.criterion);
+    const grouped = groupItemsByDate(items, primary.criterion);
     const keys = Array.from(grouped.keys());
     const sortedKeys = getSortedDateGroupKeys(keys, primary.direction);
     const secondarySort = sortDescriptors.slice(1);
@@ -154,48 +169,63 @@
 
 <!-- Conteúdo interno da Aba Cartões -->
 <!-- Barra Superior: Busca, Escopo e Botão Filtro -->
-<div class="flex flex-col md:flex-row gap-2 pb-4 flex-shrink-0 px-1 items-center">
-    <!-- Input de Busca -->
-    <div class="relative flex-grow w-full md:w-auto">
-      <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input 
-        type="search" 
-        placeholder="Pesquisar..." 
-        class="pl-8 w-full" 
-        value={searchQuery} 
-        oninput={(e) => onSearchQueryChange(e.currentTarget.value)} 
-      />
-    </div>
+<div class="bg-muted border rounded-lg p-2 flex flex-col md:flex-row gap-2 items-center mb-2">
+  <!-- Input de Busca -->
+  <div class="relative flex-grow w-full md:w-auto">
+    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <Input 
+      type="search" 
+      placeholder="Pesquisar..." 
+      class="pl-8 w-full" 
+      value={searchQuery} 
+      oninput={(e) => onSearchQueryChange(e.currentTarget.value)} 
+    />
+  </div>
 
-    <!-- ToggleGroup para Escopo da Busca -->
-    <ToggleGroup.Root 
-      type="single" 
-      variant="outline" 
-      size="sm" 
-      value={searchScope} 
-      onValueChange={(scope: 'content' | 'tags' | 'groups' | null) => { if (scope) onSearchScopeChange(scope); }}
-      class="w-full md:w-auto justify-center md:justify-start flex-shrink-0"
-    >
-        <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
-            <ToggleGroup.Item value="content" aria-label="Buscar em Conteúdo"><TextSearch class="h-4 w-4" /></ToggleGroup.Item>
-        </Tooltip.Trigger><Tooltip.Content><p>Buscar em Título, URL e Comentários</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
-        <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
-            <ToggleGroup.Item value="tags" aria-label="Buscar em Tags"><Tags class="h-4 w-4" /></ToggleGroup.Item>
-        </Tooltip.Trigger><Tooltip.Content><p>Buscar em Tags</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
-        <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
-            <ToggleGroup.Item value="groups" aria-label="Buscar em Grupos"><Folder class="h-4 w-4" /></ToggleGroup.Item>
-        </Tooltip.Trigger><Tooltip.Content><p>Buscar em Nomes de Grupos</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
-    </ToggleGroup.Root>
+  <!-- ToggleGroup para Escopo da Busca -->
+  <ToggleGroup.Root 
+    type="single" 
+    variant="outline" 
+    size="sm" 
+    value={searchScope} 
+    onValueChange={(scope: 'content' | 'tags' | 'groups' | null) => { if (scope) onSearchScopeChange(scope); }}
+    class="w-full md:w-auto justify-center md:justify-start flex-shrink-0"
+  >
+      <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
+          <ToggleGroup.Item value="content" aria-label="Buscar em Conteúdo"><TextSearch class="h-4 w-4" /></ToggleGroup.Item>
+      </Tooltip.Trigger><Tooltip.Content><p>Buscar em Título, URL e Comentários</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
+      <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
+          <ToggleGroup.Item value="tags" aria-label="Buscar em Tags"><Tags class="h-4 w-4" /></ToggleGroup.Item>
+      </Tooltip.Trigger><Tooltip.Content><p>Buscar em Tags</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
+      <Tooltip.Provider><Tooltip.Root><Tooltip.Trigger>
+          <ToggleGroup.Item value="groups" aria-label="Buscar em Grupos"><Folder class="h-4 w-4" /></ToggleGroup.Item>
+      </Tooltip.Trigger><Tooltip.Content><p>Buscar em Nomes de Grupos</p></Tooltip.Content></Tooltip.Root></Tooltip.Provider>
+  </ToggleGroup.Root>
 
-    <!-- Botão para abrir Sheet de Filtros/Data/Ordenação (chama callback) -->
-    <Button variant="outline" class="flex-shrink-0 w-full md:w-auto" onclick={onOpenFilterSheet}>
-        <Filter class="h-4 w-4" />
-        <span class="ml-2 md:hidden">Filtros e Ordenação</span>
-        {#if hasActiveFilters}
-            <span class="ml-1.5 h-2 w-2 rounded-full bg-primary"></span>
-        {/if}
-    </Button>
+  <!-- Botão para abrir Sheet de Filtros/Data/Ordenação (chama callback) -->
+  <Button variant="outline" class="flex-shrink-0 w-full md:w-auto" onclick={onOpenFilterSheet}>
+      <Filter class="h-4 w-4" />
+      <span class="ml-2 md:hidden">Filtros e Ordenação</span>
+      {#if hasActiveFilters}
+          <span class="ml-1.5 h-2 w-2 rounded-full bg-primary"></span>
+      {/if}
+  </Button>
+</div>
 
+<!-- Novo ToggleGroup para tipo de cartão -->
+<div class="flex gap-2 mb-2 w-full justify-center">
+  <ToggleGroup.Root
+    type="single"
+    variant="outline"
+    size="sm"
+    value={cardTypeFilter}
+    onValueChange={(val: 'all' | 'readLater' | 'bookmark' | null) => { if (val) cardTypeFilter = val; }}
+    class="w-full md:w-auto justify-center flex-shrink-0"
+  >
+    <ToggleGroup.Item value="all" aria-label="Todos"><LayoutGrid class="h-4 w-4" /> <span class="hidden md:inline ml-1">Todos</span></ToggleGroup.Item>
+    <ToggleGroup.Item value="readLater" aria-label="Ler Mais Tarde"><CalendarDays class="h-4 w-4" /> <span class="hidden md:inline ml-1">Ler Mais Tarde</span></ToggleGroup.Item>
+    <ToggleGroup.Item value="bookmark" aria-label="Bookmark"><Bookmark class="h-4 w-4" /> <span class="hidden md:inline ml-1">Bookmark</span></ToggleGroup.Item>
+  </ToggleGroup.Root>
 </div>
 
 <!-- Badges de Filtro Ativo -->

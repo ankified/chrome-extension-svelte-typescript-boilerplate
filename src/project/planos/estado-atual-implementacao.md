@@ -181,6 +181,10 @@ Os principais componentes de interface do usuário foram atualizados para utiliz
 - Garantia de truncamento adequado para URLs longas
 - **Melhorias de Acessibilidade (a11y)**: Corrigidos alertas em `SaveItemForm.svelte` e `SavedItemsCardView.svelte`, incluindo adição de `aria-label` a botões de ícone, associação correta de labels a inputs (`for`/`id`), e uso de elementos semanticamente corretos (ex: `<a>` para links clicáveis).
 - **Modularidade da UI em `SavedItemsView`**: A interface de filtros/ordenação (`Sheet`) e o conteúdo da aba "Cartões" foram extraídos para componentes dedicados (`FilterSheet.svelte`, `SavedItemsCardsTab.svelte`), tornando `SavedItemsView.svelte` mais limpo e focado na orquestração dos dados e da estrutura geral.
+- **Unificação visual do input de busca e ToggleGroup de escopo em um único container, com borda e background comuns, na aba de cartões.**
+- **Adicionado ToggleGroup para filtrar cartões por tipo: Todos, Ler Mais Tarde, Bookmark.**
+- **Refatoração completa do uso de stores derivados e $derived para compatibilidade total com Svelte 5 (Rune), acessando stores como função e tipando corretamente agrupamentos.**
+- **Todos os erros de linter de tipagem e uso de stores foram eliminados no componente de cartões.**
 
 ### Ajuste Definitivo da Rolagem dos Cartões na Aba Itens Salvos (2025-04-15)
 
