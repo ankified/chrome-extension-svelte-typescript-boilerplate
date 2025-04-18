@@ -3,12 +3,24 @@ import type { SavedItem } from '../../../types';
 import { renderComponent } from '../../../lib/components/ui/data-table/index';
 import DataTableCheckbox from './data-table-checkbox.svelte';
 import DataTableActions from './data-table-actions.svelte';
+import ItemCell from './ItemCell.svelte';
+import ExpandButton from './ExpandButton.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export const columns: ColumnDef<SavedItem, any>[] = [
+  {
+    id: 'expand',
+    header: '',
+    cell: ({ row }) => renderComponent(ExpandButton, { row }),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+    minSize: 32,
+    maxSize: 32,
+  },
   {
     id: 'select',
     header: ({ table }) =>
@@ -28,12 +40,9 @@ export const columns: ColumnDef<SavedItem, any>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'title',
-    header: 'Título',
-  },
-  {
-    accessorKey: 'url',
-    header: 'URL',
+    id: 'item',
+    header: 'Item',
+    cell: ({ row }) => renderComponent(ItemCell, { item: row.original }),
   },
   {
     accessorKey: 'readLater',

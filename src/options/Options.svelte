@@ -147,7 +147,7 @@
 
 <Sidebar.Provider>
   <AppSidebar {activeTab} onTabChange={changeTab} />
-  <Sidebar.Inset class="!h-2 min-h-0 p-1">
+  <Sidebar.Inset class="!h-2 min-h-0 p-1 overflow-y-auto">
     <header class="flex h-8 shrink-0 items-center gap-2">
       <div class="flex items-center gap-2 px-4 py-4">
         <Sidebar.Trigger class="-ml-1" />
