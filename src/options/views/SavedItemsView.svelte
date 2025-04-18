@@ -39,7 +39,8 @@
   // import * as ToggleGroup from "../../lib/components/ui/toggle-group/index.js"; // Remover
   import {
       Info, Trash2, Edit, Tags, FileText, Layers, CalendarClock, Folder, Tag, // Remover X, Search, Filter, TextSearch
-      List, LayoutGrid, KanbanSquare, Waypoints, CalendarIcon, FilterX // Manter CalendarIcon (Sheet), FilterX (Sheet)
+      List, LayoutGrid, KanbanSquare, Waypoints, CalendarIcon, FilterX, // Manter CalendarIcon (Sheet), FilterX (Sheet)
+      Bookmark, Clock
   } from "@lucide/svelte";
   import { sortItems } from '../../lib/utils/sorting';
   // Importações de Componentes Customizados
@@ -58,6 +59,7 @@
   import ManageTagsDialog from "../components/ManageTagsDialog.svelte";
   // Importação do componente de tabela
   import SavedItemsTableView from "./table/SavedItemsTableView.svelte";
+  import { Root as ToggleGroup, Item as ToggleGroupItem } from '../../lib/components/ui/toggle-group/index';
 
   // Novo estado para ordenação múltipla
   let sortDescriptors = $state<SortDescriptor[]>([

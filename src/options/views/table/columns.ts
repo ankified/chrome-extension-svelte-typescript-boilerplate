@@ -45,9 +45,19 @@ export const columns: ColumnDef<SavedItem, any>[] = [
     cell: ({ row }) => renderComponent(ItemCell, { item: row.original }),
   },
   {
-    accessorKey: 'readLater',
-    header: 'Ler Mais Tarde',
-    cell: ({ row }) => row.original.readLater ? 'Sim' : 'Não',
+    id: 'type',
+    header: 'Tipo',
+    cell: ({ row }) => {
+      const isReadLater = row.original.readLater;
+      // Ícones Lucide (Bookmark, Clock)
+      // Importação será feita no DataTable.svelte
+      return {
+        isReadLater,
+        typeLabel: isReadLater ? 'Ler Mais Tarde' : 'Bookmark',
+      };
+    },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'groupIds',

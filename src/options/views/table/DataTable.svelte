@@ -15,6 +15,9 @@
   import { getLocalTimeZone, today } from "@internationalized/date";
   import type { DateRange } from 'bits-ui';
   import { RangeCalendar } from '../../../lib/components/ui/range-calendar/index.js';
+  import Bookmark from '@lucide/svelte/icons/bookmark';
+  import Clock from '@lucide/svelte/icons/clock';
+  import * as ToggleGroup from '../../../lib/components/ui/toggle-group/index';
 
   let { columns = [], data = [] } = $props();
 
@@ -22,7 +25,6 @@
 
   // Filtros por coluna
   let itemFilter = $state('');
-  let typeFilter = $state('');
   let groupFilter = $state<string[]>([]);
   let tagFilter = $state<string[]>([]);
   let noteFilter = $state('');
@@ -31,6 +33,7 @@
   let datePopoverOpen = $state(false);
   let groupDialogOpen = $state(false);
   let tagDialogOpen = $state(false);
+  let typeFilter = $state<'all' | 'readlater' | 'bookmark'>('all');
 
   // Dados para dialogs (arrays reativos)
   let groups = $derived(() => {
@@ -44,49 +47,27 @@
     return arr;
   });
 
+  let filteredByType = $derived(() => {
+    if (typeFilter === 'all') return data;
+    if (typeFilter === 'readlater') return data.filter((item: SavedItem) => item.scheduledDate);
+    if (typeFilter === 'bookmark') return data.filter((item: SavedItem) => !item.scheduledDate);
+    return data;
+  });
+
   $effect(() => {
     if (datePopoverOpen && dateFilter) {
       datePopoverOpen = false;
     }
   });
 
-  // Função de filtragem
-  function filterRows(row: { original: SavedItem }) {
-    if (itemFilter && !(row.original.title?.toLowerCase().includes(itemFilter.toLowerCase()) || row.original.url?.toLowerCase().includes(itemFilter.toLowerCase()))) {
-      return false;
-    }
-    if (typeFilter && typeFilter !== 'all') {
-      if (typeFilter === 'bookmark' && row.original.readLater) return false;
-      if (typeFilter === 'readlater' && !row.original.readLater) return false;
-    }
-    if (groupFilter.length > 0 && !groupFilter.some(gid => row.original.groupIds?.includes(gid))) {
-      return false;
-    }
-    if (tagFilter.length > 0 && !tagFilter.some(tag => row.original.tags?.includes(tag))) {
-      return false;
-    }
-    if (noteFilter && String(row.original.noteIds?.length || 0) !== noteFilter) {
-      return false;
-    }
-    if (flashcardFilter && String(row.original.flashcardIds?.length || 0) !== flashcardFilter) {
-      return false;
-    }
-    if (dateFilter && row.original.dateAdded && dateFilter.start && dateFilter.end) {
-      const itemDate = new Date(row.original.dateAdded);
-      const start = dateFilter.start.toDate(getLocalTimeZone());
-      const end = dateFilter.end.toDate(getLocalTimeZone());
-      if (itemDate < start || itemDate > end) return false;
-    }
-    return true;
-  }
+  let columnVisibility = $state<{ [key: string]: boolean }>({});
 
   const table = createSvelteTable({
     data,
     columns,
     state: {
-      get rowSelection() {
-        return rowSelection;
-      },
+      get rowSelection() { return rowSelection; },
+      get columnVisibility() { return columnVisibility; },
     },
     onRowSelectionChange: (updater) => {
       if (typeof updater === 'function') {
@@ -95,8 +76,25 @@
         rowSelection = updater;
       }
     },
+    onColumnVisibilityChange: (updater) => {
+      if (typeof updater === 'function') {
+        columnVisibility = updater(columnVisibility);
+      } else {
+        columnVisibility = updater;
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: undefined, // será resolvido automaticamente
+  });
+
+  $effect(() => {
+    const col = table.getColumn('type');
+    if (col) {
+      const shouldBeVisible = typeFilter === 'all';
+      if (col.getIsVisible() !== shouldBeVisible) {
+        col.toggleVisibility(shouldBeVisible);
+      }
+    }
   });
 
   function formatDate(filter: DateRange | undefined) {
@@ -109,7 +107,45 @@
     }
     return start.toLocaleDateString('pt-BR');
   }
+
+  let filteredRows = $derived(() => {
+    // Força rastreamento de dependências
+    const _allRows = table.getFilteredRowModel().rows;
+    const _type = typeFilter;
+    _allRows.length; // força dependência
+    return _allRows.filter(row => {
+      if (_type === 'all') return true;
+      if (_type === 'readlater') return row.original.scheduledDate;
+      if (_type === 'bookmark') return !row.original.scheduledDate;
+      return true;
+    });
+  });
+
+  let filteredSelectedRows = $derived(() => {
+    const _selectedRows = table.getFilteredSelectedRowModel().rows;
+    const _type = typeFilter;
+    _selectedRows.length;
+    return _selectedRows.filter(row => {
+      if (_type === 'all') return true;
+      if (_type === 'readlater') return row.original.scheduledDate;
+      if (_type === 'bookmark') return !row.original.scheduledDate;
+      return true;
+    });
+  });
 </script>
+
+<div class="flex items-center gap-2 mb-2">
+  <span class="font-medium text-sm">Tipo:</span>
+  <ToggleGroup.Root bind:value={typeFilter} variant="outline" size="sm" type="single">
+    <ToggleGroup.Item value="all">Todos</ToggleGroup.Item>
+    <ToggleGroup.Item value="bookmark">
+      <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom" /> Bookmark
+    </ToggleGroup.Item>
+    <ToggleGroup.Item value="readlater">
+      <Clock class="inline w-4 h-4 mr-1 align-text-bottom" /> Ler Mais Tarde
+    </ToggleGroup.Item>
+  </ToggleGroup.Root>
+</div>
 
 <div class="w-full overflow-x-auto">
   <div class="rounded-md border min-w-full">
@@ -131,8 +167,6 @@
               <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if header.column.id === 'item'}
                   <input type="text" placeholder="Filtrar..." class="input input-xs w-full" bind:value={itemFilter} />
-                {:else if header.column.id === 'readLater'}
-                  <!-- Será substituído pelo ToggleGroup depois -->
                 {:else if header.column.id === 'groupIds'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
                     {#if groupFilter.length === 0}
@@ -191,11 +225,25 @@
         {/each}
       </Table.Header>
       <Table.Body>
-        {#each table.getRowModel().rows.filter(filterRows) as row (row.id)}
+        {#each filteredRows() as row (row.id)}
           <Table.Row data-state={row.getIsSelected() && 'selected'}>
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
-                <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                {#if cell.column.id === 'type'}
+                  {@const typeValue = cell.getValue() as { isReadLater: boolean; typeLabel: string } | undefined}
+                    {#if typeValue}
+                      {#if typeValue.isReadLater}
+                        <Clock class="inline w-4 h-4 mr-1 align-text-bottom text-blue-500" />
+                      {:else}
+                        <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom text-yellow-500" />
+                      {/if}
+                      <span>{typeValue.typeLabel}</span>
+                    {:else}
+                      <span>-</span>
+                  {/if}
+                {:else}
+                  <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                {/if}
               </Table.Cell>
             {/each}
           </Table.Row>
@@ -219,5 +267,5 @@
 </div>
 
 <div class="text-muted-foreground flex-1 text-sm mt-2">
-  {table.getFilteredSelectedRowModel().rows.length} de {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+  {filteredSelectedRows().length} de {filteredRows().length} linha(s) selecionada(s).
 </div> 

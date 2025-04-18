@@ -3,7 +3,7 @@
   import type { SavedItem } from '../../../types';
   import DataTable from './DataTable.svelte';
 
-  export let data: SavedItem[] = [];
+  let { data = [] } = $props();
 
   // Mock temporário para fallback
   const mockData: SavedItem[] = [

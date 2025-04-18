@@ -14,9 +14,10 @@ Analise o projeto para entender sua estrutura, propósito e tecnologias utilizad
    - Padrões de codificação adotados
 
 2. Leia detalhadamente os arquivos:
-   - src/project/estado-atual-implementacao.md
-   - src/project/plano-acoes-prioritarias.md
-   - src/project/refatoracao-filtros-ordenacao.md
+   - src/project/planos/estado-atual-implementacao.md
+   - src/project/planos/plano-acoes-prioritarias.md
+   - src/project/planos/progresso-ui-global-opcoes.md
+   - src/project/planos/progresso-visualizacao-tabela.md
 
 3. Com base nessa análise:
    - Apresente um resumo do estado atual do projeto
