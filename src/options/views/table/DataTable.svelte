@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -25,6 +25,7 @@
   let { columns = [], data = [] } = $props();
 
   let rowSelection = $state({});
+  let sorting = $state<SortingState>([]);
 
   // Filtros por coluna
   let itemFilter = $state('');
@@ -71,6 +72,7 @@
     state: {
       get rowSelection() { return rowSelection; },
       get columnVisibility() { return columnVisibility; },
+      get sorting() { return sorting; },
     },
     onRowSelectionChange: (updater) => {
       if (typeof updater === 'function') {
@@ -84,6 +86,13 @@
         columnVisibility = updater(columnVisibility);
       } else {
         columnVisibility = updater;
+      }
+    },
+    onSortingChange: (updater) => {
+      if (typeof updater === 'function') {
+        sorting = updater(sorting);
+      } else {
+        sorting = updater;
       }
     },
     getCoreRowModel: getCoreRowModel(),
@@ -160,25 +169,7 @@
             {#each headerGroup.headers as header (header.id)}
               <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if !header.isPlaceholder}
-                  {#if header.column.getCanSort?.()}
-                    <button
-                      type="button"
-                      class="flex items-center gap-1 select-none cursor-pointer group text-left w-full"
-                      onclick={header.column.getToggleSortingHandler?.()}
-                      aria-label="Ordenar coluna"
-                    >
-                      <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
-                      {#if header.column.getIsSorted?.() === 'asc'}
-                        <ChevronUp class="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
-                      {:else if header.column.getIsSorted?.() === 'desc'}
-                        <ChevronDown class="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
-                      {:else}
-                        <ArrowUpDown class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      {/if}
-                    </button>
-                  {:else}
-                    <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
-                  {/if}
+                  <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
                 {/if}
               </Table.Head>
             {/each}
@@ -247,7 +238,7 @@
         {/each}
       </Table.Header>
       <Table.Body>
-        {#each filteredRows() as row (row.id)}
+        {#each table.getRowModel().rows as row (row.id)}
           <Table.Row data-state={row.getIsSelected() && 'selected'}>
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
