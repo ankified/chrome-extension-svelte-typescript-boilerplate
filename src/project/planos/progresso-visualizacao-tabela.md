@@ -17,9 +17,9 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [✅] Corrigidos erros de linter e ajustada a tipagem do sortingFn para cada coluna.
   - [✅] Removido botão duplicado de ordenação do template.
 
-- [ ] **Expansão de Linha com Detalhes**
-  - [ ] Ao expandir uma linha, exibir detalhes do item: comentário, tags, grupos, etc.
-  - [ ] Layout limpo e visualmente separado.
+- [✅] **Expansão de Linha com Detalhes**
+  - [✅] Ao expandir uma linha, exibir detalhes do item: comentário, tags, grupos, etc.
+  - [✅] Layout limpo e visualmente separado.
 
 - [ ] **Botão para Expandir/Recolher Todos**
   - [ ] Adicionar um botão no header para expandir ou recolher todas as linhas de uma vez.
