@@ -27,6 +27,7 @@
   import NoteCard from '../../../lib/components/NoteCard.svelte';
   import FlashcardCard from '../../../lib/components/FlashcardCard.svelte';
   import Input from '../../../lib/components/ui/input/input.svelte';
+  import * as Select from "../../../lib/components/ui/select/index.js";
 
   let { columns = [], data = [] } = $props();
 
@@ -45,6 +46,7 @@
   let groupDialogOpen = $state(false);
   let tagDialogOpen = $state(false);
   let typeFilter = $state<'all' | 'readlater' | 'bookmark'>('all');
+  let searchScope: 'title' | 'url' | 'groups' | 'tags' | 'comment' = $state('title');
 
   // Dados para dialogs (arrays reativos)
   let groups = $derived(() => {
@@ -173,59 +175,88 @@
   });
 
   let editingComment: { [id: string]: string } = {};
+
+  // Definir opções para o Select
+  const searchScopeOptions = [
+    { value: "title", label: "Título" },
+    { value: "url", label: "URL" },
+    { value: "groups", label: "Grupos" },
+    { value: "tags", label: "Tags" },
+    { value: "comment", label: "Comentário" }
+  ];
+
+  // Estado derivado para o texto do Trigger
+  const selectedScopeLabel = $derived(
+    searchScopeOptions.find((opt) => opt.value === searchScope)?.label ?? "Buscar em..."
+  );
 </script>
 
-<div class="flex items-center gap-2 mb-4">
-  <div class="relative w-full max-w-xs">
-    <span class="absolute left-2.5 top-2.5 text-muted-foreground">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </svg>
-    </span>
-    <Input
-      type="search"
-      class="pl-8 pr-8 py-2 w-full"
-      placeholder="Buscar item..."
-      bind:value={itemFilter}
-      autocomplete="off"
-    />
-    {#if itemFilter}
-      <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''}>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    {/if}
+<div class="flex justify-between items-center gap-4 mb-4">
+  <div class="flex items-center gap-2">
+    <span class="font-medium text-sm shrink-0">Tipo:</span>
+    <ToggleGroup.Root bind:value={typeFilter} variant="outline" size="sm" type="single">
+      <ToggleGroup.Item value="all">Todos</ToggleGroup.Item>
+      <ToggleGroup.Item value="bookmark">
+        <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom" /> Bookmark
+      </ToggleGroup.Item>
+      <ToggleGroup.Item value="readlater">
+        <Clock class="inline w-4 h-4 mr-1 align-text-bottom" /> Ler Mais Tarde
+      </ToggleGroup.Item>
+    </ToggleGroup.Root>
   </div>
-  {#if itemFilter}
-    <span class="ml-2">
-      <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted text-xs">
-        Busca: "{itemFilter}"
-        <button type="button" class="ml-1 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''} aria-label="Remover busca">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+  <div class="flex items-center border rounded-md overflow-hidden w-full">
+    <div class="relative grow">
+      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </span>
+      <Input
+        type="search"
+        class="pl-8 pr-8 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
+        placeholder="Buscar..."
+        bind:value={itemFilter}
+        autocomplete="off"
+      />
+      {#if itemFilter}
+        <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''}>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-      </span>
-    </span>
-  {/if}
+      {/if}
+    </div>
+    <Select.Root bind:value={searchScope} type="single">
+      <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0" aria-label="Escopo da busca">
+        {selectedScopeLabel}
+      </Select.Trigger>
+      <Select.Content>
+        {#each searchScopeOptions as option (option.value)}
+          <Select.Item value={option.value} label={option.label}>
+            {option.label}
+          </Select.Item>
+        {/each}
+      </Select.Content>
+    </Select.Root>
+  </div>
 </div>
 
-<div class="flex items-center gap-2 mb-2">
-  <span class="font-medium text-sm">Tipo:</span>
-  <ToggleGroup.Root bind:value={typeFilter} variant="outline" size="sm" type="single">
-    <ToggleGroup.Item value="all">Todos</ToggleGroup.Item>
-    <ToggleGroup.Item value="bookmark">
-      <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom" /> Bookmark
-    </ToggleGroup.Item>
-    <ToggleGroup.Item value="readlater">
-      <Clock class="inline w-4 h-4 mr-1 align-text-bottom" /> Ler Mais Tarde
-    </ToggleGroup.Item>
-  </ToggleGroup.Root>
-</div>
+{#if itemFilter}
+  <div class="mb-4">
+    <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted text-xs">
+      Busca ({searchScope}): "{itemFilter}"
+      <button type="button" class="ml-1 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''} aria-label="Remover busca">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </span>
+  </div>
+{/if}
 
 <div class="w-full overflow-x-auto">
   <div class="rounded-md border min-w-full">
