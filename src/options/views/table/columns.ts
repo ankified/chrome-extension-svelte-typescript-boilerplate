@@ -42,7 +42,9 @@ export const columns: ColumnDef<SavedItem, any>[] = [
   {
     id: 'item',
     header: 'Item',
+    accessorFn: (row) => row.title,
     cell: ({ row }) => renderComponent(ItemCell, { item: row.original }),
+    enableSorting: true,
   },
   {
     id: 'type',

@@ -3,7 +3,7 @@
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
   import type { ColumnDef } from '@tanstack/table-core';
-  import { getCoreRowModel } from '@tanstack/table-core';
+  import { getCoreRowModel, getSortedRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
   import Button from '../../../lib/components/ui/button/button.svelte';
@@ -87,6 +87,7 @@
       }
     },
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getExpandedRowModel: undefined, // será resolvido automaticamente
   });
 

@@ -13,6 +13,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [✅] **Botão de Ordenação em Cada Coluna**
   - [✅] Adicionar um botão de ordenação (ícone de seta dupla) ao lado do título de cada coluna ordenável.
   - [✅] Permitir alternar entre ascendente, descendente e sem ordenação.
+  - **Observação:** Apesar da implementação do botão e do estado de sorting, a funcionalidade de ordenação ainda não está funcionando como esperado. A tabela não é reordenada ao clicar nos botões de ordenação. Necessário investigar mais a fundo a integração do estado de sorting com o TanStack Table e a renderização dos dados.
 
 - [ ] **Expansão de Linha com Detalhes**
   - [ ] Ao expandir uma linha, exibir detalhes do item: comentário, tags, grupos, etc.
