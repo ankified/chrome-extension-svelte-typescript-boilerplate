@@ -31,9 +31,9 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [ ] Implementar ação de alteração de tags em lote.
   - [ ] Outras ações relevantes para múltiplos itens.
 
-- [ ] **Melhorias de Interface e Usabilidade**
-  - [ ] Adicionar botão de opções gerais no header da coluna de opções por linha.
-  - [ ] Acrescentar campo de pesquisa acima da tabela, seguindo o padrão do campo de busca dos cards.
+- [✅] **Melhorias de Interface e Usabilidade**
+  - [✅] Adicionado botão de opções gerais (DropdownMenu) no header da coluna de ações, com menu placeholder e ícone de três pontos vertical, pronto para receber opções futuras.
+  - [✅] Acrescentado campo de pesquisa acima da tabela, seguindo o padrão visual e funcional do campo de busca dos cards, com botão de limpar e badge de busca ativa.
   - [ ] Quando "Ler Mais Tarde" estiver selecionado, exibir também as colunas "Agendado para" e "Status" (com pills coloridas para pendente, concluído ou atrasado).
 
 - [ ] **Funcionalidade de Paginação**
@@ -51,6 +51,8 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 
 ### [19/04/2025]
 - Removido o botão global antigo acima da tabela; agora o controle está no header da coluna de expansão, garantindo alinhamento visual e melhor usabilidade.
+- Adicionado botão de opções gerais no header da coluna de ações, usando DropdownMenu do Shadcn-Svelte.
+- Padronizado o campo de busca da tabela para UX igual aos cards, incluindo botão de limpar e badge de busca ativa.
 
 ---
 

@@ -7,6 +7,7 @@ import ItemCell from './ItemCell.svelte';
 import ExpandButton from './ExpandButton.svelte';
 import SortableHeader from './SortableHeader.svelte';
 import ExpandAllButton from './ExpandAllButton.svelte';
+import DropdownMenuHeaderButton from './DropdownMenuHeaderButton.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -156,7 +157,12 @@ export const columns: ColumnDef<SavedItem, any>[] = [
   },
   {
     id: 'actions',
-    header: '',
+    header: () => (
+      renderComponent(
+        DropdownMenuHeaderButton,
+        {}
+      )
+    ),
     cell: ({ row }) => renderComponent(DataTableActions, { id: row.original.id }),
     enableSorting: false,
     enableHiding: false,
