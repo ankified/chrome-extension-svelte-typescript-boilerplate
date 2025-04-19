@@ -6,6 +6,7 @@ import DataTableActions from './data-table-actions.svelte';
 import ItemCell from './ItemCell.svelte';
 import ExpandButton from './ExpandButton.svelte';
 import SortableHeader from './SortableHeader.svelte';
+import ExpandAllButton from './ExpandAllButton.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -14,7 +15,9 @@ function formatDate(date: number) {
 export const columns: ColumnDef<SavedItem, any>[] = [
   {
     id: 'expand',
-    header: '',
+    header: ({ table }) => renderComponent(
+      ExpandAllButton, { table }
+    ),
     cell: ({ row }) => renderComponent(ExpandButton, { row }),
     enableSorting: false,
     enableHiding: false,

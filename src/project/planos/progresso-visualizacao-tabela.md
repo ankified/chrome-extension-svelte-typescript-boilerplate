@@ -21,8 +21,8 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [✅] Ao expandir uma linha, exibir detalhes do item: comentário, tags, grupos, etc.
   - [✅] Layout limpo e visualmente separado.
 
-- [ ] **Botão para Expandir/Recolher Todos**
-  - [ ] Adicionar um botão no header para expandir ou recolher todas as linhas de uma vez.
+- [✅] **Botão para Expandir/Recolher Todos**
+  - [✅] Adicionado botão no header da coluna de expansão para expandir ou recolher todas as linhas de uma vez, centralizando o controle global de expansão na tabela.
 
 - [ ] **Ações em Lote**
   - [ ] Exibir barra de ações quando um ou mais itens estiverem selecionados.
@@ -48,6 +48,9 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 ## Observações e Datas de Conclusão
 
 - Utilize este espaço para registrar decisões, dificuldades, datas de início/conclusão de cada etapa e links para commits relevantes.
+
+### [19/04/2025]
+- Removido o botão global antigo acima da tabela; agora o controle está no header da coluna de expansão, garantindo alinhamento visual e melhor usabilidade.
 
 ---
 
