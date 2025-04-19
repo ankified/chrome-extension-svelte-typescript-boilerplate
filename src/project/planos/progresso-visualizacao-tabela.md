@@ -5,9 +5,10 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 ## Checklist de Funcionalidades
 
 - [ ] **Coluna "Tipo" com Toggle Group e Ícones**
-  - [ ] Renomear a coluna "Ler Mais Tarde" para "Tipo".
-  - [ ] Substituir o input por um ToggleGroup com três opções: Bookmarks, Ler Mais Tarde, Todos.
-  - [ ] Exibir ícone de bookmark ou clock na célula, conforme o tipo do item.
+  - [✅] Renomear a coluna "Ler Mais Tarde" para "Tipo".
+  - [✅] Exibir a coluna "Tipo" apenas quando a opção "Todos" estiver selecionada no ToggleGroup.
+  - [✅] Implementar um ToggleGroup de exibição (Bookmarks, Ler Mais Tarde, Todos) acima da tabela, em vez de dentro da coluna Tipo.
+  - [⚠️] Exibir ícone de bookmark ou clock na célula, conforme o tipo do item. (Implementado, mas não está funcionando)
 
 - [ ] **Botão de Ordenação em Cada Coluna**
   - [ ] Adicionar um botão de ordenação (ícone de seta dupla) ao lado do título de cada coluna ordenável.
@@ -30,8 +31,6 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [ ] **Melhorias de Interface e Usabilidade**
   - [ ] Adicionar botão de opções gerais no header da coluna de opções por linha.
   - [ ] Acrescentar campo de pesquisa acima da tabela, seguindo o padrão do campo de busca dos cards.
-  - [ ] Mover o ToggleGroup de exibição (Bookmarks, Ler Mais Tarde, Todos) para acima da tabela, em vez de dentro da coluna Tipo.
-  - [ ] Exibir a coluna "Tipo" apenas quando a opção "Todos" estiver selecionada no ToggleGroup.
   - [ ] Quando "Ler Mais Tarde" estiver selecionado, exibir também as colunas "Agendado para" e "Status" (com pills coloridas para pendente, concluído ou atrasado).
 
 - [ ] **Funcionalidade de Paginação**

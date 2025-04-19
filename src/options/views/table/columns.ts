@@ -47,15 +47,11 @@ export const columns: ColumnDef<SavedItem, any>[] = [
   {
     id: 'type',
     header: 'Tipo',
-    cell: ({ row }) => {
-      const isReadLater = row.original.readLater;
-      // Ícones Lucide (Bookmark, Clock)
-      // Importação será feita no DataTable.svelte
-      return {
-        isReadLater,
-        typeLabel: isReadLater ? 'Ler Mais Tarde' : 'Bookmark',
-      };
-    },
+    accessorFn: (row) => ({
+      isReadLater: row.readLater,
+      typeLabel: row.readLater ? 'Ler Mais Tarde' : 'Favorito',
+    }),
+    cell: ({ getValue }) => getValue(),
     enableSorting: true,
     enableHiding: true,
   },
