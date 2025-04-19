@@ -4,15 +4,15 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 
 ## Checklist de Funcionalidades
 
-- [ ] **Coluna "Tipo" com Toggle Group e Ícones**
+- [✅] **Coluna "Tipo" com Toggle Group e Ícones**
   - [✅] Renomear a coluna "Ler Mais Tarde" para "Tipo".
   - [✅] Exibir a coluna "Tipo" apenas quando a opção "Todos" estiver selecionada no ToggleGroup.
   - [✅] Implementar um ToggleGroup de exibição (Bookmarks, Ler Mais Tarde, Todos) acima da tabela, em vez de dentro da coluna Tipo.
-  - [⚠️] Exibir ícone de bookmark ou clock na célula, conforme o tipo do item. (Implementado, mas não está funcionando)
+  - [✅] Exibir ícone de bookmark ou clock na célula, conforme o tipo do item.
 
-- [ ] **Botão de Ordenação em Cada Coluna**
-  - [ ] Adicionar um botão de ordenação (ícone de seta dupla) ao lado do título de cada coluna ordenável.
-  - [ ] Permitir alternar entre ascendente, descendente e sem ordenação.
+- [✅] **Botão de Ordenação em Cada Coluna**
+  - [✅] Adicionar um botão de ordenação (ícone de seta dupla) ao lado do título de cada coluna ordenável.
+  - [✅] Permitir alternar entre ascendente, descendente e sem ordenação.
 
 - [ ] **Expansão de Linha com Detalhes**
   - [ ] Ao expandir uma linha, exibir detalhes do item: comentário, tags, grupos, etc.

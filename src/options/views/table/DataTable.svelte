@@ -18,6 +18,9 @@
   import Bookmark from '@lucide/svelte/icons/bookmark';
   import Clock from '@lucide/svelte/icons/clock';
   import * as ToggleGroup from '../../../lib/components/ui/toggle-group/index';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
 
   let { columns = [], data = [] } = $props();
 
@@ -156,7 +159,25 @@
             {#each headerGroup.headers as header (header.id)}
               <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if !header.isPlaceholder}
-                  <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+                  {#if header.column.getCanSort?.()}
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 select-none cursor-pointer group text-left w-full"
+                      onclick={header.column.getToggleSortingHandler?.()}
+                      aria-label="Ordenar coluna"
+                    >
+                      <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+                      {#if header.column.getIsSorted?.() === 'asc'}
+                        <ChevronUp class="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
+                      {:else if header.column.getIsSorted?.() === 'desc'}
+                        <ChevronDown class="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
+                      {:else}
+                        <ArrowUpDown class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      {/if}
+                    </button>
+                  {:else}
+                    <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+                  {/if}
                 {/if}
               </Table.Head>
             {/each}
@@ -237,7 +258,7 @@
                       {:else}
                         <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom text-yellow-500" />
                       {/if}
-                      <span>{typeValue.typeLabel}</span>
+                      <!-- <span>{typeValue.typeLabel}</span> -->
                     {:else}
                       <span>-</span>
                   {/if}
