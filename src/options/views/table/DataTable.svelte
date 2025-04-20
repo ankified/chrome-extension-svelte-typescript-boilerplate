@@ -205,8 +205,8 @@
     </ToggleGroup.Root>
   </div>
 
-  <div class="flex items-center border rounded-md overflow-hidden w-full">
-    <div class="relative grow">
+  <div class="flex items-center border rounded-md overflow-hidden w-full max-w-[360px]">
+    <div class="relative grow min-w-0 max-w-[320px]">
       <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8" />
@@ -230,7 +230,7 @@
       {/if}
     </div>
     <Select.Root bind:value={searchScope} type="single">
-      <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0" aria-label="Escopo da busca">
+      <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0 w-32 max-w-[120px]" aria-label="Escopo da busca">
         {selectedScopeLabel}
       </Select.Trigger>
       <Select.Content>
