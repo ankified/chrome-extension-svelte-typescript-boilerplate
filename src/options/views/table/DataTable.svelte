@@ -3,7 +3,7 @@
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
   import type { ColumnDef, SortingState } from '@tanstack/table-core';
-  import { getCoreRowModel, getSortedRowModel, getExpandedRowModel } from '@tanstack/table-core';
+  import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
   import Button from '../../../lib/components/ui/button/button.svelte';
@@ -75,14 +75,90 @@
 
   let columnVisibility = $state<{ [key: string]: boolean }>({});
 
+  let globalFilter = $state('');
+
+  // Função de filtro global baseada no escopo
+  function filterByScope(item: SavedItem) {
+    if (!itemFilter) return true;
+    let value: any;
+    switch (searchScope) {
+      case 'groups':
+        value = item.groupIds;
+        break;
+      case 'tags':
+        value = item.tags;
+        break;
+      case 'title':
+        value = item.title;
+        break;
+      case 'url':
+        value = item.url;
+        break;
+      case 'comment':
+        value = item.comments;
+        break;
+      default:
+        value = '';
+    }
+    if (Array.isArray(value)) {
+      return value.some(v => v && v.toString().toLowerCase().includes(itemFilter.toLowerCase()));
+    }
+    if (typeof value === 'string') {
+      return value.toLowerCase().includes(itemFilter.toLowerCase());
+    }
+    if (typeof value === 'number') {
+      return value.toString().includes(itemFilter);
+    }
+    return false;
+  }
+
   const table = createSvelteTable({
     data,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     state: {
+      get globalFilter() { return globalFilter; },
       get rowSelection() { return rowSelection; },
       get columnVisibility() { return columnVisibility; },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
+    },
+    onGlobalFilterChange: (value) => { globalFilter = value; },
+    globalFilterFn: (row, columnId, filterValue) => {
+      const item = row.original as SavedItem;
+      let value: any;
+      switch (searchScope) {
+        case 'groups':
+          value = (item.groupIds || [])
+            .map(gid => groups().find(g => g.id === gid)?.name || '')
+            .filter(Boolean);
+          break;
+        case 'tags':
+          value = item.tags;
+          break;
+        case 'title':
+          value = item.title;
+          break;
+        case 'url':
+          value = item.url;
+          break;
+        case 'comment':
+          value = item.comments;
+          break;
+        default:
+          value = '';
+      }
+      if (Array.isArray(value)) {
+        return value.some(v => v && v.toString().toLowerCase().includes(filterValue.toLowerCase()));
+      }
+      if (typeof value === 'string') {
+        return value.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      if (typeof value === 'number') {
+        return value.toString().includes(filterValue);
+      }
+      return false;
     },
     onRowSelectionChange: (updater) => {
       if (typeof updater === 'function') {
@@ -112,9 +188,6 @@
         expanded = updater;
       }
     },
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
   });
 
   $effect(() => {
@@ -217,11 +290,12 @@
         type="search"
         class="pl-8 pr-8 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
         placeholder="Buscar..."
-        bind:value={itemFilter}
+        value={globalFilter}
+        oninput={(e) => globalFilter = e.currentTarget.value}
         autocomplete="off"
       />
-      {#if itemFilter}
-        <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''}>
+      {#if globalFilter}
+        <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => globalFilter = ''}>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
@@ -244,20 +318,6 @@
   </div>
 </div>
 
-{#if itemFilter}
-  <div class="mb-4">
-    <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-muted text-xs">
-      Busca ({searchScope}): "{itemFilter}"
-      <button type="button" class="ml-1 text-muted-foreground hover:text-primary" onclick={() => itemFilter = ''} aria-label="Remover busca">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </span>
-  </div>
-{/if}
-
 <div class="w-full overflow-x-auto">
   <div class="rounded-md border min-w-full">
     <Table.Root class="min-w-full">
@@ -277,7 +337,7 @@
             {#each headerGroup.headers as header (header.id)}
               <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if header.column.id === 'item'}
-                  <input type="text" placeholder="Filtrar..." class="input input-xs w-full" bind:value={itemFilter} />
+                  <!-- Filtro removido, busca global será usada -->
                 {:else if header.column.id === 'groupIds'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
                     {#if groupFilter.length === 0}
