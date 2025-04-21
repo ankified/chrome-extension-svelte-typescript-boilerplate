@@ -2,8 +2,6 @@
 
 ## Análise Inicial do Projeto
 
-Use este prompt quando iniciar uma nova conversa ou sessão com o projeto:
-
 ```
 Analise o projeto para entender sua estrutura, propósito e tecnologias utilizadas. Especificamente:
 

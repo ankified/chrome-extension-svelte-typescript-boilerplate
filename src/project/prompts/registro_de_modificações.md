@@ -36,5 +36,5 @@ Registre a modificação recém-implementada no diário do projeto. Para isso:
       - Adicionar testes para o componente BotaoSecundario.
    ```
 
-5. Se for conveniente, prepare também uma mensagem de commit com um resumo conciso das mudanças acumuladas desde o último commit para uso no GitHub.
+5. Prepare também uma mensagem de commit com um resumo conciso das mudanças acumuladas desde o último commit para uso no GitHub.
 ``` 
