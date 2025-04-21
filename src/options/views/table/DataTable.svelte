@@ -86,16 +86,29 @@
   let globalFilterObj = $derived(() => ({ value: globalFilter, scope: searchScope }));
 
   // Função de filtro global baseada no escopo
-  function globalFilterFn(row, columnId, filterValue) {
+  function globalFilterFn(
+    row: { original: SavedItem },
+    columnId: string,
+    filterValue: any
+  ) {
     // filterValue: { value: string, scope: string }
-    const { value, scope } = typeof filterValue === 'object' && filterValue !== null ? filterValue : { value: filterValue, scope: 'title' };
+    let value: string = '';
+    let scope: string = 'title';
+    if (typeof filterValue === 'object' && filterValue !== null) {
+      value = filterValue.value;
+      scope = filterValue.scope;
+    } else {
+      value = filterValue;
+      scope = 'title';
+    }
     if (!value) return true;
-    let field;
+    let field: string | string[] | number | undefined;
     switch (scope) {
       case 'groups':
+        // Buscar pelo nome do grupo, não pelo id
         field = row.original.groupIds
-          .map(gid => groups().find(g => g.id === gid)?.name)
-          .filter(Boolean);
+          .map((gid: string) => groups().find((g: Group) => g.id === gid)?.name)
+          .filter((x): x is string => Boolean(x));
         break;
       case 'tags':
         field = row.original.tags;
@@ -113,14 +126,15 @@
         field = '';
     }
     if (Array.isArray(field)) {
-      return field.some(v => v && v.toString().toLowerCase().includes(value.toLowerCase()));
+      return field.some((v) => typeof v === 'string' && v.toLowerCase().includes(value.toLowerCase()));
     }
     if (typeof field === 'string') {
       return field.toLowerCase().includes(value.toLowerCase());
     }
     if (typeof field === 'number') {
-      return field.toString().includes(value);
+      return (field as number).toString().includes(value);
     }
+    // Checagem defensiva para evitar erro de never
     return false;
   }
 
