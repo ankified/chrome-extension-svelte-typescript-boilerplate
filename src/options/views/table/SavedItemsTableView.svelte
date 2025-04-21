@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { columns } from './columns';
+  import { getColumns } from './columns';
   import type { SavedItem } from '../../../types';
   import DataTable from './DataTable.svelte';
 
@@ -40,6 +40,18 @@
       flashcardIds: [],
     },
   ];
+
+  // Reatividade Svelte 5 para alternar colunas
+  let typeFilter = $state('all');
+  const showReadLaterColumns = $derived(() => typeFilter === 'readlater');
+  const dynamicColumns = $derived(() => getColumns(showReadLaterColumns()));
+
+  const filteredData = $derived(() => {
+    if (typeFilter === 'all') return data && data.length > 0 ? data : mockData;
+    if (typeFilter === 'readlater') return (data && data.length > 0 ? data : mockData).filter(item => item.readLater);
+    if (typeFilter === 'bookmark') return (data && data.length > 0 ? data : mockData).filter(item => !item.readLater);
+    return data && data.length > 0 ? data : mockData;
+  });
 </script>
 
-<DataTable {columns} data={data && data.length > 0 ? data : mockData} /> 
+<DataTable columns={dynamicColumns()} data={filteredData()} typeFilter={typeFilter} /> 

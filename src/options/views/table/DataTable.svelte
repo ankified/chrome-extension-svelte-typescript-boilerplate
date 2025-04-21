@@ -29,7 +29,7 @@
   import Input from '../../../lib/components/ui/input/input.svelte';
   import * as Select from "../../../lib/components/ui/select/index.js";
 
-  let { columns = [], data = [] } = $props();
+  let { columns = [], data = [], typeFilter = 'all' } = $props();
 
   let rowSelection = $state({});
   let sorting = $state<SortingState>([]);
@@ -45,7 +45,6 @@
   let datePopoverOpen = $state(false);
   let groupDialogOpen = $state(false);
   let tagDialogOpen = $state(false);
-  let typeFilter = $state<'all' | 'readlater' | 'bookmark'>('all');
   let searchScope: 'title' | 'url' | 'groups' | 'tags' | 'comment' = $state('title');
 
   // Dados para dialogs (arrays reativos)
@@ -123,43 +122,9 @@
       get columnVisibility() { return columnVisibility; },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
+      get columnFilters() { return [{ id: 'type', value: typeFilter }]; },
     },
     onGlobalFilterChange: (value) => { globalFilter = value; },
-    globalFilterFn: (row, columnId, filterValue) => {
-      const item = row.original as SavedItem;
-      let value: any;
-      switch (searchScope) {
-        case 'groups':
-          value = (item.groupIds || [])
-            .map(gid => groups().find(g => g.id === gid)?.name || '')
-            .filter(Boolean);
-          break;
-        case 'tags':
-          value = item.tags;
-          break;
-        case 'title':
-          value = item.title;
-          break;
-        case 'url':
-          value = item.url;
-          break;
-        case 'comment':
-          value = item.comments;
-          break;
-        default:
-          value = '';
-      }
-      if (Array.isArray(value)) {
-        return value.some(v => v && v.toString().toLowerCase().includes(filterValue.toLowerCase()));
-      }
-      if (typeof value === 'string') {
-        return value.toLowerCase().includes(filterValue.toLowerCase());
-      }
-      if (typeof value === 'number') {
-        return value.toString().includes(filterValue);
-      }
-      return false;
-    },
     onRowSelectionChange: (updater) => {
       if (typeof updater === 'function') {
         rowSelection = updater(rowSelection);
@@ -197,6 +162,16 @@
       if (col.getIsVisible() !== shouldBeVisible) {
         col.toggleVisibility(shouldBeVisible);
       }
+    }
+    // Controle das colunas 'Agendado para' e 'Status'
+    const colScheduled = table.getColumn('scheduledDate');
+    const colStatus = table.getColumn('status');
+    const showReadLater = typeFilter === 'readlater';
+    if (colScheduled && colScheduled.getIsVisible() !== showReadLater) {
+      colScheduled.toggleVisibility(showReadLater);
+    }
+    if (colStatus && colStatus.getIsVisible() !== showReadLater) {
+      colStatus.toggleVisibility(showReadLater);
     }
   });
 
@@ -401,14 +376,14 @@
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if cell.column.id === 'type'}
-                  {@const typeValue = cell.getValue() as { isReadLater: boolean; typeLabel: string } | undefined}
+                  {@const typeValue = cell.getValue() as string}
                     {#if typeValue}
-                      {#if typeValue.isReadLater}
+                      {#if typeValue === "Ler Mais Tarde"}
                         <Clock class="inline w-4 h-4 mr-1 align-text-bottom text-blue-500" />
                       {:else}
                         <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom text-yellow-500" />
                       {/if}
-                      <!-- <span>{typeValue.typeLabel}</span> -->
+                      <span>{typeValue}</span>
                     {:else}
                       <span>-</span>
                   {/if}
