@@ -93,7 +93,9 @@
     let field;
     switch (scope) {
       case 'groups':
-        field = row.original.groupIds;
+        field = row.original.groupIds
+          .map(gid => groups().find(g => g.id === gid)?.name)
+          .filter(Boolean);
         break;
       case 'tags':
         field = row.original.tags;
@@ -378,6 +380,7 @@
           <Table.Row data-state={row.getIsSelected() && 'selected'}>
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
+                <!-- {JSON.stringify(cell)} -->
                 {#if cell.column.id === 'type'}
                   {@const typeValue = cell.getValue() as string}
                     {#if typeValue}
