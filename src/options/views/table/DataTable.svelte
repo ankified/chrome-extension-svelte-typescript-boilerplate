@@ -17,6 +17,7 @@
   import { RangeCalendar } from '../../../lib/components/ui/range-calendar/index.js';
   import Bookmark from '@lucide/svelte/icons/bookmark';
   import Clock from '@lucide/svelte/icons/clock';
+  import Funnel from '@lucide/svelte/icons/funnel';
   import * as ToggleGroup from '../../../lib/components/ui/toggle-group/index';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -28,7 +29,7 @@
   import FlashcardCard from '../../../lib/components/FlashcardCard.svelte';
   import Input from '../../../lib/components/ui/input/input.svelte';
   import * as Select from "../../../lib/components/ui/select/index.js";
-
+  import CalendarSearch from '@lucide/svelte/icons/calendar-search';
   let { columns = [], data = [], typeFilter = 'all' } = $props();
 
   let rowSelection = $state({});
@@ -176,10 +177,10 @@
   });
 
   function formatDate(filter: DateRange | undefined) {
-    if (!filter) return 'Filtrar por data';
+    if (!filter) return 'Filtrar por data!';
     const start = filter.start?.toDate(getLocalTimeZone());
     const end = filter.end?.toDate(getLocalTimeZone());
-    if (!start) return 'Filtrar por data';
+    if (!start) return 'Filtrar por data!';
     if (end && end.getTime() !== start.getTime()) {
       return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
     }
@@ -316,7 +317,7 @@
                 {:else if header.column.id === 'groupIds'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
                     {#if groupFilter.length === 0}
-                      Filtrar grupo
+                      <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                     {:else}
                       {#each groupFilter as gid (gid)}
                         <Badge class="mr-1">{groups().find((g: Group) => g.id === gid)?.name || gid}</Badge>
@@ -333,7 +334,7 @@
                 {:else if header.column.id === 'tags'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
                     {#if tagFilter.length === 0}
-                      Filtrar tag
+                      <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                     {:else}
                       {#each tagFilter as tag (tag)}
                         <Badge class="mr-1">{tag}</Badge>
@@ -355,7 +356,11 @@
                   <Popover.Root>
                     <Popover.Trigger>
                       <Button variant="outline" size="sm" class="w-full justify-start">
-                        {formatDate(dateFilter)}
+                        {#if dateFilter}
+                          {formatDate(dateFilter)}
+                        {:else}
+                          <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
+                        {/if}
                       </Button>
                     </Popover.Trigger>
                     <Popover.Content align="end" class="p-0">
@@ -383,7 +388,7 @@
                       {:else}
                         <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom text-yellow-500" />
                       {/if}
-                      <span>{typeValue}</span>
+                      <!-- <span>{typeValue}</span> -->
                     {:else}
                       <span>-</span>
                   {/if}

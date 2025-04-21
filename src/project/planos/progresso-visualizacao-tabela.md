@@ -2,6 +2,17 @@
 
 Este documento registra o progresso das melhorias planejadas para a visualização da tabela de itens salvos.
 
+## Correções prioritárias
+
+- [ ] O botão de expandir/colapsar só está funcionando para expandir mas não para colapsar.
+- [ ] As colunas "Agendado para" e "Status" não estão sendo exibidas e a página de erros mostra mensagens dizendo que essas colunas não existem.
+- [ ] O input de pesquisa exibe dois botões de excluir.
+- [ ] A busca está sendo feita apenas nos títulos, independente do escopo selecionado.
+- [ ] A filtragem por grupos não está funcionando.
+- [ ] A filtragem por tags não está funcionando.
+- [ ] A filtragem por data não está funcionando.
+- [ ] A ordenação não está funcionando.
+
 ## Checklist de Funcionalidades
 
 - [✅] **Coluna "Tipo" com Toggle Group e Ícones**
@@ -35,6 +46,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [✅] Adicionado botão de opções gerais (DropdownMenu) no header da coluna de ações, com menu placeholder e ícone de três pontos vertical, pronto para receber opções futuras.
   - [✅] Acrescentado campo de pesquisa acima da tabela, seguindo o padrão visual e funcional do campo de busca dos cards, com botão de limpar e badge de busca ativa.
   - [ ] Quando "Ler Mais Tarde" estiver selecionado, exibir também as colunas "Agendado para" e "Status" (com pills coloridas para pendente, concluído ou atrasado).
+  - [ ] Substituir os inputs das colunas "Notas" e "Flashcards" por botões com ícones de visualizar. Quando clicado, deve abrir um Dialog mostrando os conteúdos dessas colunas.
 
 - [ ] **Funcionalidade de Paginação**
   - [ ] Implementar paginação na tabela de itens salvos.
