@@ -12,7 +12,7 @@
   import Badge from '../../../lib/components/ui/badge/badge.svelte';
   import type { SavedItem, Group } from '../../../types';
   import { groups as groupsStore, knownTags as tagsStore } from '../../../storage';
-  import { getLocalTimeZone, today } from "@internationalized/date";
+  import { getLocalTimeZone, today, type DateValue } from "@internationalized/date";
   import type { DateRange } from 'bits-ui';
   import { RangeCalendar } from '../../../lib/components/ui/range-calendar/index.js';
   import Bookmark from '@lucide/svelte/icons/bookmark';
@@ -138,6 +138,8 @@
     return false;
   }
 
+  let columnFilters = $state<{ id: string; value: any }[]>([]);
+
   const table = createSvelteTable({
     data,
     columns,
@@ -150,7 +152,7 @@
       get columnVisibility() { return columnVisibility(); },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
-      get columnFilters() { return [{ id: 'type', value: typeFilter }]; },
+      get columnFilters() { return columnFilters; },
     },
     onGlobalFilterChange: (value) => {
       if (typeof value === 'object' && value !== null) {
@@ -186,6 +188,13 @@
         expanded = updater(expanded);
       } else {
         expanded = updater;
+      }
+    },
+    onColumnFiltersChange: (updater) => {
+      if (typeof updater === 'function') {
+        columnFilters = updater(columnFilters);
+      } else {
+        columnFilters = updater;
       }
     },
   });
@@ -343,7 +352,11 @@
                     initialIncludedGroups={groupFilter}
                     availableGroups={groups()}
                     onClose={() => groupDialogOpen = false}
-                    onApply={(e) => { groupFilter = e.included; groupDialogOpen = false; }}
+                    onApply={(e) => {
+                      groupFilter = e.included;
+                      groupDialogOpen = false;
+                      table.getColumn('groupIds')?.setFilterValue(e.included);
+                    }}
                   />
                 {:else if header.column.id === 'tags'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
@@ -360,7 +373,11 @@
                     initialIncludedTags={tagFilter}
                     availableTags={tags()}
                     onClose={() => tagDialogOpen = false}
-                    onApply={(e) => { tagFilter = e.included; tagDialogOpen = false; }}
+                    onApply={(e) => {
+                      tagFilter = e.included;
+                      tagDialogOpen = false;
+                      table.getColumn('tags')?.setFilterValue(e.included);
+                    }}
                   />
                 {:else if header.column.id === 'noteIds'}
                   <input type="text" placeholder="# Notas" class="input input-xs w-full" bind:value={noteFilter} />
@@ -378,7 +395,7 @@
                       </Button>
                     </Popover.Trigger>
                     <Popover.Content align="end" class="p-0">
-                      <RangeCalendar bind:value={dateFilter} />
+                      <RangeCalendar bind:value={dateFilter} on:valueChange={e => table.getColumn('dateAdded')?.setFilterValue(e.detail)} />
                     </Popover.Content>
                   </Popover.Root>
                 {:else}

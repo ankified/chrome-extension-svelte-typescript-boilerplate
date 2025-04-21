@@ -10,6 +10,7 @@ import ExpandAllButton from './ExpandAllButton.svelte';
 import DropdownMenuHeaderButton from './DropdownMenuHeaderButton.svelte';
 import Bookmark from '@lucide/svelte/icons/bookmark';
 import Clock from '@lucide/svelte/icons/clock';
+import { getLocalTimeZone } from "@internationalized/date";
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -105,6 +106,10 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         const countB = Array.isArray(b.original.groupIds) ? b.original.groupIds.length : 0;
         return countA - countB;
       },
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue || filterValue.length === 0) return true;
+        return (filterValue as string[]).every((gid: string) => Array.isArray(row.original.groupIds) && row.original.groupIds.includes(gid));
+      },
     },
     {
       accessorKey: 'tags',
@@ -120,6 +125,10 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         const countA = Array.isArray(a.original.tags) ? a.original.tags.length : 0;
         const countB = Array.isArray(b.original.tags) ? b.original.tags.length : 0;
         return countA - countB;
+      },
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue || filterValue.length === 0) return true;
+        return (filterValue as string[]).every((tag: string) => Array.isArray(row.original.tags) && row.original.tags.includes(tag));
       },
     },
     {
@@ -165,6 +174,14 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       cell: ({ row }) => formatDate(row.original.dateAdded),
       sortingFn: 'datetime',
       enableSorting: true,
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue || !filterValue.start) return true;
+        const date = row.original.dateAdded;
+        const start = filterValue.start ? filterValue.start.toDate(getLocalTimeZone()).setHours(0,0,0,0) : null;
+        const end = filterValue.end ? filterValue.end.toDate(getLocalTimeZone()).setHours(23,59,59,999) : start;
+        if (!start) return true;
+        return date >= start && date <= (end ?? start);
+      },
     },
     {
       id: 'actions',
