@@ -82,37 +82,42 @@
 
   let globalFilter = $state('');
 
+  // Novo estado para filtro global composto
+  let globalFilterObj = $derived(() => ({ value: globalFilter, scope: searchScope }));
+
   // Função de filtro global baseada no escopo
-  function filterByScope(item: SavedItem) {
-    if (!itemFilter) return true;
-    let value: any;
-    switch (searchScope) {
+  function globalFilterFn(row, columnId, filterValue) {
+    // filterValue: { value: string, scope: string }
+    const { value, scope } = typeof filterValue === 'object' && filterValue !== null ? filterValue : { value: filterValue, scope: 'title' };
+    if (!value) return true;
+    let field;
+    switch (scope) {
       case 'groups':
-        value = item.groupIds;
+        field = row.original.groupIds;
         break;
       case 'tags':
-        value = item.tags;
+        field = row.original.tags;
         break;
       case 'title':
-        value = item.title;
+        field = row.original.title;
         break;
       case 'url':
-        value = item.url;
+        field = row.original.url;
         break;
       case 'comment':
-        value = item.comments;
+        field = row.original.comments;
         break;
       default:
-        value = '';
+        field = '';
     }
-    if (Array.isArray(value)) {
-      return value.some(v => v && v.toString().toLowerCase().includes(itemFilter.toLowerCase()));
+    if (Array.isArray(field)) {
+      return field.some(v => v && v.toString().toLowerCase().includes(value.toLowerCase()));
     }
-    if (typeof value === 'string') {
-      return value.toLowerCase().includes(itemFilter.toLowerCase());
+    if (typeof field === 'string') {
+      return field.toLowerCase().includes(value.toLowerCase());
     }
-    if (typeof value === 'number') {
-      return value.toString().includes(itemFilter);
+    if (typeof field === 'number') {
+      return field.toString().includes(value);
     }
     return false;
   }
@@ -122,15 +127,23 @@
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn, // Passa a função customizada
     state: {
-      get globalFilter() { return globalFilter; },
+      get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
       get columnVisibility() { return columnVisibility(); },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
       get columnFilters() { return [{ id: 'type', value: typeFilter }]; },
     },
-    onGlobalFilterChange: (value) => { globalFilter = value; },
+    onGlobalFilterChange: (value) => {
+      if (typeof value === 'object' && value !== null) {
+        globalFilter = value.value;
+        searchScope = value.scope;
+      } else {
+        globalFilter = value;
+      }
+    },
     onRowSelectionChange: (updater) => {
       if (typeof updater === 'function') {
         rowSelection = updater(rowSelection);
