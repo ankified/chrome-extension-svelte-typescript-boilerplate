@@ -73,7 +73,12 @@
     }
   });
 
-  let columnVisibility = $state<{ [key: string]: boolean }>({});
+  let columnVisibilityState = $state<{ [key: string]: boolean }>({});
+  let columnVisibility = $derived(() => ({
+    type: typeFilter === 'all',
+    scheduledDate: typeFilter === 'readlater',
+    status: typeFilter === 'readlater',
+  }));
 
   let globalFilter = $state('');
 
@@ -120,7 +125,7 @@
     state: {
       get globalFilter() { return globalFilter; },
       get rowSelection() { return rowSelection; },
-      get columnVisibility() { return columnVisibility; },
+      get columnVisibility() { return columnVisibility(); },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
       get columnFilters() { return [{ id: 'type', value: typeFilter }]; },
@@ -135,9 +140,9 @@
     },
     onColumnVisibilityChange: (updater) => {
       if (typeof updater === 'function') {
-        columnVisibility = updater(columnVisibility);
+        columnVisibilityState = updater(columnVisibilityState);
       } else {
-        columnVisibility = updater;
+        columnVisibilityState = updater;
       }
     },
     onSortingChange: (updater) => {
@@ -154,26 +159,6 @@
         expanded = updater;
       }
     },
-  });
-
-  $effect(() => {
-    const col = table.getColumn('type');
-    if (col) {
-      const shouldBeVisible = typeFilter === 'all';
-      if (col.getIsVisible() !== shouldBeVisible) {
-        col.toggleVisibility(shouldBeVisible);
-      }
-    }
-    // Controle das colunas 'Agendado para' e 'Status'
-    const colScheduled = table.getColumn('scheduledDate');
-    const colStatus = table.getColumn('status');
-    const showReadLater = typeFilter === 'readlater';
-    if (colScheduled && colScheduled.getIsVisible() !== showReadLater) {
-      colScheduled.toggleVisibility(showReadLater);
-    }
-    if (colStatus && colStatus.getIsVisible() !== showReadLater) {
-      colStatus.toggleVisibility(showReadLater);
-    }
   });
 
   function formatDate(filter: DateRange | undefined) {
@@ -388,9 +373,17 @@
                       {:else}
                         <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom text-yellow-500" />
                       {/if}
-                      <!-- <span>{typeValue}</span> -->
                     {:else}
                       <span>-</span>
+                  {/if}
+                {:else if cell.column.id === 'status'}
+                  {@const status = cell.getValue() as string}
+                  {#if status === 'Atrasado'}
+                    <span class="px-2 py-1 rounded bg-red-500 text-white text-xs">Atrasado</span>
+                  {:else if status === 'Pendente'}
+                    <span class="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Pendente</span>
+                  {:else if status === 'Agendado'}
+                    <span class="px-2 py-1 rounded bg-green-500 text-white text-xs">Agendado</span>
                   {/if}
                 {:else}
                   <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />

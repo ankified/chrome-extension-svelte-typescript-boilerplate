@@ -15,16 +15,6 @@ function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function getStatusPill(scheduledDate?: number) {
-  if (!scheduledDate) return '';
-  const now = Date.now();
-  const isToday = new Date(scheduledDate).toDateString() === new Date(now).toDateString();
-  if (scheduledDate < now && !isToday) return '<span class="px-2 py-1 rounded bg-red-500 text-white text-xs">Atrasado</span>';
-  if (isToday) return '<span class="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Pendente</span>';
-  if (scheduledDate > now) return '<span class="px-2 py-1 rounded bg-green-500 text-white text-xs">Agendado</span>';
-  return '';
-}
-
 export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, any>[] {
   const baseColumns: ColumnDef<SavedItem, any>[] = [
     {
@@ -203,15 +193,19 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
   const statusCol: ColumnDef<SavedItem, any> = {
     id: 'status',
     header: () => 'Status',
-    cell: ({ row }) => {
-      const status = getStatusPill(row.original.scheduledDate);
-      return status ? status : '';
+    accessorFn: (row) => {
+      if (!row.scheduledDate) return '';
+      const now = Date.now();
+      const scheduled = row.scheduledDate;
+      const isToday = new Date(scheduled).toDateString() === new Date(now).toDateString();
+      if (scheduled < now && !isToday) return 'Atrasado';
+      if (isToday) return 'Pendente';
+      if (scheduled > now) return 'Agendado';
+      return '';
     },
     enableSorting: false,
   };
-  if (showReadLaterColumns) {
-    const idx = baseColumns.findIndex(col => col.id === 'type');
-    baseColumns.splice(idx + 1, 0, agendadoParaCol, statusCol);
-  }
+  const idx = baseColumns.findIndex(col => col.id === 'type');
+  baseColumns.splice(idx + 1, 0, agendadoParaCol, statusCol);
   return baseColumns;
 } 
