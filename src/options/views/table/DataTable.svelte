@@ -145,6 +145,7 @@
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     globalFilterFn, // Passa a função customizada
     state: {
       get globalFilter() { return globalFilterObj(); },
