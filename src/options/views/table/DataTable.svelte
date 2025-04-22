@@ -30,6 +30,8 @@
   import Input from '../../../lib/components/ui/input/input.svelte';
   import * as Select from "../../../lib/components/ui/select/index.js";
   import CalendarSearch from '@lucide/svelte/icons/calendar-search';
+  import DialogButtonNotas from './DialogButtonNotas.svelte';
+  import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
   let { columns = [], data = [], typeFilter = 'all' } = $props();
 
   let rowSelection = $state({});
@@ -270,6 +272,9 @@
   const selectedScopeLabel = $derived(
     searchScopeOptions.find((opt) => opt.value === searchScope)?.label ?? "Buscar em..."
   );
+
+  // Registrar para uso em renderComponent
+  const _ = { DialogButtonNotas, DialogButtonFlashcards };
 </script>
 
 <div class="flex justify-between items-center gap-4 mb-4">

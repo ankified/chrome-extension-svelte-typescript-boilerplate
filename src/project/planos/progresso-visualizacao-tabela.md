@@ -46,7 +46,8 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [✅] Adicionado botão de opções gerais (DropdownMenu) no header da coluna de ações, com menu placeholder e ícone de três pontos vertical, pronto para receber opções futuras.
   - [✅] Acrescentado campo de pesquisa acima da tabela, seguindo o padrão visual e funcional do campo de busca dos cards, com botão de limpar e badge de busca ativa.
   - [✅] Quando "Ler Mais Tarde" estiver selecionado, exibir também as colunas "Agendado para" e "Status" (com pills coloridas para pendente, concluído ou atrasado).
-  - [ ] Substituir os inputs das colunas "Notas" e "Flashcards" por botões com ícones de visualizar. Quando clicado, deve abrir um Dialog mostrando os conteúdos dessas colunas.
+  - [✅] Colocar o valor de cada célula das colunas "Notas" e "Flashcards" dentro de botões. Quando clicado, cada botão deve abrir um Dialog mostrando os conteúdos dessas células. Se não houver conteúdo, o botão deve estar desativado.
+  - [ ] Colocar o valor de cada célula das colunas "Grupos" e "Tags" dentro de botões. Quando clicado, cada botão deve abrir um Dialog mostrando os conteúdos dessas células. Se não houver conteúdo, o botão deve estar desativado.
 
 - [ ] **Funcionalidade de Paginação**
   - [ ] Implementar paginação na tabela de itens salvos.

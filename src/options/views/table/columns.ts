@@ -11,6 +11,10 @@ import DropdownMenuHeaderButton from './DropdownMenuHeaderButton.svelte';
 import Bookmark from '@lucide/svelte/icons/bookmark';
 import Clock from '@lucide/svelte/icons/clock';
 import { getLocalTimeZone } from "@internationalized/date";
+import type DialogButtonNotasType from './DialogButtonNotas.svelte';
+import type DialogButtonFlashcardsType from './DialogButtonFlashcards.svelte';
+import DialogButtonNotas from './DialogButtonNotas.svelte';
+import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -139,7 +143,18 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
           sorted: column.getIsSorted?.(),
         }),
-      cell: ({ row }) => row.original.noteIds?.length || 0,
+      cell: ({ row }) => {
+        const count = row.original.noteIds?.length || 0;
+        return renderComponent(
+          DialogButtonNotas as typeof DialogButtonNotasType,
+          {
+            noteIds: row.original.noteIds,
+            disabled: count === 0,
+            count,
+            itemId: row.original.id,
+          }
+        );
+      },
       enableSorting: true,
       sortingFn: (a, b) => {
         const countA = Array.isArray(a.original.noteIds) ? a.original.noteIds.length : 0;
@@ -155,7 +170,18 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
           sorted: column.getIsSorted?.(),
         }),
-      cell: ({ row }) => row.original.flashcardIds?.length || 0,
+      cell: ({ row }) => {
+        const count = row.original.flashcardIds?.length || 0;
+        return renderComponent(
+          DialogButtonFlashcards as typeof DialogButtonFlashcardsType,
+          {
+            flashcardIds: row.original.flashcardIds,
+            disabled: count === 0,
+            count,
+            itemId: row.original.id,
+          }
+        );
+      },
       enableSorting: true,
       sortingFn: (a, b) => {
         const countA = Array.isArray(a.original.flashcardIds) ? a.original.flashcardIds.length : 0;
