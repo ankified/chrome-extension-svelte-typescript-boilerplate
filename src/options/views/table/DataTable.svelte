@@ -288,20 +288,20 @@
       </span>
       <Input
         type="search"
-        class="pl-8 pr-8 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
+        class="pl-8 pr-2 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
         placeholder="Buscar..."
         value={globalFilter}
         oninput={(e) => globalFilter = e.currentTarget.value}
         autocomplete="off"
       />
-      {#if globalFilter}
+      <!-- {#if globalFilter}
         <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => globalFilter = ''}>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-      {/if}
+      {/if} -->
     </div>
     <Select.Root bind:value={searchScope} type="single">
       <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0 w-32 max-w-[120px]" aria-label="Escopo da busca">
@@ -396,7 +396,14 @@
                       </Button>
                     </Popover.Trigger>
                     <Popover.Content align="end" class="p-0">
-                      <RangeCalendar bind:value={dateFilter} on:valueChange={e => table.getColumn('dateAdded')?.setFilterValue(e.detail)} />
+                      <RangeCalendar bind:value={dateFilter} onValueChange={v => table.getColumn('dateAdded')?.setFilterValue(v)} />
+                      <!-- {JSON.stringify(dateFilter)} -->
+                      <!-- {#if dateFilter}
+                        {@const start = dateFilter.start?.toDate(getLocalTimeZone())}
+                        {@const end = dateFilter.end?.toDate(getLocalTimeZone())}
+                        {"START: " + JSON.stringify(start)}
+                        {"END: " + JSON.stringify(end)}
+                      {/if} -->
                     </Popover.Content>
                   </Popover.Root>
                 {:else}

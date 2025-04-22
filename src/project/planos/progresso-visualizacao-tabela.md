@@ -6,7 +6,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 
 - [✅] O botão de expandir/colapsar só está funcionando para expandir mas não para colapsar.
 - [✅] As colunas "Agendado para" e "Status" não estão sendo exibidas e a página de erros mostra mensagens dizendo que essas colunas não existem.
-- [ ] O input de pesquisa exibe dois botões de excluir.
+- [✅] O input de pesquisa exibe dois botões de excluir.
 - [✅] A busca está sendo feita apenas nos títulos, independente do escopo selecionado.
 - [✅] A filtragem por grupos não está funcionando.
 - [✅] A filtragem por tags não está funcionando.
