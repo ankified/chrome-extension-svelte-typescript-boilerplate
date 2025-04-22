@@ -2,7 +2,7 @@
   import Button from '../../../lib/components/ui/button/button.svelte';
   import * as Dialog from '../../../lib/components/ui/dialog/index';
   import Badge from '../../../lib/components/ui/badge/badge.svelte';
-  import { groups } from '../../../storage';
+  import { groups, savedItems } from '../../../storage';
   import type { Group } from '../../../types';
   import GroupFilterDialog from '../../components/GroupFilterDialog.svelte';
   let { groupIds = [], count = 0, disabled = false, itemId = '' } = $props();
@@ -17,6 +17,11 @@
 
   function handleApplyGrupos(e: { included: string[] }) {
     groupIds = e.included;
+    if (itemId) {
+      savedItems.update(items => items.map(item =>
+        item.id === itemId ? { ...item, groupIds: [...e.included] } : item
+      ));
+    }
     manageDialogOpen = false;
   }
 </script>
