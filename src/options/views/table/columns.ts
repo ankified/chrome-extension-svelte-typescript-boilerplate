@@ -15,6 +15,10 @@ import type DialogButtonNotasType from './DialogButtonNotas.svelte';
 import type DialogButtonFlashcardsType from './DialogButtonFlashcards.svelte';
 import DialogButtonNotas from './DialogButtonNotas.svelte';
 import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
+import type DialogButtonGruposType from './DialogButtonGrupos.svelte';
+import type DialogButtonTagsType from './DialogButtonTags.svelte';
+import DialogButtonGrupos from './DialogButtonGrupos.svelte';
+import DialogButtonTags from './DialogButtonTags.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -103,7 +107,18 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
           sorted: column.getIsSorted?.(),
         }),
-      cell: ({ row }) => row.original.groupIds?.length || 0,
+      cell: ({ row }) => {
+        const count = Array.isArray(row.original.groupIds) ? row.original.groupIds.length : 0;
+        return renderComponent(
+          DialogButtonGrupos as typeof DialogButtonGruposType,
+          {
+            groupIds: row.original.groupIds,
+            disabled: count === 0,
+            count,
+            itemId: row.original.id,
+          }
+        );
+      },
       enableSorting: true,
       sortingFn: (a, b) => {
         const countA = Array.isArray(a.original.groupIds) ? a.original.groupIds.length : 0;
@@ -123,7 +138,18 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
           sorted: column.getIsSorted?.(),
         }),
-      cell: ({ row }) => row.original.tags?.length || 0,
+      cell: ({ row }) => {
+        const count = Array.isArray(row.original.tags) ? row.original.tags.length : 0;
+        return renderComponent(
+          DialogButtonTags as typeof DialogButtonTagsType,
+          {
+            tags: row.original.tags,
+            disabled: count === 0,
+            count,
+            itemId: row.original.id,
+          }
+        );
+      },
       enableSorting: true,
       sortingFn: (a, b) => {
         const countA = Array.isArray(a.original.tags) ? a.original.tags.length : 0;
