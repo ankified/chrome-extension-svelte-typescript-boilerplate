@@ -178,7 +178,9 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         if (!filterValue || !filterValue.start) return true;
         const date = row.original.dateAdded;
         const start = filterValue.start ? filterValue.start.toDate(getLocalTimeZone()).setHours(0,0,0,0) : null;
+        console.log("START: " + JSON.stringify(start));
         const end = filterValue.end ? filterValue.end.toDate(getLocalTimeZone()).setHours(23,59,59,999) : start;
+        console.log("END: " + JSON.stringify(end));
         if (!start) return true;
         return date >= start && date <= (end ?? start);
       },

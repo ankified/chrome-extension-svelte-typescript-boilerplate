@@ -10,7 +10,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [✅] A busca está sendo feita apenas nos títulos, independente do escopo selecionado.
 - [✅] A filtragem por grupos não está funcionando.
 - [✅] A filtragem por tags não está funcionando.
-- [ ] A filtragem por data não está funcionando.
+- [✅] A filtragem por data não está funcionando.
 - [✅] A ordenação não está funcionando.
 
 ## Checklist de Funcionalidades

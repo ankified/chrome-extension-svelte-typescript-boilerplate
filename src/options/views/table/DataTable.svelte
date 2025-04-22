@@ -73,6 +73,14 @@
     }
   });
 
+  $effect(() => {
+    const current = table.getColumn('dateAdded')?.getFilterValue();
+    if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
+      table.getColumn('dateAdded')?.setFilterValue(undefined);
+      console.log('Filtro de data limpo via $effect');
+    }
+  });
+
   let columnVisibilityState = $state<{ [key: string]: boolean }>({});
   let columnVisibility = $derived(() => ({
     type: typeFilter === 'all',
@@ -201,10 +209,10 @@
   });
 
   function formatDate(filter: DateRange | undefined) {
-    if (!filter) return 'Filtrar por data!';
+    if (!filter) return;
     const start = filter.start?.toDate(getLocalTimeZone());
     const end = filter.end?.toDate(getLocalTimeZone());
-    if (!start) return 'Filtrar por data!';
+    if (!start) return;
     if (end && end.getTime() !== start.getTime()) {
       return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
     }
@@ -388,7 +396,7 @@
                   <Popover.Root>
                     <Popover.Trigger>
                       <Button variant="outline" size="sm" class="w-full justify-start">
-                        {#if dateFilter}
+                        {#if dateFilter && dateFilter.start && dateFilter.end}
                           {formatDate(dateFilter)}
                         {:else}
                           <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
@@ -396,14 +404,25 @@
                       </Button>
                     </Popover.Trigger>
                     <Popover.Content align="end" class="p-0">
-                      <RangeCalendar bind:value={dateFilter} onValueChange={v => table.getColumn('dateAdded')?.setFilterValue(v)} />
+                      <RangeCalendar
+                        bind:value={dateFilter}
+                        onValueChange={v => {
+                          if (!v || (!v.start && !v.end)) {
+                            table.getColumn('dateAdded')?.setFilterValue(undefined);
+                            console.log("UNDEFINED");
+                          } else {
+                            table.getColumn('dateAdded')?.setFilterValue(v);
+                            console.log("DEFINED");
+                          }
+                        }}
+                      />
                       <!-- {JSON.stringify(dateFilter)} -->
-                      <!-- {#if dateFilter}
+                      {#if dateFilter}
                         {@const start = dateFilter.start?.toDate(getLocalTimeZone())}
                         {@const end = dateFilter.end?.toDate(getLocalTimeZone())}
                         {"START: " + JSON.stringify(start)}
                         {"END: " + JSON.stringify(end)}
-                      {/if} -->
+                      {/if}
                     </Popover.Content>
                   </Popover.Root>
                 {:else}
