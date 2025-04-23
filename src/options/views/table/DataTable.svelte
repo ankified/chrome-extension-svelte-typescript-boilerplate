@@ -11,7 +11,7 @@
   import TagFilterDialog from '../../components/TagFilterDialog.svelte';
   import Badge from '../../../lib/components/ui/badge/badge.svelte';
   import type { SavedItem, Group } from '../../../types';
-  import { groups as groupsStore, knownTags as tagsStore } from '../../../storage';
+  import { savedItems, groups as groupsStore, knownTags as tagsStore, notes as notesStore, flashcards as flashcardsStore } from '../../../storage';
   import { getLocalTimeZone, today, type DateValue } from "@internationalized/date";
   import type { DateRange } from 'bits-ui';
   import { RangeCalendar } from '../../../lib/components/ui/range-calendar/index.js';
@@ -24,7 +24,6 @@
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
   import { Card, CardHeader, CardTitle, CardContent } from '../../../lib/components/ui/card';
   import * as Dialog from '../../../lib/components/ui/dialog/index';
-  import { notes as notesStore, flashcards as flashcardsStore } from '../../../storage';
   import NoteCard from '../../../lib/components/NoteCard.svelte';
   import FlashcardCard from '../../../lib/components/FlashcardCard.svelte';
   import Input from '../../../lib/components/ui/input/input.svelte';
@@ -471,6 +470,7 @@
             {/each}
           </Table.Row>
           {#if row.getIsExpanded()}
+            {@const reactiveItem = $savedItems.find(item => item.id === row.original.id)}
             <Table.Row>
               <Table.Cell colspan={columns.length} class="bg-muted/40 p-0">
                 <div class="p-4">
@@ -491,13 +491,15 @@
                           </Dialog.Trigger>
                           <Dialog.Content class="max-w-lg w-full">
                             <Dialog.Title>Notas associadas</Dialog.Title>
-                            {#each notes() as note (note.id)}
-                              {#if row.original.noteIds.includes(note.id)}
-                                <NoteCard {note} showActions={false} />
-                              {/if}
+                            {#if reactiveItem?.noteIds?.length}
+                              {#each notes() as note (note.id)}
+                                {#if reactiveItem.noteIds.includes(note.id)}
+                                  <NoteCard {note} showActions={false} />
+                                {/if}
+                              {/each}
                             {:else}
                               <div class="text-xs text-muted-foreground">Nenhuma nota associada.</div>
-                            {/each}
+                            {/if}
                           </Dialog.Content>
                         </Dialog.Root>
                         <!-- Dialog de Flashcards -->
@@ -507,27 +509,29 @@
                           </Dialog.Trigger>
                           <Dialog.Content class="max-w-lg w-full">
                             <Dialog.Title>Flashcards associados</Dialog.Title>
-                            {#each flashcards() as flashcard (flashcard.id)}
-                              {#if row.original.flashcardIds.includes(flashcard.id)}
-                                <FlashcardCard card={flashcard} showActions={false} />
-                              {/if}
+                            {#if reactiveItem?.flashcardIds?.length}
+                              {#each flashcards() as flashcard (flashcard.id)}
+                                {#if reactiveItem.flashcardIds.includes(flashcard.id)}
+                                  <FlashcardCard card={flashcard} showActions={false} />
+                                {/if}
+                              {/each}
                             {:else}
                               <div class="text-xs text-muted-foreground">Nenhum flashcard associado.</div>
-                            {/each}
+                            {/if}
                           </Dialog.Content>
                         </Dialog.Root>
                         <!-- Dialog de Comentário -->
                         <Dialog.Root>
                           <Dialog.Trigger>
-                            <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = row.original.comments || ""}>Editar Comentário</Button>
+                            <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = reactiveItem?.comments || ""}>Editar Comentário</Button>
                           </Dialog.Trigger>
                           <Dialog.Content class="max-w-md w-full">
                             <Dialog.Title>Editar Comentário</Dialog.Title>
-                            <form onsubmit={(e) => { e.preventDefault(); row.original.comments = editingComment[row.original.id]; }}>
+                            <form onsubmit={(e) => { e.preventDefault(); /* Update store directly */ }}>
                               <textarea bind:value={editingComment[row.original.id]} class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none mb-2"></textarea>
                               <div class="flex gap-2 justify-end">
                                 <Button type="submit" size="sm">Salvar</Button>
-                                <Button type="button" size="sm" variant="outline" onclick={() => { /* fechar dialog manualmente se necessário */ }}>Cancelar</Button>
+                                <Button type="button" size="sm" variant="outline" onclick={() => { /* close dialog */ }}>Cancelar</Button>
                               </div>
                             </form>
                           </Dialog.Content>
@@ -551,42 +555,44 @@
                           </Dialog.Content>
                         </Dialog.Root>
                       </div>
-                      {#if row.original.comments}
+                      {#if reactiveItem?.comments}
                         <div class="mb-2">
                           <span class="font-medium text-xs text-muted-foreground">Comentário:</span>
-                          <div class="text-sm mt-1">{row.original.comments}</div>
+                          <div class="text-sm mt-1">{reactiveItem.comments}</div>
                         </div>
                       {/if}
                       <div class="flex flex-wrap gap-2 mb-2">
                         <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                        {#if row.original.groupIds.length === 0}
-                          <span class="text-xs text-muted-foreground">Nenhum</span>
-                        {:else}
-                          {#each row.original.groupIds as gid (gid)}
-                            {#if groups().find(g => g.id === gid)}
-                              <Badge variant="secondary" style={groups().find(g => g.id === gid)?.color ? `background-color: ${groups().find(g => g.id === gid)?.color}` : ''}>
-                                {groups().find(g => g.id === gid)?.name}
+                        {#if reactiveItem && reactiveItem.groupIds && reactiveItem.groupIds.length > 0}
+                          {#each reactiveItem.groupIds as gid (gid)}
+                            <!-- Correção: Usar $groupsStore e tipar 'g' -->
+                            {@const groupInfo = $groupsStore.find((g: Group) => g.id === gid)}
+                            {#if groupInfo}
+                              <Badge variant="secondary" style={groupInfo.color ? `background-color: ${groupInfo.color}` : ''}>
+                                {groupInfo.name}
                               </Badge>
                             {:else}
-                              <Badge variant="outline">{gid}</Badge>
+                              <Badge variant="outline">{gid}</Badge> <!-- Fallback -->
                             {/if}
                           {/each}
+                        {:else}
+                          <span class="text-xs text-muted-foreground">Nenhum</span>
                         {/if}
                       </div>
                       <div class="flex flex-wrap gap-2 mb-2">
                         <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                        {#if row.original.tags.length === 0}
-                          <span class="text-xs text-muted-foreground">Nenhuma</span>
-                        {:else}
-                          {#each row.original.tags as tag (tag)}
+                        {#if reactiveItem && reactiveItem.tags && reactiveItem.tags.length > 0}
+                          {#each reactiveItem.tags as tag (tag)}
                             <Badge variant="outline">{tag}</Badge>
                           {/each}
+                        {:else}
+                          <span class="text-xs text-muted-foreground">Nenhuma</span>
                         {/if}
                       </div>
                       <div class="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
                         <span>Criado em: {new Date(row.original.dateAdded).toLocaleString('pt-BR')}</span>
-                        <span>Notas: {row.original.noteIds.length}</span>
-                        <span>Flashcards: {row.original.flashcardIds.length}</span>
+                        <span>Notas: {reactiveItem?.noteIds?.length || 0}</span>
+                        <span>Flashcards: {reactiveItem?.flashcardIds?.length || 0}</span>
                       </div>
                     </CardContent>
                   </Card>

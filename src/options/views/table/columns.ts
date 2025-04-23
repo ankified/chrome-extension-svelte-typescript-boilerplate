@@ -19,6 +19,8 @@ import type DialogButtonGruposType from './DialogButtonGrupos.svelte';
 import type DialogButtonTagsType from './DialogButtonTags.svelte';
 import DialogButtonGrupos from './DialogButtonGrupos.svelte';
 import DialogButtonTags from './DialogButtonTags.svelte';
+import type ManageItemGroupsDialogType from '../../components/ManageItemGroupsDialog.svelte';
+import ManageItemGroupsDialog from '../../components/ManageItemGroupsDialog.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -108,13 +110,9 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           sorted: column.getIsSorted?.(),
         }),
       cell: ({ row }) => {
-        const count = Array.isArray(row.original.groupIds) ? row.original.groupIds.length : 0;
         return renderComponent(
           DialogButtonGrupos as typeof DialogButtonGruposType,
           {
-            groupIds: row.original.groupIds,
-            disabled: count === 0,
-            count,
             itemId: row.original.id,
           }
         );
@@ -139,13 +137,9 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           sorted: column.getIsSorted?.(),
         }),
       cell: ({ row }) => {
-        const count = Array.isArray(row.original.tags) ? row.original.tags.length : 0;
         return renderComponent(
-          DialogButtonTags as typeof DialogButtonTagsType,
+          DialogButtonTags,
           {
-            tags: row.original.tags,
-            disabled: count === 0,
-            count,
             itemId: row.original.id,
           }
         );

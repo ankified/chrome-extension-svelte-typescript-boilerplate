@@ -1,61 +1,35 @@
 <script lang="ts">
   import Button from '../../../lib/components/ui/button/button.svelte';
   import * as Dialog from '../../../lib/components/ui/dialog/index';
-  import Badge from '../../../lib/components/ui/badge/badge.svelte';
   import { groups, savedItems } from '../../../storage';
-  import type { Group } from '../../../types';
-  import GroupFilterDialog from '../../components/GroupFilterDialog.svelte';
-  let { groupIds = [], count = 0, disabled = false, itemId = '' } = $props();
-  let dialogOpen = $state(false);
+  import type { Group, SavedItem } from '../../../types';
+  import ManageItemGroupsDialog from '../../components/ManageItemGroupsDialog.svelte';
+
+  let { disabled: initiallyDisabled = false, itemId = '' } = $props();
+
+  let item = $derived($savedItems.find((i: SavedItem) => i.id === itemId));
+
+  let derivedCount = $derived(item?.groupIds?.length || 0);
+
+  let isDisabled = $derived(derivedCount === 0);
+
   let allGroups = $derived(() => {
     let arr: Group[] = [];
-    groups.subscribe(val => arr = val)();
+    $groups.forEach(g => arr.push(g));
     return arr;
   });
-  let associatedGroups = $derived(() => allGroups().filter(g => groupIds.includes(g.id)));
-  let manageDialogOpen = $state(false);
-
-  function handleApplyGrupos(e: { included: string[] }) {
-    groupIds = e.included;
-    if (itemId) {
-      savedItems.update(items => items.map(item =>
-        item.id === itemId ? { ...item, groupIds: [...e.included] } : item
-      ));
-    }
-    manageDialogOpen = false;
-  }
 </script>
-<Button variant="outline" size="sm" disabled={disabled} onclick={() => dialogOpen = true} aria-label="Ver grupos">
-  {count}
-</Button>
-<Dialog.Root open={dialogOpen} onOpenChange={v => dialogOpen = v}>
+<Dialog.Root>
   <Dialog.Trigger>
-    <!-- O botão já está acima, então deixamos vazio aqui -->
+    <Button variant="outline" size="sm" disabled={isDisabled} aria-label="Ver grupos">
+      {derivedCount}
+    </Button>
   </Dialog.Trigger>
-  <Dialog.Content class="max-w-lg w-full">
-    <Dialog.Title>Grupos associados</Dialog.Title>
-    {#if associatedGroups().length > 0}
-      <div class="flex flex-wrap gap-2">
-        {#each associatedGroups() as group (group.id)}
-          <Badge variant="secondary" style={group.color ? `background-color: ${group.color}` : ''}>
-            {group.name}
-          </Badge>
-        {/each}
-      </div>
-    {:else}
-      <div class="text-xs text-muted-foreground">Nenhum grupo associado.</div>
-    {/if}
-    <div class="flex justify-end mt-4">
-      <Button variant="secondary" size="sm" onclick={() => manageDialogOpen = true}>Gerenciar</Button>
-    </div>
-    {#if manageDialogOpen}
-      <GroupFilterDialog
-        open={manageDialogOpen}
-        initialIncludedGroups={groupIds}
-        availableGroups={allGroups()}
-        onClose={() => manageDialogOpen = false}
-        onApply={(e: { included: string[] }) => handleApplyGrupos(e)}
-      />
-    {/if}
+  <Dialog.Content class="max-w-[650px]">
+    <ManageItemGroupsDialog
+      itemId={itemId}
+      allGroups={allGroups()}
+      onClose={() => {}}
+    />
   </Dialog.Content>
 </Dialog.Root> 

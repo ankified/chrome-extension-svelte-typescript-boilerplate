@@ -7,8 +7,12 @@
     import { Label } from '../../lib/components/ui/label/index.js';
     import { ScrollArea } from '../../lib/components/ui/scroll-area/index.js';
     import { Separator } from '../../lib/components/ui/separator/index.js';
-    import { Trash2, Edit, Check, X as IconX } from '@lucide/svelte'; // Renomeado X para IconX
+    import { Trash2, Edit, Check, X as IconX, Folder } from '@lucide/svelte'; // Renomeado X para IconX
     import { toast } from 'svelte-sonner';
+    import { savedItems, groups } from "../../storage";
+    import type { SavedItem } from "../../types";
+    import chroma from 'chroma-js';
+    import { createGroup } from "../../storage";
 
     // Cores pré-definidas (igual a SavedItemsCardView e SaveItemForm)
     const groupColors = [
@@ -19,25 +23,20 @@
     type Props = {
       open?: boolean;
       allGroups?: Group[];
-      // Callbacks para interagir com SavedItemsView/storage
-      onCreate?: (name: string, color?: string) => Promise<Group | null>;
-      onUpdate?: (id: string, updates: { name?: string; color?: string }) => Promise<boolean>;
-      onDelete?: (id: string) => Promise<boolean>;
-      onDeleteAll?: () => Promise<boolean>;
+      item: SavedItem;
+      onClose: () => void;
     };
 
     let {
       open = $bindable(false),
       allGroups = [],
-      onCreate = async () => null,
-      onUpdate = async () => false,
-      onDelete = async () => false,
-      onDeleteAll = async () => false,
+      item,
+      onClose,
     }: Props = $props();
 
     console.log('open', open);
-    let newGroupName = $state('');
-    let newGroupColor = $state(groupColors[0]); // Cor padrão inicial
+    let newGroupNameDialog = $state('');
+    let newGroupDialogColor = $state(groupColors[0]); // Cor padrão inicial
     let editingGroupId = $state<string | null>(null);
     let editingGroupName = $state('');
     let editingGroupColor = $state<string | undefined>(undefined);
@@ -70,24 +69,76 @@
         }
     }
 
-    async function handleCreate() {
-        if (!newGroupName.trim()) return;
-        const createdGroup = await onCreate(newGroupName.trim(), newGroupColor);
+    async function handleCreateGroupInDialog() {
+        if (!newGroupNameDialog.trim()) return;
+        const createdGroup = await createGroup(newGroupNameDialog, newGroupDialogColor);
         if (createdGroup) {
-            toast.success(`Grupo "${createdGroup.name}" criado.`);
-            newGroupName = '';
-            newGroupColor = groupColors[0]; // Resetar cor
-        } else {
-             toast.warning(`Grupo "${newGroupName.trim()}" já existe ou ocorreu um erro.`);
+            addItemToGroup(item.id, createdGroup.id);
+            newGroupNameDialog = '';
+            newGroupDialogColor = groupColors[0];
         }
+    }
+
+    function getTextColorForBackground(bgColor: string): string {
+        try {
+            return chroma(bgColor).luminance() > 0.5 ? '#000000' : '#ffffff';
+        } catch (e) {
+            return '#000000';
+        }
+    }
+
+    function addItemToGroup(itemId: string, groupId: string) {
+        savedItems.update(items =>
+            items.map(item => {
+                if (item.id === itemId) {
+                    const currentGroupIds = Array.isArray(item.groupIds) ? item.groupIds : [];
+                    if (!currentGroupIds.includes(groupId)) {
+                        return { ...item, groupIds: [...currentGroupIds, groupId] };
+                    }
+                }
+                return item;
+            })
+        );
+        groups.update(currentGroups =>
+            currentGroups.map(group => {
+                if (group.id === groupId) {
+                    const currentItemIds = Array.isArray(group.itemIds) ? group.itemIds : [];
+                    if (!currentItemIds.includes(itemId)) {
+                        return { ...group, itemIds: [...currentItemIds, itemId] };
+                    }
+                }
+                return group;
+            })
+        );
+    }
+
+    function removeItemFromGroup(itemId: string, groupId: string) {
+        savedItems.update(items =>
+            items.map(item => {
+                if (item.id === itemId) {
+                    const currentGroupIds = Array.isArray(item.groupIds) ? item.groupIds : [];
+                    return { ...item, groupIds: currentGroupIds.filter(gid => gid !== groupId) };
+                }
+                return item;
+            })
+        );
+        groups.update(currentGroups =>
+            currentGroups.map(group => {
+                if (group.id === groupId) {
+                    const currentItemIds = Array.isArray(group.itemIds) ? group.itemIds : [];
+                    return { ...group, itemIds: currentItemIds.filter(id => id !== itemId) };
+                }
+                return group;
+            })
+        );
     }
 
      // Reseta o estado de edição e criação ao fechar
      $effect(() => {
         if (!open) {
             cancelEditing();
-            newGroupName = '';
-            newGroupColor = groupColors[0];
+            newGroupNameDialog = '';
+            newGroupDialogColor = groupColors[0];
         }
     });
 
@@ -111,14 +162,14 @@
              type="text"
              class="flex-grow"
              placeholder="Nome do novo grupo"
-             bind:value={newGroupName}
-             onkeydown={(e) => { if(e.key === 'Enter') handleCreate(); }}
+             bind:value={newGroupNameDialog}
+             onkeydown={(e) => { if(e.key === 'Enter') handleCreateGroupInDialog(); }}
            />
            <Button
              type="button"
              size="sm"
-             disabled={!newGroupName.trim()}
-             onclick={handleCreate}
+             disabled={!newGroupNameDialog.trim()}
+             onclick={handleCreateGroupInDialog}
            >
              Criar
            </Button>
@@ -127,9 +178,9 @@
          {#each groupColors as clr}
            <button
              type="button"
-             class={`w-5 h-5 rounded-full border-2 transition-all ${newGroupColor === clr ? 'border-foreground scale-110' : 'border-transparent opacity-70 hover:opacity-100'}`}
+             class={`w-5 h-5 rounded-full border-2 transition-all ${newGroupDialogColor === clr ? 'border-foreground scale-110' : 'border-transparent opacity-70 hover:opacity-100'}`}
              style="background-color: {clr};"
-             onclick={() => newGroupColor = clr}
+             onclick={() => newGroupDialogColor = clr}
              aria-label="Selecionar cor {clr}"
            ></button>
          {/each}
