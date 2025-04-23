@@ -13,7 +13,10 @@
   });
   let associatedFlashcards = $derived(() => allFlashcards().filter(f => flashcardIds.includes(f.id)));
 </script>
-<Button variant="outline" size="sm" disabled={disabled} onclick={() => dialogOpen = true} aria-label="Ver flashcards">
+<!-- <Button variant="outline" size="sm" disabled={disabled} onclick={() => dialogOpen = true} aria-label="Ver flashcards">
+  {count}
+</Button> -->
+<Button variant="outline" size="sm" onclick={() => dialogOpen = true} aria-label="Ver flashcards">
   {count}
 </Button>
 <Dialog.Root open={dialogOpen} onOpenChange={v => dialogOpen = v}>

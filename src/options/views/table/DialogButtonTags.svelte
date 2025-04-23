@@ -21,7 +21,8 @@
 </script>
 <Dialog.Root>
   <Dialog.Trigger>
-    <Button variant="outline" size="sm" disabled={isDisabled} aria-label="Ver tags">
+    <!-- <Button variant="outline" size="sm" disabled={isDisabled} aria-label="Ver tags"> -->
+    <Button variant="outline" size="sm" aria-label="Ver tags">
       {derivedCount}
     </Button>
   </Dialog.Trigger>

@@ -13,7 +13,10 @@
   });
   let associatedNotes = $derived(() => allNotes().filter(n => noteIds.includes(n.id)));
 </script>
-<Button variant="outline" size="sm" disabled={disabled} onclick={() => dialogOpen = true} aria-label="Ver notas">
+<!-- <Button variant="outline" size="sm" disabled={disabled} onclick={() => dialogOpen = true} aria-label="Ver notas">
+  {count}
+</Button> -->
+<Button variant="outline" size="sm" onclick={() => dialogOpen = true} aria-label="Ver notas">
   {count}
 </Button>
 <Dialog.Root open={dialogOpen} onOpenChange={v => dialogOpen = v}>
