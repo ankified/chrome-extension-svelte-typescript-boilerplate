@@ -54,4 +54,4 @@
   });
 </script>
 
-<DataTable columns={dynamicColumns()} data={filteredData()} typeFilter={typeFilter} /> 
+<DataTable columns={dynamicColumns()} data={filteredData()} /> 

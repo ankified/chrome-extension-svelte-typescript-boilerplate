@@ -31,7 +31,10 @@
   import CalendarSearch from '@lucide/svelte/icons/calendar-search';
   import DialogButtonNotas from './DialogButtonNotas.svelte';
   import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
-  let { columns = [], data = [], typeFilter = 'all' } = $props();
+
+  let { columns = [], data = [] } = $props();
+
+  let typeFilter = $state('all');
 
   let rowSelection = $state({});
   let sorting = $state<SortingState>([]);
@@ -61,13 +64,6 @@
     return arr;
   });
 
-  let filteredByType = $derived(() => {
-    if (typeFilter === 'all') return data;
-    if (typeFilter === 'readlater') return data.filter((item: SavedItem) => item.scheduledDate);
-    if (typeFilter === 'bookmark') return data.filter((item: SavedItem) => !item.scheduledDate);
-    return data;
-  });
-
   $effect(() => {
     if (datePopoverOpen && dateFilter) {
       datePopoverOpen = false;
@@ -79,6 +75,33 @@
     if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
       table.getColumn('dateAdded')?.setFilterValue(undefined);
       console.log('Filtro de data limpo via $effect');
+    }
+  });
+
+  // NOVO EFEITO para aplicar o filtro de tipo à coluna da tabela
+  $effect(() => {
+    // Obtém a coluna 'type'
+    const typeColumn = table.getColumn('type');
+    if (typeColumn) {
+      // Define o valor do filtro para a coluna 'type'
+      // Se 'all', passa undefined para limpar o filtro desta coluna
+      // Caso contrário, passa o valor 'bookmark' ou 'readlater'
+      // typeColumn.setFilterValue(typeFilter === 'all' ? undefined : typeFilter);
+      // console.log(`Applying type filter to column: ${typeFilter === 'all' ? undefined : typeFilter}`);
+
+      // Determina o novo valor de filtro desejado com base no estado
+      const newFilterValue = typeFilter === 'all' ? undefined : typeFilter;
+      // Obtém o valor de filtro atualmente aplicado à coluna
+      const currentFilterValue = typeColumn.getFilterValue();
+
+      // SOMENTE atualiza o filtro da coluna se o novo valor for diferente do atual
+      if (newFilterValue !== currentFilterValue) {
+        console.log(`Applying type filter. Current: ${currentFilterValue}, New: ${newFilterValue}`);
+        typeColumn.setFilterValue(newFilterValue);
+      }
+      // else { // Opcional: Log para ver quando a atualização é pulada
+      //   console.log(`Skipping type filter update. Current: ${currentFilterValue}, New: ${newFilterValue} (already applied)`);
+      // }
     }
   });
 
@@ -219,31 +242,6 @@
     }
     return start.toLocaleDateString('pt-BR');
   }
-
-  let filteredRows = $derived(() => {
-    // Força rastreamento de dependências
-    const _allRows = table.getFilteredRowModel().rows;
-    const _type = typeFilter;
-    _allRows.length; // força dependência
-    return _allRows.filter(row => {
-      if (_type === 'all') return true;
-      if (_type === 'readlater') return row.original.scheduledDate;
-      if (_type === 'bookmark') return !row.original.scheduledDate;
-      return true;
-    });
-  });
-
-  let filteredSelectedRows = $derived(() => {
-    const _selectedRows = table.getFilteredSelectedRowModel().rows;
-    const _type = typeFilter;
-    _selectedRows.length;
-    return _selectedRows.filter(row => {
-      if (_type === 'all') return true;
-      if (_type === 'readlater') return row.original.scheduledDate;
-      if (_type === 'bookmark') return !row.original.scheduledDate;
-      return true;
-    });
-  });
 
   let notes = $derived(() => {
     let arr: import('../../../types').Note[] = [];
@@ -613,5 +611,5 @@
 </div>
 
 <div class="text-muted-foreground flex-1 text-sm mt-2">
-  {filteredSelectedRows().length} de {filteredRows().length} linha(s) selecionada(s).
+  {table.getFilteredSelectedRowModel().rows.length} de {table.getRowModel().rows.length} linha(s) selecionada(s).
 </div> 
