@@ -22,6 +22,7 @@ import DialogButtonTags from './DialogButtonTags.svelte';
 import type ManageItemGroupsDialogType from '../../components/ManageItemGroupsDialog.svelte';
 import ManageItemGroupsDialog from '../../components/ManageItemGroupsDialog.svelte';
 import { type AggregationFn, sortingFns } from '@tanstack/table-core';
+import StatusCellButton from './StatusCellButton.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -285,6 +286,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         sorted: column.getIsSorted?.(),
       }),
     accessorFn: (row) => {
+      if (row.completed) return 'Concluído';
       if (!row.scheduledDate) return 'Pendente';
 
       const now = Date.now();
@@ -297,8 +299,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       return 'Pendente';
     },
     cell: ({ row }) => {
-      const status = row.getValue('status') as string;
-      return status;
+      return renderComponent(StatusCellButton, { item: row.original });
     },
     enableSorting: true,
     sortingFn: (rowA, rowB, columnId) => {

@@ -11,6 +11,7 @@ export interface SavedItem {
   groupIds: string[];
   readLater: boolean;
   scheduledDate?: number;
+  completed?: boolean;
   position?: { x: number, y: number }; // Para SvelteFlow
   previewImage?: string; // URL da captura de tela para exibição no popover
   noteIds: string[];

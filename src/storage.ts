@@ -900,3 +900,26 @@ export async function deleteAllGroupsGlobally(): Promise<void> {
         throw error; 
     }
 }
+
+// Função para atualizar campos específicos de um SavedItem
+export async function updateItem(itemId: string, updates: Partial<SavedItem>): Promise<boolean> {
+  let itemFound = false;
+  savedItems.update((items) => {
+    const itemIndex = items.findIndex((item) => item.id === itemId);
+    if (itemIndex !== -1) {
+      // Aplica as atualizações ao item encontrado
+      items[itemIndex] = { ...items[itemIndex], ...updates };
+      itemFound = true;
+      console.log(`[Storage] Item ${itemId} atualizado com:`, updates);
+    } else {
+      console.warn(`[Storage] Tentativa de atualizar item não encontrado: ${itemId}`);
+    }
+    return items; // Retorna o array modificado (ou não) para a store
+  });
+
+  // Forçar a sincronização pode ser útil se a atualização precisar ser refletida
+  // imediatamente em outras partes que leem diretamente do chrome.storage
+  // await savedItems.forceSync(); // Descomentar se necessário
+
+  return itemFound;
+}

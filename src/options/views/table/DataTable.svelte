@@ -568,15 +568,6 @@
                     {:else}
                       <span>-</span>
                   {/if}
-                {:else if cell.column.id === 'status'}
-                  {@const status = cell.getValue() as string}
-                  {#if status === 'Atrasado'}
-                    <span class="px-2 py-1 rounded bg-red-500 text-white text-xs">Atrasado</span>
-                  {:else if status === 'Pendente'}
-                    <span class="px-2 py-1 rounded bg-yellow-500 text-white text-xs">Pendente</span>
-                  {:else if status === 'Agendado'}
-                    <span class="px-2 py-1 rounded bg-green-500 text-white text-xs">Agendado</span>
-                  {/if}
                 {:else}
                   <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                 {/if}
