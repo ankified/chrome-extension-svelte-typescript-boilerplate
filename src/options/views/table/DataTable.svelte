@@ -76,12 +76,6 @@
   });
 
   $effect(() => {
-    if (scheduledDatePopoverOpen && scheduledDateFilter) {
-      scheduledDatePopoverOpen = false;
-    }
-  });
-
-  $effect(() => {
     const current = table.getColumn('dateAdded')?.getFilterValue();
     if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
       table.getColumn('dateAdded')?.setFilterValue(undefined);
@@ -514,7 +508,7 @@
                           <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
                           <DropdownMenu.Separator />
                            {#each possibleStatus as status (status)}
-                              <DropdownMenu.CheckboxItem>
+                              <DropdownMenu.CheckboxItem
                                   checked={statusFilter.includes(status)}
                                   onCheckedChange={() => {
                                       let updatedFilter;
@@ -528,6 +522,7 @@
                                       console.log('Setting status filter:', statusFilter.length > 0 ? statusFilter : undefined);
                                   }}
                                   onSelect={(e: Event) => e.preventDefault()}
+                                >
                                   {status}
                                 </DropdownMenu.CheckboxItem>
                           {/each}

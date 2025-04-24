@@ -12,31 +12,27 @@ links:
     import { ComponentPreview, PMAddComp, PMInstall, Step, Steps, InstallTabs } from '$lib/components/docs';
 </script>
 
-<ComponentPreview name="range-calendar-demo">
+## ComponentPreview
 
-<div></div>
+```svelte
+<script lang="ts">
+ import { getLocalTimeZone, today } from "@internationalized/date";
+ import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
+ 
+ const start = today(getLocalTimeZone());
+ const end = start.add({ days: 7 });
+ 
+ let value = $state({
+  start,
+  end
+ });
+</script>
+ 
+<RangeCalendar bind:value class="rounded-md border" />
+```
 
-</ComponentPreview>
+
 
 ## About
 
 The `<RangeCalendar />` component is built on top of the [Bits Range Calendar](https://www.bits-ui.com/docs/components/range-calendar) component, which uses the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package to handle dates.
-
-## Installation
-
-<InstallTabs>
-{#snippet cli()}
-<PMAddComp name="range-calendar" />
-{/snippet}
-{#snippet manual()}
-<Steps>
-<Step>
-
-Install `bits-ui` and `@internalized/date`:
-
-</Step>
-<PMInstall command="bits-ui @internationalized/date -D" />
-<Step>Copy and paste the component source files linked at the top of this page into your project.</Step>
-</Steps>
-{/snippet}
-</InstallTabs>
