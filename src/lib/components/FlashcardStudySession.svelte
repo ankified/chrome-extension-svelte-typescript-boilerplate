@@ -159,10 +159,11 @@
       <h2 class="text-xl font-semibold mb-4">Configurar Sessão de Estudo</h2>
       
       <div class="mb-4">
-        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+        <label for="max-cards-input" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           Número de cartões:
         </label>
         <input 
+          id="max-cards-input"
           type="number" 
           bind:value={maxCards}
           min="1" 
@@ -172,11 +173,11 @@
       </div>
       
       {#if allTags.length > 0}
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+        <fieldset class="mb-4">
+          <legend class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
             Filtrar por tags:
-          </label>
-          <div class="tags-selector flex flex-wrap gap-2">
+          </legend>
+          <div class="tags-selector flex flex-wrap gap-2" role="group">
             {#each allTags as tag}
               <button 
                 class="tag px-3 py-1 text-sm rounded-full {selectedTags.includes(tag) ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}"
@@ -186,7 +187,7 @@
               </button>
             {/each}
           </div>
-        </div>
+        </fieldset>
       {/if}
       
       <div class="session-info mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded">

@@ -565,9 +565,9 @@
         </p>
         
         <div class="links text-blue-600 dark:text-blue-400 space-y-1 text-sm">
-          <p><a href="#" target="_blank" rel="noopener noreferrer">Política de Privacidade</a></p>
-          <p><a href="#" target="_blank" rel="noopener noreferrer">Termos de Uso</a></p>
-          <p><a href="#" target="_blank" rel="noopener noreferrer">Reportar um Problema</a></p>
+          <p>Política de Privacidade</p>
+          <p>Termos de Uso</p>
+          <p>Reportar um Problema</p>
         </div>
       </div>
     </Card.Root>

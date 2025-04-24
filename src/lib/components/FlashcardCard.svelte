@@ -230,8 +230,9 @@
                   onclick={startEditing}
                   class="p-1 hover:text-blue-600 dark:hover:text-blue-400"
                   title="Editar flashcard"
+                  aria-label="Editar flashcard"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </button>
@@ -239,8 +240,9 @@
                   onclick={deleteFlashcard}
                   class="p-1 hover:text-red-600 dark:hover:text-red-400"
                   title="Excluir flashcard"
+                  aria-label="Excluir flashcard"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
@@ -305,6 +307,16 @@
       <Dialog.Description>
         Faça alterações no seu flashcard e clique em salvar quando finalizar.
       </Dialog.Description>
+      <Dialog.Close>
+        <button
+          class="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+          aria-label="Fechar diálogo"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </Dialog.Close>
     </Dialog.Header>
     
     <div class="flashcard-edit-form space-y-3 py-4">
@@ -314,13 +326,14 @@
           <h3 class="text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Item vinculado:</h3>
           <div class="flex items-center gap-2">
             {#if linkedItem.favicon}
-              <img src={linkedItem.favicon} alt="" class="w-5 h-5 rounded-sm" />
+              <img src={linkedItem.favicon} alt="Favicon do item vinculado" class="w-5 h-5 rounded-sm" />
             {:else}
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             {/if}
             <button 
+              type="button"
               onclick={openLinkedItem}
               class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex-1 text-left truncate"
               title={linkedItem.title}
@@ -333,8 +346,9 @@
               rel="noopener noreferrer"
               class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               title="Abrir em nova aba"
+              aria-label="Abrir item vinculado em nova aba"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
@@ -343,10 +357,11 @@
       {/if}
       
       <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+        <label for="edit-front-{card.id}" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           Frente (pergunta)
         </label>
         <textarea 
+          id="edit-front-{card.id}"
           bind:value={editedFront}
           placeholder="Digite a pergunta ou conceito aqui"
           class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -354,10 +369,11 @@
       </div>
       
       <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+        <label for="edit-back-{card.id}" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           Verso (resposta)
         </label>
         <textarea 
+          id="edit-back-{card.id}"
           bind:value={editedBack}
           placeholder="Digite a resposta ou explicação aqui"
           class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -365,7 +381,7 @@
       </div>
       
       <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+        <label for="edit-tags-{card.id}" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
           Tags
         </label>
         
@@ -380,8 +396,9 @@
                   class="ml-1 text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200"
                   onclick={() => removeTag(tag)}
                   title="Remover tag"
+                  aria-label="Remover tag {tag}"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                   </svg>
                 </button>
@@ -393,12 +410,21 @@
         <!-- Input para adicionar nova tag -->
         <div class="flex">
           <input 
+            id="edit-tags-{card.id}"
             type="text" 
             bind:value={tagInput}
             placeholder="Digite e pressione Enter para adicionar uma tag"
             class="flex-1 p-2 rounded-l border border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             onkeydown={handleTagInputKeydown}
+            list="existing-tags-list-{card.id}"
           />
+          <datalist id="existing-tags-list-{card.id}">
+             {#each allTags as tag}
+               {#if !editedTags.includes(tag)}
+                 <option value={tag}>{tag}</option>
+               {/if}
+             {/each}
+           </datalist>
           <button 
             type="button"
             onclick={addTag}
@@ -427,22 +453,27 @@
         {/if}
       </div>
       
-      <div>
-        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+      <fieldset class="mt-4">
+        <legend class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
           Cor
-        </label>
-        <div class="flex flex-wrap gap-3 mt-2">
+        </legend>
+        <div class="flex flex-wrap gap-2" role="radiogroup">
           {#each colorOptions as option}
             <button 
               type="button"
+              role="radio"
+              aria-checked={editedColor === option.value}
+              tabindex="0"
               class="color-option w-8 h-8 rounded-full cursor-pointer border-2 {editedColor === option.value ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-300 dark:border-gray-600'}"
               style="background-color: {option.value};"
               onclick={() => editedColor = option.value}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editedColor = option.value; } }}
               title={option.name}
+              aria-label={option.name}
             ></button>
           {/each}
         </div>
-      </div>
+      </fieldset>
     </div>
     
     <Dialog.Footer>
