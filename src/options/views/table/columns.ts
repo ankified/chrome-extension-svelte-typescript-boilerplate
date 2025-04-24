@@ -285,38 +285,34 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         sorted: column.getIsSorted?.(),
       }),
     accessorFn: (row) => {
-      if (!row.scheduledDate) return 'Não Agendado';
+      if (!row.scheduledDate) return 'Pendente';
+
       const now = Date.now();
       const scheduled = row.scheduledDate;
       const todayStart = new Date(now).setHours(0, 0, 0, 0);
-      const todayEnd = new Date(now).setHours(23, 59, 59, 999);
       const scheduledDateOnly = new Date(scheduled).setHours(0, 0, 0, 0);
 
       if (scheduled < todayStart) return 'Atrasado';
       if (scheduledDateOnly === todayStart) return 'Hoje';
-      if (scheduled > todayEnd) return 'Agendado';
       return 'Pendente';
     },
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
-      let variant: "default" | "secondary" | "destructive" | "outline" = 'outline';
-      if (status === 'Atrasado') variant = 'destructive';
-      else if (status === 'Hoje') variant = 'default';
-      else if (status === 'Agendado') variant = 'secondary';
-      else if (status === 'Não Agendado') variant = 'secondary';
       return status;
     },
     enableSorting: true,
     sortingFn: (rowA, rowB, columnId) => {
-      const statusOrder = ['Atrasado', 'Hoje', 'Agendado', 'Pendente', 'Não Agendado', 'Concluído'];
+      const statusOrder = ['Atrasado', 'Hoje', 'Pendente', 'Concluído'];
       const statusA = rowA.getValue(columnId) as string;
       const statusB = rowB.getValue(columnId) as string;
-      return statusOrder.indexOf(statusA) - statusOrder.indexOf(statusB);
+      const indexA = statusOrder.indexOf(statusA);
+      const indexB = statusOrder.indexOf(statusB);
+      return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
     },
-    filterFn: (row, columnId, filterValue: string[] | undefined) => {
-      if (!filterValue || filterValue.length === 0) return true;
+    filterFn: (row, columnId, filterValue: string | undefined) => {
+      if (typeof filterValue === 'undefined') return true;
       const status = row.getValue(columnId) as string;
-      return filterValue.includes(status);
+      return status === filterValue;
     },
     enableGrouping: true,
     aggregationFn: 'count',

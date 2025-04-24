@@ -32,7 +32,6 @@
   import DialogButtonNotas from './DialogButtonNotas.svelte';
   import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
   import * as DropdownMenu from '../../../lib/components/ui/dropdown-menu/index';
-  import Checkbox from '../../../lib/components/ui/checkbox/checkbox.svelte';
   import { fly } from 'svelte/transition';
 
   let { columns = [], data = [] } = $props();
@@ -49,7 +48,7 @@
   let tagFilter = $state<string[]>([]);
   let dateFilter = $state<DateRange | undefined>(undefined);
   let scheduledDateFilter = $state<DateRange | undefined>(undefined);
-  let statusFilter = $state<string[]>([]);
+  let statusFilter = $state<string>('');
   let datePopoverOpen = $state(false);
   let scheduledDatePopoverOpen = $state(false);
   let statusDropdownOpen = $state(false);
@@ -247,6 +246,19 @@
     },
   });
 
+  // NOVO EFEITO para aplicar o filtro de status quando o estado mudar
+  $effect(() => {
+    const filterValueForTable = statusFilter !== '' ? statusFilter : undefined;
+    const currentTableFilter = table.getColumn('status')?.getFilterValue();
+
+    // Aplicar somente se o valor do estado for diferente do filtro atual da tabela
+    // para evitar chamadas desnecessárias.
+    if (filterValueForTable !== currentTableFilter) {
+      console.log('Applying status filter via $effect:', filterValueForTable);
+      table.getColumn('status')?.setFilterValue(filterValueForTable);
+    }
+  });
+
   function formatDate(filter: DateRange | undefined) {
     if (!filter) return;
     const start = filter.start?.toDate(getLocalTimeZone());
@@ -299,8 +311,8 @@
   // Registrar para uso em renderComponent
   const _ = { DialogButtonNotas, DialogButtonFlashcards };
 
-  // Lista de status possíveis para o filtro (baseado em columns.ts)
-  const possibleStatus = ['Atrasado', 'Hoje', 'Agendado', 'Pendente', 'Não Agendado', 'Concluído'];
+  // Lista de status possíveis para o filtro (atualizada)
+  const possibleStatus = ['Hoje', 'Pendente', 'Atrasado', 'Concluído'];
 </script>
 
 <div class="flex justify-between items-center gap-4 mb-4">
@@ -493,12 +505,8 @@
                   <DropdownMenu.Root bind:open={statusDropdownOpen}>
                       <DropdownMenu.Trigger>
                           <Button variant="outline" size="sm" class="w-full justify-start">
-                              {#if statusFilter.length > 0}
-                                  <div class="flex flex-wrap gap-1">
-                                      {#each statusFilter as status (status)}
-                                          <Badge variant="secondary">{status}</Badge>
-                                      {/each}
-                                  </div>
+                              {#if statusFilter !== ''}
+                                  <Badge variant="secondary">{statusFilter}</Badge>
                               {:else}
                                   <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                               {/if}
@@ -507,28 +515,31 @@
                       <DropdownMenu.Content class="w-48">
                           <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
                           <DropdownMenu.Separator />
-                           {#each possibleStatus as status (status)}
-                              <DropdownMenu.CheckboxItem
-                                  checked={statusFilter.includes(status)}
-                                  onCheckedChange={() => {
-                                      let updatedFilter;
-                                      if (statusFilter.includes(status)) {
-                                          updatedFilter = statusFilter.filter(s => s !== status);
-                                      } else {
-                                          updatedFilter = [...statusFilter, status];
-                                      }
-                                      statusFilter = updatedFilter;
-                                      table.getColumn('status')?.setFilterValue(statusFilter.length > 0 ? statusFilter : undefined);
-                                      console.log('Setting status filter:', statusFilter.length > 0 ? statusFilter : undefined);
-                                  }}
-                                  onSelect={(e: Event) => e.preventDefault()}
-                                >
-                                  {status}
-                                </DropdownMenu.CheckboxItem>
-                          {/each}
-                          {#if statusFilter.length > 0}
+                          <DropdownMenu.RadioGroup bind:value={statusFilter}>
+                              {#each possibleStatus as status (status)}
+                                  <DropdownMenu.RadioItem
+                                      value={status}
+                                      onSelect={() => {
+                                          // Apenas fechar o menu ao selecionar
+                                          statusDropdownOpen = false;
+                                          // O $effect cuidará de aplicar o filtro
+                                      }}
+                                  >
+                                      {status}
+                                  </DropdownMenu.RadioItem>
+                              {/each}
+                          </DropdownMenu.RadioGroup>
+                          {#if statusFilter !== ''}
                               <DropdownMenu.Separator />
-                              <DropdownMenu.Item onSelect={() => { statusFilter = []; table.getColumn('status')?.setFilterValue(undefined); }}>Limpar Filtro</DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                  onSelect={() => {
+                                      statusFilter = ''; // Limpar estado, o $effect aplicará undefined
+                                      // table.getColumn('status')?.setFilterValue(undefined); // Removido daqui
+                                      console.log('Status filter state cleared to \', $effect will apply undefined.');
+                                      statusDropdownOpen = false; // Fechar menu
+                                  }}>
+                                  Limpar Filtro
+                              </DropdownMenu.Item>
                           {/if}
                       </DropdownMenu.Content>
                   </DropdownMenu.Root>
