@@ -31,6 +31,9 @@
   import CalendarSearch from '@lucide/svelte/icons/calendar-search';
   import DialogButtonNotas from './DialogButtonNotas.svelte';
   import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
+  import * as DropdownMenu from '../../../lib/components/ui/dropdown-menu/index';
+  import Checkbox from '../../../lib/components/ui/checkbox/checkbox.svelte';
+  import { fly } from 'svelte/transition';
 
   let { columns = [], data = [] } = $props();
 
@@ -44,10 +47,12 @@
   let itemFilter = $state('');
   let groupFilter = $state<string[]>([]);
   let tagFilter = $state<string[]>([]);
-  let noteFilter = $state('');
-  let flashcardFilter = $state('');
   let dateFilter = $state<DateRange | undefined>(undefined);
+  let scheduledDateFilter = $state<DateRange | undefined>(undefined);
+  let statusFilter = $state<string[]>([]);
   let datePopoverOpen = $state(false);
+  let scheduledDatePopoverOpen = $state(false);
+  let statusDropdownOpen = $state(false);
   let groupDialogOpen = $state(false);
   let tagDialogOpen = $state(false);
   let searchScope: 'title' | 'url' | 'groups' | 'tags' | 'comment' = $state('title');
@@ -71,11 +76,27 @@
   });
 
   $effect(() => {
+    if (scheduledDatePopoverOpen && scheduledDateFilter) {
+      scheduledDatePopoverOpen = false;
+    }
+  });
+
+  $effect(() => {
     const current = table.getColumn('dateAdded')?.getFilterValue();
     if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
       table.getColumn('dateAdded')?.setFilterValue(undefined);
-      console.log('Filtro de data limpo via $effect');
     }
+  });
+
+  $effect(() => {
+    const current = table.getColumn('scheduledDate')?.getFilterValue();
+    const filterStartTs = scheduledDateFilter?.start?.toDate(getLocalTimeZone()).getTime();
+    const filterEndTs = scheduledDateFilter?.end?.toDate(getLocalTimeZone()).getTime();
+
+    if ((!scheduledDateFilter || (!filterStartTs && !filterEndTs)) && current !== undefined) {
+       console.log('Limpando filtro scheduledDate da coluna', current);
+       table.getColumn('scheduledDate')?.setFilterValue(undefined);
+     }
   });
 
   // NOVO EFEITO para aplicar o filtro de tipo à coluna da tabela
@@ -243,6 +264,17 @@
     return start.toLocaleDateString('pt-BR');
   }
 
+  function formatDateFilterDisplay(filter: DateRange | undefined) {
+    if (!filter) return null;
+    const start = filter.start?.toDate(getLocalTimeZone());
+    const end = filter.end?.toDate(getLocalTimeZone());
+    if (!start) return null;
+    if (end && end.getTime() !== start.getTime()) {
+      return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
+    }
+    return start.toLocaleDateString('pt-BR');
+  }
+
   let notes = $derived(() => {
     let arr: import('../../../types').Note[] = [];
     notesStore.subscribe(val => arr = val)();
@@ -272,6 +304,9 @@
 
   // Registrar para uso em renderComponent
   const _ = { DialogButtonNotas, DialogButtonFlashcards };
+
+  // Lista de status possíveis para o filtro (baseado em columns.ts)
+  const possibleStatus = ['Atrasado', 'Hoje', 'Agendado', 'Pendente', 'Não Agendado', 'Concluído'];
 </script>
 
 <div class="flex justify-between items-center gap-4 mb-4">
@@ -391,15 +426,19 @@
                     }}
                   />
                 {:else if header.column.id === 'noteIds'}
-                  <input type="text" placeholder="# Notas" class="input input-xs w-full" bind:value={noteFilter} />
+                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Notas clicked')}>
+                    <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                  </Button>
                 {:else if header.column.id === 'flashcardIds'}
-                  <input type="text" placeholder="# Flashcards" class="input input-xs w-full" bind:value={flashcardFilter} />
+                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Flashcards clicked')}>
+                    <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                  </Button>
                 {:else if header.column.id === 'dateAdded'}
-                  <Popover.Root>
+                  <Popover.Root bind:open={datePopoverOpen}>
                     <Popover.Trigger>
                       <Button variant="outline" size="sm" class="w-full justify-start">
-                        {#if dateFilter && dateFilter.start && dateFilter.end}
-                          {formatDate(dateFilter)}
+                        {#if dateFilter && (dateFilter.start || dateFilter.end)}
+                          {formatDateFilterDisplay(dateFilter)}
                         {:else}
                           <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
                         {/if}
@@ -411,22 +450,93 @@
                         onValueChange={v => {
                           if (!v || (!v.start && !v.end)) {
                             table.getColumn('dateAdded')?.setFilterValue(undefined);
-                            console.log("UNDEFINED");
                           } else {
-                            table.getColumn('dateAdded')?.setFilterValue(v);
-                            console.log("DEFINED");
+                            const filterVal = {
+                              start: v.start?.toDate(getLocalTimeZone()).getTime(),
+                              end: v.end?.toDate(getLocalTimeZone()).getTime() ?? v.start?.toDate(getLocalTimeZone()).getTime()
+                            }
+                            table.getColumn('dateAdded')?.setFilterValue(filterVal);
                           }
                         }}
                       />
-                      <!-- {JSON.stringify(dateFilter)} -->
-                      {#if dateFilter}
-                        {@const start = dateFilter.start?.toDate(getLocalTimeZone())}
-                        {@const end = dateFilter.end?.toDate(getLocalTimeZone())}
-                        {"START: " + JSON.stringify(start)}
-                        {"END: " + JSON.stringify(end)}
-                      {/if}
                     </Popover.Content>
                   </Popover.Root>
+                {:else if header.column.id === 'scheduledDate'}
+                   <Popover.Root bind:open={scheduledDatePopoverOpen}>
+                    <Popover.Trigger>
+                      <Button variant="outline" size="sm" class="w-full justify-start">
+                        {#if scheduledDateFilter && (scheduledDateFilter.start || scheduledDateFilter.end)}
+                          {formatDateFilterDisplay(scheduledDateFilter)}
+                        {:else}
+                          <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
+                        {/if}
+                      </Button>
+                    </Popover.Trigger>
+                    <Popover.Content align="end" class="p-0">
+                      <RangeCalendar
+                        bind:value={scheduledDateFilter}
+                        onValueChange={v => {
+                          if (!v || (!v.start && !v.end)) {
+                            table.getColumn('scheduledDate')?.setFilterValue(undefined);
+                            console.log('Setting scheduledDate filter to undefined');
+                          } else {
+                            const filterVal = {
+                              start: v.start?.toDate(getLocalTimeZone()).getTime(),
+                              end: v.end?.toDate(getLocalTimeZone()).getTime()
+                            };
+                            if (filterVal.start && filterVal.end === filterVal.start) {
+                                filterVal.end = new Date(filterVal.start).setHours(23, 59, 59, 999);
+                            }
+
+                            console.log('Setting scheduledDate filter:', filterVal);
+                            table.getColumn('scheduledDate')?.setFilterValue(filterVal);
+                          }
+                        }}
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
+                {:else if header.column.id === 'status'}
+                  <DropdownMenu.Root bind:open={statusDropdownOpen}>
+                      <DropdownMenu.Trigger>
+                          <Button variant="outline" size="sm" class="w-full justify-start">
+                              {#if statusFilter.length > 0}
+                                  <div class="flex flex-wrap gap-1">
+                                      {#each statusFilter as status (status)}
+                                          <Badge variant="secondary">{status}</Badge>
+                                      {/each}
+                                  </div>
+                              {:else}
+                                  <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                              {/if}
+                          </Button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content class="w-48">
+                          <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
+                          <DropdownMenu.Separator />
+                           {#each possibleStatus as status (status)}
+                              <DropdownMenu.CheckboxItem>
+                                  checked={statusFilter.includes(status)}
+                                  onCheckedChange={() => {
+                                      let updatedFilter;
+                                      if (statusFilter.includes(status)) {
+                                          updatedFilter = statusFilter.filter(s => s !== status);
+                                      } else {
+                                          updatedFilter = [...statusFilter, status];
+                                      }
+                                      statusFilter = updatedFilter;
+                                      table.getColumn('status')?.setFilterValue(statusFilter.length > 0 ? statusFilter : undefined);
+                                      console.log('Setting status filter:', statusFilter.length > 0 ? statusFilter : undefined);
+                                  }}
+                                  onSelect={(e: Event) => e.preventDefault()}
+                                  {status}
+                                </DropdownMenu.CheckboxItem>
+                          {/each}
+                          {#if statusFilter.length > 0}
+                              <DropdownMenu.Separator />
+                              <DropdownMenu.Item onSelect={() => { statusFilter = []; table.getColumn('status')?.setFilterValue(undefined); }}>Limpar Filtro</DropdownMenu.Item>
+                          {/if}
+                      </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 {:else}
                   <!-- Colunas sem filtro -->
                 {/if}

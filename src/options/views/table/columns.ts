@@ -21,6 +21,7 @@ import DialogButtonGrupos from './DialogButtonGrupos.svelte';
 import DialogButtonTags from './DialogButtonTags.svelte';
 import type ManageItemGroupsDialogType from '../../components/ManageItemGroupsDialog.svelte';
 import ManageItemGroupsDialog from '../../components/ManageItemGroupsDialog.svelte';
+import { type AggregationFn, sortingFns } from '@tanstack/table-core';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -246,31 +247,86 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
   ];
   const agendadoParaCol: ColumnDef<SavedItem, any> = {
     id: 'scheduledDate',
-    header: () => 'Agendado para',
+    header: ({ column }) =>
+      renderComponent(SortableHeader, {
+        label: 'Agendado p/',
+        onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+        sorted: column.getIsSorted?.(),
+      }),
+    accessorFn: (row) => row.scheduledDate,
     cell: ({ row }) => row.original.scheduledDate ? formatDate(row.original.scheduledDate) : '-',
     enableSorting: true,
-    sortingFn: (a, b) => {
-      const aDate = a.original.scheduledDate || 0;
-      const bDate = b.original.scheduledDate || 0;
-      return aDate - bDate;
+    sortingFn: sortingFns.datetime,
+    filterFn: (row, columnId, filterValue: { start?: number, end?: number } | undefined) => {
+      const date = row.original.scheduledDate;
+
+      if (!filterValue || typeof filterValue.start === 'undefined') {
+        return true;
+      }
+
+      if (!date) {
+        return false;
+      }
+
+      const start = filterValue.start;
+      const end = typeof filterValue.end === 'undefined' ? start : filterValue.end;
+
+      return date >= start && date <= end;
     },
+    enableGrouping: true,
+    aggregationFn: 'count',
   };
   const statusCol: ColumnDef<SavedItem, any> = {
     id: 'status',
-    header: () => 'Status',
+    header: ({ column }) =>
+      renderComponent(SortableHeader, {
+        label: 'Status',
+        onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+        sorted: column.getIsSorted?.(),
+      }),
     accessorFn: (row) => {
-      if (!row.scheduledDate) return '';
+      if (!row.scheduledDate) return 'Não Agendado';
       const now = Date.now();
       const scheduled = row.scheduledDate;
-      const isToday = new Date(scheduled).toDateString() === new Date(now).toDateString();
-      if (scheduled < now && !isToday) return 'Atrasado';
-      if (isToday) return 'Pendente';
-      if (scheduled > now) return 'Agendado';
-      return '';
+      const todayStart = new Date(now).setHours(0, 0, 0, 0);
+      const todayEnd = new Date(now).setHours(23, 59, 59, 999);
+      const scheduledDateOnly = new Date(scheduled).setHours(0, 0, 0, 0);
+
+      if (scheduled < todayStart) return 'Atrasado';
+      if (scheduledDateOnly === todayStart) return 'Hoje';
+      if (scheduled > todayEnd) return 'Agendado';
+      return 'Pendente';
     },
-    enableSorting: false,
+    cell: ({ row }) => {
+      const status = row.getValue('status') as string;
+      let variant: "default" | "secondary" | "destructive" | "outline" = 'outline';
+      if (status === 'Atrasado') variant = 'destructive';
+      else if (status === 'Hoje') variant = 'default';
+      else if (status === 'Agendado') variant = 'secondary';
+      else if (status === 'Não Agendado') variant = 'secondary';
+      return status;
+    },
+    enableSorting: true,
+    sortingFn: (rowA, rowB, columnId) => {
+      const statusOrder = ['Atrasado', 'Hoje', 'Agendado', 'Pendente', 'Não Agendado', 'Concluído'];
+      const statusA = rowA.getValue(columnId) as string;
+      const statusB = rowB.getValue(columnId) as string;
+      return statusOrder.indexOf(statusA) - statusOrder.indexOf(statusB);
+    },
+    filterFn: (row, columnId, filterValue: string[] | undefined) => {
+      if (!filterValue || filterValue.length === 0) return true;
+      const status = row.getValue(columnId) as string;
+      return filterValue.includes(status);
+    },
+    enableGrouping: true,
+    aggregationFn: 'count',
   };
-  const idx = baseColumns.findIndex(col => col.id === 'type');
-  baseColumns.splice(idx + 1, 0, agendadoParaCol, statusCol);
-  return baseColumns;
+  const baseColumnsWithScheduled: ColumnDef<SavedItem, any>[] = [...baseColumns];
+  const typeIndex = baseColumnsWithScheduled.findIndex(col => col.id === 'type');
+  if (typeIndex !== -1) {
+    baseColumnsWithScheduled.splice(typeIndex + 1, 0, agendadoParaCol, statusCol);
+  } else {
+    baseColumnsWithScheduled.push(agendadoParaCol, statusCol);
+  }
+  return baseColumnsWithScheduled;
 } 

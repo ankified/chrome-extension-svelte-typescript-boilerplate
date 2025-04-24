@@ -21,7 +21,7 @@
         Copiar ID
       </DropdownMenu.Item>
       <DropdownMenu.Item onclick={() => window.open(`/item/${id}`, '_blank')}>
-        Abrir
+        Visualizar
       </DropdownMenu.Item>
       <DropdownMenu.Item onclick={() => alert('Editar: ' + id)}>
         Editar
