@@ -299,7 +299,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       return 'Pendente';
     },
     cell: ({ row }) => {
-      return renderComponent(StatusCellButton, { item: row.original });
+      return renderComponent(StatusCellButton, { itemId: row.original.id });
     },
     enableSorting: true,
     sortingFn: (rowA, rowB, columnId) => {
