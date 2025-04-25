@@ -15,9 +15,9 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [✅] Substituir os inputs das colunas de Notas e Flashcards por botões de filtragem (as funcionalidades desses botões serão implementadas posteriormente);
 - [✅] Substituir o item "Abrir" por "Visualizar" no Menu de ações de cada item da tabela;
 - [✅] Implementar filtragem, agrupamento e ordenação às colunas "Agendado para" e "Status";
-- [ ] Colocar a data de agendamento de cada item da coluna "Agendado para" dentro de um botão. Esse botão deve abrir um RangeCalendar para que o usuário possa alterar a data de agendamento ou acrescentar uma nova data. (Talvez seja preciso analisar se o banco de dados admite um array de datas ou se será preciso fazer alguma modificação para que passe a admitir. Se esse for o caso, talvez seja necessário ajustar outras partes do aplicativo que lidam com datas agendadas)
+- [ ] Colocar a data de agendamento de cada item da coluna "Agendado p/" dentro de um botão. Esse botão deve abrir um RangeCalendar para que o usuário possa alterar a data de agendamento ou acrescentar uma nova data. (Talvez seja preciso analisar se o banco de dados admite um array de datas ou se será preciso fazer alguma modificação para que passe a admitir. Se esse for o caso, talvez seja necessário ajustar outras partes do aplicativo que lidam com datas agendadas)
 - [✅] Fazer com que ao clicar no botão que exibe o status de cada item da coluna "Status", seja exibido um AlertDialog perguntando se o usuário quer marcar o item como concluído (apenas se ainda não tiver sido marcado como concluído).
-- [ ] Adicionar um botão de agrupamento à coluna "Item", para que os itens sejam agrupados por domínio.
+- [❓] Adicionar um botão de agrupamento à coluna "Item", para que os itens sejam agrupados por domínio.
 
 ## Checklist de Funcionalidades
 
@@ -46,6 +46,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [ ] Implementar ação de exclusão em lote.
   - [ ] Implementar ação de alteração de grupo em lote.
   - [ ] Implementar ação de alteração de tags em lote.
+  - [ ] Implementar ação de abrir em uma nova aba ou nova janela em lote.
   - [ ] Outras ações relevantes para múltiplos itens.
 
 - [✅] **Melhorias de Interface e Usabilidade**

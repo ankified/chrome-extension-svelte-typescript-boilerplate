@@ -923,3 +923,172 @@ export async function updateItem(itemId: string, updates: Partial<SavedItem>): P
 
   return itemFound;
 }
+
+// --- NOVAS FUNÇÕES DE MANIPULAÇÃO EM LOTE ---
+
+/**
+ * Exclui múltiplos SavedItems e limpa suas referências em Groups.
+ * @param itemIds Array de IDs dos itens a serem excluídos.
+ * @returns Promise que resolve quando a operação for concluída.
+ */
+export async function deleteItems(itemIds: string[]): Promise<void> {
+  if (!itemIds || itemIds.length === 0) {
+    console.log('[Storage] deleteItems chamado sem IDs.');
+    return;
+  }
+  console.log(`[Storage] Excluindo ${itemIds.length} itens...`);
+  try {
+    // Remover itens da store savedItems
+    savedItems.update(currentItems => 
+      currentItems.filter(item => !itemIds.includes(item.id))
+    );
+
+    // Remover referências dos itens nos grupos
+    groups.update(currentGroups => 
+      currentGroups.map(group => {
+        const initialLength = group.itemIds?.length || 0;
+        const updatedItemIds = group.itemIds?.filter(id => !itemIds.includes(id)) || [];
+        if (updatedItemIds.length < initialLength) {
+          return { ...group, itemIds: updatedItemIds };
+        }
+        return group;
+      })
+    );
+
+    // Forçar sincronização
+    await Promise.all([
+      (savedItems as any).forceSync?.(),
+      (groups as any).forceSync?.()
+    ]);
+
+    console.log(`[Storage] ${itemIds.length} itens excluídos com sucesso.`);
+  } catch (error) {
+    console.error('[Storage] Erro ao excluir itens em lote:', error);
+    throw error; // Relança o erro para tratamento na UI
+  }
+}
+
+/**
+ * Adiciona ou remove associações de múltiplos SavedItems a um ou mais Groups.
+ * @param itemIds Array de IDs dos itens a serem atualizados.
+ * @param groupUpdates Objeto com arrays opcionais 'add' (IDs de grupos a adicionar) e 'remove' (IDs de grupos a remover).
+ * @returns Promise que resolve quando a operação for concluída.
+ */
+export async function updateItemsGroups(itemIds: string[], groupUpdates: { add?: string[], remove?: string[] }): Promise<void> {
+  if (!itemIds || itemIds.length === 0) {
+    console.log('[Storage] updateItemsGroups chamado sem IDs de itens.');
+    return;
+  }
+  const groupsToAdd = groupUpdates.add || [];
+  const groupsToRemove = groupUpdates.remove || [];
+  if (groupsToAdd.length === 0 && groupsToRemove.length === 0) {
+    console.log('[Storage] updateItemsGroups chamado sem grupos para adicionar ou remover.');
+    return;
+  }
+
+  console.log(`[Storage] Atualizando grupos para ${itemIds.length} itens: add ${groupsToAdd.length}, remove ${groupsToRemove.length}`);
+
+  try {
+    // Atualizar savedItems
+    savedItems.update(currentItems => 
+      currentItems.map(item => {
+        if (itemIds.includes(item.id)) {
+          let currentGroupIds = item.groupIds || [];
+          // Remover grupos
+          currentGroupIds = currentGroupIds.filter(gid => !groupsToRemove.includes(gid));
+          // Adicionar grupos (evitando duplicatas)
+          currentGroupIds = [...new Set([...currentGroupIds, ...groupsToAdd])];
+          return { ...item, groupIds: currentGroupIds };
+        }
+        return item;
+      })
+    );
+
+    // Atualizar groups
+    groups.update(currentGroups => 
+      currentGroups.map(group => {
+        let updated = false;
+        let currentItemIds = group.itemIds || [];
+        // Adicionar itens ao grupo
+        if (groupsToAdd.includes(group.id)) {
+          const beforeAddLength = currentItemIds.length;
+          currentItemIds = [...new Set([...currentItemIds, ...itemIds])];
+          if (currentItemIds.length > beforeAddLength) updated = true;
+        }
+        // Remover itens do grupo
+        if (groupsToRemove.includes(group.id)) {
+          const beforeRemoveLength = currentItemIds.length;
+          currentItemIds = currentItemIds.filter(itemId => !itemIds.includes(itemId));
+          if (currentItemIds.length < beforeRemoveLength) updated = true;
+        }
+        return updated ? { ...group, itemIds: currentItemIds } : group;
+      })
+    );
+
+    // Forçar sincronização
+    await Promise.all([
+      (savedItems as any).forceSync?.(),
+      (groups as any).forceSync?.()
+    ]);
+
+    console.log(`[Storage] Grupos atualizados para ${itemIds.length} itens.`);
+  } catch (error) {
+    console.error('[Storage] Erro ao atualizar grupos em lote:', error);
+    throw error;
+  }
+}
+
+/**
+ * Adiciona ou remove tags de múltiplos SavedItems.
+ * @param itemIds Array de IDs dos itens a serem atualizados.
+ * @param tagUpdates Objeto com arrays opcionais 'add' (tags a adicionar) e 'remove' (tags a remover).
+ * @returns Promise que resolve quando a operação for concluída.
+ */
+export async function updateItemsTags(itemIds: string[], tagUpdates: { add?: string[], remove?: string[] }): Promise<void> {
+  if (!itemIds || itemIds.length === 0) {
+    console.log('[Storage] updateItemsTags chamado sem IDs de itens.');
+    return;
+  }
+  const tagsToAdd = (tagUpdates.add || []).map(tag => tag.trim()).filter(Boolean);
+  const tagsToRemove = (tagUpdates.remove || []).map(tag => tag.trim()).filter(Boolean);
+  const lowerCaseTagsToRemove = tagsToRemove.map(t => t.toLowerCase());
+
+  if (tagsToAdd.length === 0 && tagsToRemove.length === 0) {
+    console.log('[Storage] updateItemsTags chamado sem tags para adicionar ou remover.');
+    return;
+  }
+
+  console.log(`[Storage] Atualizando tags para ${itemIds.length} itens: add ${tagsToAdd.length}, remove ${tagsToRemove.length}`);
+
+  try {
+    // Atualizar savedItems
+    savedItems.update(currentItems => 
+      currentItems.map(item => {
+        if (itemIds.includes(item.id)) {
+          let currentTags = item.tags || [];
+          // Remover tags (case-insensitive)
+          currentTags = currentTags.filter(tag => !lowerCaseTagsToRemove.includes(tag.toLowerCase()));
+          // Adicionar tags (evitando duplicatas, preservando case da primeira adição)
+          const lowerCaseCurrentTags = currentTags.map(t => t.toLowerCase());
+          const uniqueNewTags = tagsToAdd.filter(newTag => !lowerCaseCurrentTags.includes(newTag.toLowerCase()));
+          currentTags = [...currentTags, ...uniqueNewTags];
+          return { ...item, tags: currentTags };
+        }
+        return item;
+      })
+    );
+
+    // Adicionar novas tags à lista conhecida
+    if (tagsToAdd.length > 0) {
+      tagsToAdd.forEach(tag => addKnownTagIfNotExists(tag));
+    }
+
+    // Forçar sincronização de savedItems (knownTags sincroniza reativamente)
+    await (savedItems as any).forceSync?.();
+
+    console.log(`[Storage] Tags atualizadas para ${itemIds.length} itens.`);
+  } catch (error) {
+    console.error('[Storage] Erro ao atualizar tags em lote:', error);
+    throw error;
+  }
+}

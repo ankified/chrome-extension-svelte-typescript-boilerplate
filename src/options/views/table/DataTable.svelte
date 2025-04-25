@@ -11,6 +11,7 @@
   import TagFilterDialog from '../../components/TagFilterDialog.svelte';
   import Badge from '../../../lib/components/ui/badge/badge.svelte';
   import type { SavedItem, Group } from '../../../types';
+  import * as storage from '../../../storage';
   import { savedItems, groups as groupsStore, knownTags as tagsStore, notes as notesStore, flashcards as flashcardsStore } from '../../../storage';
   import { getLocalTimeZone, today, type DateValue } from "@internationalized/date";
   import type { DateRange } from 'bits-ui';
@@ -33,6 +34,14 @@
   import DialogButtonFlashcards from './DialogButtonFlashcards.svelte';
   import * as DropdownMenu from '../../../lib/components/ui/dropdown-menu/index';
   import { fly } from 'svelte/transition';
+  import { toast } from 'svelte-sonner';
+  import * as AlertDialog from '../../../lib/components/ui/alert-dialog/index';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Folder from '@lucide/svelte/icons/folder';
+  import Tags from '@lucide/svelte/icons/tags';
+  import ExternalLink from '@lucide/svelte/icons/external-link';
+  import BulkGroupAssignDialog from './BulkGroupAssignDialog.svelte';
+  import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
 
   let { columns = [], data = [] } = $props();
 
@@ -42,7 +51,6 @@
   let sorting = $state<SortingState>([]);
   let expanded = $state({});
 
-  // Filtros por coluna
   let itemFilter = $state('');
   let groupFilter = $state<string[]>([]);
   let tagFilter = $state<string[]>([]);
@@ -56,7 +64,6 @@
   let tagDialogOpen = $state(false);
   let searchScope: 'title' | 'url' | 'groups' | 'tags' | 'comment' = $state('title');
 
-  // Dados para dialogs (arrays reativos)
   let groups = $derived(() => {
     let arr: Group[] = [];
     groupsStore.subscribe(val => arr = val)();
@@ -92,30 +99,16 @@
      }
   });
 
-  // NOVO EFEITO para aplicar o filtro de tipo à coluna da tabela
   $effect(() => {
-    // Obtém a coluna 'type'
     const typeColumn = table.getColumn('type');
     if (typeColumn) {
-      // Define o valor do filtro para a coluna 'type'
-      // Se 'all', passa undefined para limpar o filtro desta coluna
-      // Caso contrário, passa o valor 'bookmark' ou 'readlater'
-      // typeColumn.setFilterValue(typeFilter === 'all' ? undefined : typeFilter);
-      // console.log(`Applying type filter to column: ${typeFilter === 'all' ? undefined : typeFilter}`);
-
-      // Determina o novo valor de filtro desejado com base no estado
       const newFilterValue = typeFilter === 'all' ? undefined : typeFilter;
-      // Obtém o valor de filtro atualmente aplicado à coluna
       const currentFilterValue = typeColumn.getFilterValue();
 
-      // SOMENTE atualiza o filtro da coluna se o novo valor for diferente do atual
       if (newFilterValue !== currentFilterValue) {
         console.log(`Applying type filter. Current: ${currentFilterValue}, New: ${newFilterValue}`);
         typeColumn.setFilterValue(newFilterValue);
       }
-      // else { // Opcional: Log para ver quando a atualização é pulada
-      //   console.log(`Skipping type filter update. Current: ${currentFilterValue}, New: ${newFilterValue} (already applied)`);
-      // }
     }
   });
 
@@ -128,16 +121,13 @@
 
   let globalFilter = $state('');
 
-  // Novo estado para filtro global composto
   let globalFilterObj = $derived(() => ({ value: globalFilter, scope: searchScope }));
 
-  // Função de filtro global baseada no escopo
   function globalFilterFn(
     row: { original: SavedItem },
     columnId: string,
     filterValue: any
   ) {
-    // filterValue: { value: string, scope: string }
     let value: string = '';
     let scope: string = 'title';
     if (typeof filterValue === 'object' && filterValue !== null) {
@@ -151,7 +141,6 @@
     let field: string | string[] | number | undefined;
     switch (scope) {
       case 'groups':
-        // Buscar pelo nome do grupo, não pelo id
         field = row.original.groupIds
           .map((gid: string) => groups().find((g: Group) => g.id === gid)?.name)
           .filter((x): x is string => Boolean(x));
@@ -180,7 +169,6 @@
     if (typeof field === 'number') {
       return (field as number).toString().includes(value);
     }
-    // Checagem defensiva para evitar erro de never
     return false;
   }
 
@@ -192,7 +180,8 @@
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    globalFilterFn, // Passa a função customizada
+    getExpandedRowModel: getExpandedRowModel(),
+    globalFilterFn,
     state: {
       get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
@@ -244,15 +233,13 @@
         columnFilters = updater;
       }
     },
+    enableRowSelection: true,
   });
 
-  // NOVO EFEITO para aplicar o filtro de status quando o estado mudar
   $effect(() => {
     const filterValueForTable = statusFilter !== '' ? statusFilter : undefined;
     const currentTableFilter = table.getColumn('status')?.getFilterValue();
 
-    // Aplicar somente se o valor do estado for diferente do filtro atual da tabela
-    // para evitar chamadas desnecessárias.
     if (filterValueForTable !== currentTableFilter) {
       console.log('Applying status filter via $effect:', filterValueForTable);
       table.getColumn('status')?.setFilterValue(filterValueForTable);
@@ -294,7 +281,6 @@
 
   let editingComment: { [id: string]: string } = {};
 
-  // Definir opções para o Select
   const searchScopeOptions = [
     { value: "title", label: "Título" },
     { value: "url", label: "URL" },
@@ -303,16 +289,113 @@
     { value: "comment", label: "Comentário" }
   ];
 
-  // Estado derivado para o texto do Trigger
   const selectedScopeLabel = $derived(
     searchScopeOptions.find((opt) => opt.value === searchScope)?.label ?? "Buscar em..."
   );
 
-  // Registrar para uso em renderComponent
   const _ = { DialogButtonNotas, DialogButtonFlashcards };
 
-  // Lista de status possíveis para o filtro (atualizada)
   const possibleStatus = ['Hoje', 'Pendente', 'Atrasado', 'Concluído'];
+
+  let selectedRows = $derived(table.getFilteredSelectedRowModel().rows);
+  let selectedItemIds = $derived(selectedRows.map(row => row.original.id));
+  let selectedItemUrls = $derived(selectedRows.map(row => row.original.url));
+  let selectedItemCount = $derived(selectedItemIds.length);
+
+  let isBulkGroupDialogOpen = $state(false);
+  let isBulkTagDialogOpen = $state(false);
+  let isDeleteDialogOpen = $state(false);
+
+  function handleBulkDelete() {
+    if (selectedItemCount === 0) return;
+    isDeleteDialogOpen = true;
+    console.log("Abrir confirmação de exclusão para:", selectedItemIds);
+  }
+
+  async function confirmBulkDelete() {
+    if (selectedItemCount === 0) return;
+    const idsToDelete = selectedItemIds;
+    console.log("Confirmado! Excluindo itens:", idsToDelete);
+    isDeleteDialogOpen = false;
+    try {
+      await storage.deleteItems(idsToDelete);
+      toast.success(`${idsToDelete.length} item(ns) excluído(s) com sucesso.`);
+      rowSelection = {};
+    } catch (error) {
+      console.error("Erro ao excluir itens em lote:", error);
+      toast.error("Erro ao excluir itens.", { description: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  function openBulkGroupDialog() {
+    if (selectedItemCount === 0) return;
+    isBulkGroupDialogOpen = true;
+    console.log("Abrir diálogo de grupos para:", selectedItemIds);
+  }
+
+  async function handleBulkGroupUpdate(updates: { add?: string[], remove?: string[] }) {
+    const idsToUpdate = selectedItemIds;
+    if (idsToUpdate.length === 0) return;
+    console.log("Aplicando atualização de grupos:", updates, "para itens:", idsToUpdate);
+    isBulkGroupDialogOpen = false;
+    try {
+      await storage.updateItemsGroups(idsToUpdate, updates);
+      toast.success(`Grupos atualizados para ${idsToUpdate.length} item(ns).`);
+      rowSelection = {};
+    } catch (error) {
+      console.error("Erro ao atualizar grupos em lote:", error);
+      toast.error("Erro ao atualizar grupos.", { description: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  function openBulkTagDialog() {
+    if (selectedItemCount === 0) return;
+    isBulkTagDialogOpen = true;
+    console.log("Abrir diálogo de tags para:", selectedItemIds);
+  }
+
+  async function handleBulkTagUpdate(updates: { add?: string[], remove?: string[] }) {
+     const idsToUpdate = selectedItemIds;
+     if (idsToUpdate.length === 0) return;
+     console.log("Aplicando atualização de tags:", updates, "para itens:", idsToUpdate);
+     isBulkTagDialogOpen = false;
+     try {
+       await storage.updateItemsTags(idsToUpdate, updates);
+       toast.success(`Tags atualizadas para ${idsToUpdate.length} item(ns).`);
+       rowSelection = {};
+     } catch (error) {
+       console.error("Erro ao atualizar tags em lote:", error);
+       toast.error("Erro ao atualizar tags.", { description: error instanceof Error ? error.message : String(error) });
+     }
+  }
+
+  function handleBulkOpen(mode: 'current' | 'new' | 'incognito') {
+    const urlsToOpen = selectedItemUrls;
+    const count = urlsToOpen.length;
+    if (count === 0) return;
+    console.log(`Abrindo ${count} URLs no modo ${mode}`);
+    try {
+      switch (mode) {
+        case 'current':
+          urlsToOpen.forEach((url: string, index: number) => chrome.tabs.create({ url, active: index === 0 }));
+          toast.success(`${count} aba(s) aberta(s) na janela atual.`);
+          break;
+        case 'new':
+          chrome.windows.create({ url: urlsToOpen });
+          toast.success(`${count} aba(s) aberta(s) em nova janela.`);
+          break;
+        case 'incognito':
+          chrome.windows.create({ url: urlsToOpen, incognito: true });
+          toast.success(`${count} aba(s) aberta(s) em janela anônima.`);
+          break;
+      }
+      rowSelection = {};
+    } catch (error) {
+       console.error(`Erro ao abrir URLs no modo ${mode}:`, error);
+       toast.error("Erro ao abrir links.", { description: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
 </script>
 
 <div class="flex justify-between items-center gap-4 mb-4">
@@ -345,14 +428,6 @@
         oninput={(e) => globalFilter = e.currentTarget.value}
         autocomplete="off"
       />
-      <!-- {#if globalFilter}
-        <button type="button" aria-label="Limpar busca" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary" onclick={() => globalFilter = ''}>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      {/if} -->
     </div>
     <Select.Root bind:value={searchScope} type="single">
       <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0 w-32 max-w-[120px]" aria-label="Escopo da busca">
@@ -383,12 +458,11 @@
               </Table.Head>
             {/each}
           </Table.Row>
-          <!-- Linha de filtros -->
           <Table.Row>
             {#each headerGroup.headers as header (header.id)}
               <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                 {#if header.column.id === 'item'}
-                  <!-- Filtro removido, busca global será usada -->
+                   <!-- Sem filtro de coluna para Item -->
                 {:else if header.column.id === 'groupIds'}
                   <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
                     {#if groupFilter.length === 0}
@@ -493,7 +567,6 @@
                             if (filterVal.start && filterVal.end === filterVal.start) {
                                 filterVal.end = new Date(filterVal.start).setHours(23, 59, 59, 999);
                             }
-
                             console.log('Setting scheduledDate filter:', filterVal);
                             table.getColumn('scheduledDate')?.setFilterValue(filterVal);
                           }
@@ -520,9 +593,7 @@
                                   <DropdownMenu.RadioItem
                                       value={status}
                                       onSelect={() => {
-                                          // Apenas fechar o menu ao selecionar
                                           statusDropdownOpen = false;
-                                          // O $effect cuidará de aplicar o filtro
                                       }}
                                   >
                                       {status}
@@ -533,10 +604,9 @@
                               <DropdownMenu.Separator />
                               <DropdownMenu.Item
                                   onSelect={() => {
-                                      statusFilter = ''; // Limpar estado, o $effect aplicará undefined
-                                      // table.getColumn('status')?.setFilterValue(undefined); // Removido daqui
+                                      statusFilter = '';
                                       console.log('Status filter state cleared to \', $effect will apply undefined.');
-                                      statusDropdownOpen = false; // Fechar menu
+                                      statusDropdownOpen = false;
                                   }}>
                                   Limpar Filtro
                               </DropdownMenu.Item>
@@ -544,7 +614,7 @@
                       </DropdownMenu.Content>
                   </DropdownMenu.Root>
                 {:else}
-                  <!-- Colunas sem filtro -->
+                  <!-- Coluna sem filtro (ex: Tipo, Ações) -->
                 {/if}
               </Table.Head>
             {/each}
@@ -556,7 +626,6 @@
           <Table.Row data-state={row.getIsSelected() && 'selected'}>
             {#each row.getVisibleCells() as cell (cell.id)}
               <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
-                <!-- {JSON.stringify(cell)} -->
                 {#if cell.column.id === 'type'}
                   {@const typeValue = cell.getValue() as string}
                     {#if typeValue}
@@ -567,9 +636,10 @@
                       {/if}
                     {:else}
                       <span>-</span>
-                  {/if}
+                    {/if}
                 {:else}
-                  <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                   <!-- Renderização padrão da célula -->
+                   <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                 {/if}
               </Table.Cell>
             {/each}
@@ -632,11 +702,11 @@
                           </Dialog.Trigger>
                           <Dialog.Content class="max-w-md w-full">
                             <Dialog.Title>Editar Comentário</Dialog.Title>
-                            <form onsubmit={(e) => { e.preventDefault(); /* Update store directly */ }}>
+                            <form onsubmit={(e) => { e.preventDefault(); }}>
                               <textarea bind:value={editingComment[row.original.id]} class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none mb-2"></textarea>
                               <div class="flex gap-2 justify-end">
                                 <Button type="submit" size="sm">Salvar</Button>
-                                <Button type="button" size="sm" variant="outline" onclick={() => { /* close dialog */ }}>Cancelar</Button>
+                                <Button type="button" size="sm" variant="outline" onclick={() => { }}>Cancelar</Button>
                               </div>
                             </form>
                           </Dialog.Content>
@@ -648,7 +718,6 @@
                           </Dialog.Trigger>
                           <Dialog.Content class="max-w-md w-full">
                             <Dialog.Title>Gerenciar Grupos e Tags</Dialog.Title>
-                            <!-- Aqui pode-se reutilizar a UI dos dialogs de grupos/tags dos cards -->
                             <div class="mb-2">
                               <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
                               <!-- Exibir e permitir edição dos grupos -->
@@ -670,14 +739,13 @@
                         <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
                         {#if reactiveItem && reactiveItem.groupIds && reactiveItem.groupIds.length > 0}
                           {#each reactiveItem.groupIds as gid (gid)}
-                            <!-- Correção: Usar $groupsStore e tipar 'g' -->
                             {@const groupInfo = $groupsStore.find((g: Group) => g.id === gid)}
                             {#if groupInfo}
                               <Badge variant="secondary" style={groupInfo.color ? `background-color: ${groupInfo.color}` : ''}>
                                 {groupInfo.name}
                               </Badge>
                             {:else}
-                              <Badge variant="outline">{gid}</Badge> <!-- Fallback -->
+                              <Badge variant="outline">{gid}</Badge>
                             {/if}
                           {/each}
                         {:else}
@@ -717,6 +785,78 @@
   </div>
 </div>
 
-<div class="text-muted-foreground flex-1 text-sm mt-2">
-  {table.getFilteredSelectedRowModel().rows.length} de {table.getRowModel().rows.length} linha(s) selecionada(s).
-</div> 
+<!-- Rodapé Dinâmico com Ações em Lote -->
+<div class="flex items-center justify-between text-sm mt-4">
+  {#if selectedItemCount > 0}
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-muted-foreground font-medium">
+        {selectedItemCount} selecionado(s)
+      </span>
+      <!-- Botões de Ação em Lote -->
+      <Button variant="destructive" size="sm" onclick={handleBulkDelete}>
+        <Trash2 class="w-4 h-4 mr-1"/> Excluir
+      </Button>
+      <Button variant="outline" size="sm" onclick={openBulkGroupDialog}>
+         <Folder class="w-4 h-4 mr-1"/> Alterar Grupos
+      </Button>
+      <Button variant="outline" size="sm" onclick={openBulkTagDialog}>
+         <Tags class="w-4 h-4 mr-1"/> Alterar Tags
+      </Button>
+      <!-- Botão Abrir com Dropdown (Sintaxe corrigida) -->
+      <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+              <Button variant="outline" size="sm">
+                  <ExternalLink class="w-4 h-4 mr-1"/> Abrir em...
+              </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+              <DropdownMenu.Item onSelect={() => handleBulkOpen('current')}>Aba(s) na Janela Atual</DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => handleBulkOpen('new')}>Nova Janela</DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={() => handleBulkOpen('incognito')}>Nova Janela Anônima</DropdownMenu.Item>
+          </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
+  {:else}
+    <span class="text-muted-foreground">
+      {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
+    </span>
+    <!-- Pode adicionar paginação aqui futuramente -->
+  {/if}
+   <!-- Elementos adicionais do rodapé (ex: paginação) podem ir aqui -->
+   <div>
+       <!-- Controles de Paginação (a serem implementados) -->
+   </div>
+</div>
+
+<!-- PLACEHOLDERS PARA DIÁLOGOS -->
+<AlertDialog.Root bind:open={isDeleteDialogOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Confirmar Exclusão</AlertDialog.Title>
+      <AlertDialog.Description>
+        Tem certeza que deseja excluir {selectedItemCount} item(ns) selecionado(s)? Esta ação não pode ser desfeita.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
+      <!-- Corrigido: Aninhar Button dentro de Action, sem asChild na Action -->
+      <AlertDialog.Action>
+         <Button onclick={confirmBulkDelete} variant="destructive">Excluir</Button>
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Componente real para BulkGroupAssignDialog -->
+<BulkGroupAssignDialog
+  bind:open={isBulkGroupDialogOpen} 
+  itemCount={selectedItemCount}
+  onUpdate={handleBulkGroupUpdate} 
+/>
+
+<!-- Componente real para BulkTagAssignDialog -->
+<BulkTagAssignDialog 
+  bind:open={isBulkTagDialogOpen}
+  itemCount={selectedItemCount}
+  onUpdate={handleBulkTagUpdate}
+/> 
