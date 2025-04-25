@@ -398,236 +398,242 @@
 
 </script>
 
-<div class="flex justify-between items-center gap-4 mb-4">
-  <div class="flex items-center gap-2">
-    <span class="font-medium text-sm shrink-0">Tipo:</span>
-    <ToggleGroup.Root bind:value={typeFilter} variant="outline" size="sm" type="single">
-      <ToggleGroup.Item value="all">Todos</ToggleGroup.Item>
-      <ToggleGroup.Item value="bookmark">
-        <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom" /> Bookmark
-      </ToggleGroup.Item>
-      <ToggleGroup.Item value="readlater">
-        <Clock class="inline w-4 h-4 mr-1 align-text-bottom" /> Ler Mais Tarde
-      </ToggleGroup.Item>
-    </ToggleGroup.Root>
-  </div>
+<!-- Container principal com Flexbox para ocupar altura -->
+<div class="flex flex-col h-full min-h-0">
 
-  <div class="flex items-center border rounded-md overflow-hidden w-full max-w-[360px]">
-    <div class="relative grow min-w-0 max-w-[320px]">
-      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      </span>
-      <Input
-        type="search"
-        class="pl-8 pr-2 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
-        placeholder="Buscar..."
-        value={globalFilter}
-        oninput={(e) => globalFilter = e.currentTarget.value}
-        autocomplete="off"
-      />
+  <!-- Área de Controles (Filtros, Busca) -->
+  <div class="flex justify-between items-center gap-4 mb-4 shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="font-medium text-sm shrink-0">Tipo:</span>
+      <ToggleGroup.Root bind:value={typeFilter} variant="outline" size="sm" type="single">
+        <ToggleGroup.Item value="all">Todos</ToggleGroup.Item>
+        <ToggleGroup.Item value="bookmark">
+          <Bookmark class="inline w-4 h-4 mr-1 align-text-bottom" /> Bookmark
+        </ToggleGroup.Item>
+        <ToggleGroup.Item value="readlater">
+          <Clock class="inline w-4 h-4 mr-1 align-text-bottom" /> Ler Mais Tarde
+        </ToggleGroup.Item>
+      </ToggleGroup.Root>
     </div>
-    <Select.Root bind:value={searchScope} type="single">
-      <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0 w-32 max-w-[120px]" aria-label="Escopo da busca">
-        {selectedScopeLabel}
-      </Select.Trigger>
-      <Select.Content>
-        {#each searchScopeOptions as option (option.value)}
-          <Select.Item value={option.value} label={option.label}>
-            {option.label}
-          </Select.Item>
-        {/each}
-      </Select.Content>
-    </Select.Root>
-  </div>
-</div>
 
-<div class="w-full overflow-x-auto">
-  <div class="rounded-md border min-w-full">
-    <Table.Root class="min-w-full">
-      <Table.Header>
-        {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row>
-            {#each headerGroup.headers as header (header.id)}
-              <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
-                {#if !header.isPlaceholder}
-                  <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
-                {/if}
-              </Table.Head>
-            {/each}
-          </Table.Row>
-          <Table.Row>
-            {#each headerGroup.headers as header (header.id)}
-              <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
-                {#if header.column.id === 'item'}
-                   <!-- Sem filtro de coluna para Item -->
-                {:else if header.column.id === 'groupIds'}
-                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
-                    {#if groupFilter.length === 0}
+    <div class="flex items-center border rounded-md overflow-hidden w-full max-w-[360px]">
+      <div class="relative grow min-w-0 max-w-[320px]">
+        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <Input
+          type="search"
+          class="pl-8 pr-2 h-9 w-full border-0 rounded-none rounded-l-md focus-visible:ring-0 focus-visible:ring-offset-0"
+          placeholder="Buscar..."
+          value={globalFilter}
+          oninput={(e) => globalFilter = e.currentTarget.value}
+          autocomplete="off"
+        />
+      </div>
+      <Select.Root bind:value={searchScope} type="single">
+        <Select.Trigger class="h-9 px-3 py-2 text-sm border-0 border-l rounded-none rounded-r-md focus:ring-0 focus:ring-offset-0 shrink-0 grow-0 w-32 max-w-[120px]" aria-label="Escopo da busca">
+          {selectedScopeLabel}
+        </Select.Trigger>
+        <Select.Content>
+          {#each searchScopeOptions as option (option.value)}
+            <Select.Item value={option.value} label={option.label}>
+              {option.label}
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+    </div>
+  </div>
+
+  <!-- Container da Tabela com scroll e crescimento flex -->
+  <div class="w-full overflow-x-auto flex-grow min-h-0">
+    <div class="rounded-md border min-w-full h-full">
+      <!-- Tabela em si -->
+      <Table.Root class="min-w-full">
+        <Table.Header>
+          {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+            <Table.Row>
+              {#each headerGroup.headers as header (header.id)}
+                <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
+                  {#if !header.isPlaceholder}
+                    <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+                  {/if}
+                </Table.Head>
+              {/each}
+            </Table.Row>
+            <Table.Row>
+              {#each headerGroup.headers as header (header.id)}
+                <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
+                  {#if header.column.id === 'item'}
+                    <!-- Sem filtro de coluna para Item -->
+                  {:else if header.column.id === 'groupIds'}
+                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
+                      {#if groupFilter.length === 0}
+                        <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                      {:else}
+                        {#each groupFilter as gid (gid)}
+                          <Badge class="mr-1">{groups().find((g: Group) => g.id === gid)?.name || gid}</Badge>
+                        {/each}
+                      {/if}
+                    </Button>
+                    <GroupFilterDialog
+                      open={groupDialogOpen}
+                      initialIncludedGroups={groupFilter}
+                      availableGroups={groups()}
+                      onClose={() => groupDialogOpen = false}
+                      onApply={(e) => {
+                        groupFilter = e.included;
+                        groupDialogOpen = false;
+                        table.getColumn('groupIds')?.setFilterValue(e.included);
+                      }}
+                    />
+                  {:else if header.column.id === 'tags'}
+                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
+                      {#if tagFilter.length === 0}
+                        <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                      {:else}
+                        {#each tagFilter as tag (tag)}
+                          <Badge class="mr-1">{tag}</Badge>
+                        {/each}
+                      {/if}
+                    </Button>
+                    <TagFilterDialog
+                      open={tagDialogOpen}
+                      initialIncludedTags={tagFilter}
+                      availableTags={tags()}
+                      onClose={() => tagDialogOpen = false}
+                      onApply={(e) => {
+                        tagFilter = e.included;
+                        tagDialogOpen = false;
+                        table.getColumn('tags')?.setFilterValue(e.included);
+                      }}
+                    />
+                  {:else if header.column.id === 'noteIds'}
+                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Notas clicked')}>
                       <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                    {:else}
-                      {#each groupFilter as gid (gid)}
-                        <Badge class="mr-1">{groups().find((g: Group) => g.id === gid)?.name || gid}</Badge>
-                      {/each}
-                    {/if}
-                  </Button>
-                  <GroupFilterDialog
-                    open={groupDialogOpen}
-                    initialIncludedGroups={groupFilter}
-                    availableGroups={groups()}
-                    onClose={() => groupDialogOpen = false}
-                    onApply={(e) => {
-                      groupFilter = e.included;
-                      groupDialogOpen = false;
-                      table.getColumn('groupIds')?.setFilterValue(e.included);
-                    }}
-                  />
-                {:else if header.column.id === 'tags'}
-                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
-                    {#if tagFilter.length === 0}
+                    </Button>
+                  {:else if header.column.id === 'flashcardIds'}
+                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Flashcards clicked')}>
                       <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                    {:else}
-                      {#each tagFilter as tag (tag)}
-                        <Badge class="mr-1">{tag}</Badge>
-                      {/each}
-                    {/if}
-                  </Button>
-                  <TagFilterDialog
-                    open={tagDialogOpen}
-                    initialIncludedTags={tagFilter}
-                    availableTags={tags()}
-                    onClose={() => tagDialogOpen = false}
-                    onApply={(e) => {
-                      tagFilter = e.included;
-                      tagDialogOpen = false;
-                      table.getColumn('tags')?.setFilterValue(e.included);
-                    }}
-                  />
-                {:else if header.column.id === 'noteIds'}
-                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Notas clicked')}>
-                    <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                  </Button>
-                {:else if header.column.id === 'flashcardIds'}
-                  <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => console.log('Filter Flashcards clicked')}>
-                    <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                  </Button>
-                {:else if header.column.id === 'dateAdded'}
-                  <Popover.Root bind:open={datePopoverOpen}>
-                    <Popover.Trigger>
-                      <Button variant="outline" size="sm" class="w-full justify-start">
-                        {#if dateFilter && (dateFilter.start || dateFilter.end)}
-                          {formatDateFilterDisplay(dateFilter)}
-                        {:else}
-                          <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
-                        {/if}
-                      </Button>
-                    </Popover.Trigger>
-                    <Popover.Content align="end" class="p-0">
-                      <RangeCalendar
-                        bind:value={dateFilter}
-                        onValueChange={v => {
-                          if (!v || (!v.start && !v.end)) {
-                            table.getColumn('dateAdded')?.setFilterValue(undefined);
-                          } else {
-                            const filterVal = {
-                              start: v.start?.toDate(getLocalTimeZone()).getTime(),
-                              end: v.end?.toDate(getLocalTimeZone()).getTime() ?? v.start?.toDate(getLocalTimeZone()).getTime()
+                    </Button>
+                  {:else if header.column.id === 'dateAdded'}
+                    <Popover.Root bind:open={datePopoverOpen}>
+                      <Popover.Trigger>
+                        <Button variant="outline" size="sm" class="w-full justify-start">
+                          {#if dateFilter && (dateFilter.start || dateFilter.end)}
+                            {formatDateFilterDisplay(dateFilter)}
+                          {:else}
+                            <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
+                          {/if}
+                        </Button>
+                      </Popover.Trigger>
+                      <Popover.Content align="end" class="p-0">
+                        <RangeCalendar
+                          bind:value={dateFilter}
+                          onValueChange={v => {
+                            if (!v || (!v.start && !v.end)) {
+                              table.getColumn('dateAdded')?.setFilterValue(undefined);
+                            } else {
+                              const filterVal = {
+                                start: v.start?.toDate(getLocalTimeZone()).getTime(),
+                                end: v.end?.toDate(getLocalTimeZone()).getTime() ?? v.start?.toDate(getLocalTimeZone()).getTime()
+                              }
+                              table.getColumn('dateAdded')?.setFilterValue(filterVal);
                             }
-                            table.getColumn('dateAdded')?.setFilterValue(filterVal);
-                          }
-                        }}
-                      />
-                    </Popover.Content>
-                  </Popover.Root>
-                {:else if header.column.id === 'scheduledDate'}
-                   <Popover.Root bind:open={scheduledDatePopoverOpen}>
-                    <Popover.Trigger>
-                      <Button variant="outline" size="sm" class="w-full justify-start">
-                        {#if scheduledDateFilter && (scheduledDateFilter.start || scheduledDateFilter.end)}
-                          {formatDateFilterDisplay(scheduledDateFilter)}
-                        {:else}
-                          <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
-                        {/if}
-                      </Button>
-                    </Popover.Trigger>
-                    <Popover.Content align="end" class="p-0">
-                      <RangeCalendar
-                        bind:value={scheduledDateFilter}
-                        onValueChange={v => {
-                          if (!v || (!v.start && !v.end)) {
-                            table.getColumn('scheduledDate')?.setFilterValue(undefined);
-                            console.log('Setting scheduledDate filter to undefined');
-                          } else {
-                            const filterVal = {
-                              start: v.start?.toDate(getLocalTimeZone()).getTime(),
-                              end: v.end?.toDate(getLocalTimeZone()).getTime()
-                            };
-                            if (filterVal.start && filterVal.end === filterVal.start) {
+                          }}
+                        />
+                      </Popover.Content>
+                    </Popover.Root>
+                  {:else if header.column.id === 'scheduledDate'}
+                    <Popover.Root bind:open={scheduledDatePopoverOpen}>
+                      <Popover.Trigger>
+                        <Button variant="outline" size="sm" class="w-full justify-start">
+                          {#if scheduledDateFilter && (scheduledDateFilter.start || scheduledDateFilter.end)}
+                            {formatDateFilterDisplay(scheduledDateFilter)}
+                          {:else}
+                            <CalendarSearch class="inline w-4 h-4 mr-1 align-text-bottom" />
+                          {/if}
+                        </Button>
+                      </Popover.Trigger>
+                      <Popover.Content align="end" class="p-0">
+                        <RangeCalendar
+                          bind:value={scheduledDateFilter}
+                          onValueChange={v => {
+                            if (!v || (!v.start && !v.end)) {
+                              table.getColumn('scheduledDate')?.setFilterValue(undefined);
+                              console.log('Setting scheduledDate filter to undefined');
+                            } else {
+                              const filterVal = {
+                                start: v.start?.toDate(getLocalTimeZone()).getTime(),
+                                end: v.end?.toDate(getLocalTimeZone()).getTime()
+                              };
+                              if (filterVal.start && filterVal.end === filterVal.start) {
                                 filterVal.end = new Date(filterVal.start).setHours(23, 59, 59, 999);
+                              }
+                              console.log('Setting scheduledDate filter:', filterVal);
+                              table.getColumn('scheduledDate')?.setFilterValue(filterVal);
                             }
-                            console.log('Setting scheduledDate filter:', filterVal);
-                            table.getColumn('scheduledDate')?.setFilterValue(filterVal);
-                          }
-                        }}
-                      />
-                    </Popover.Content>
-                  </Popover.Root>
-                {:else if header.column.id === 'status'}
-                  <DropdownMenu.Root bind:open={statusDropdownOpen}>
+                          }}
+                        />
+                      </Popover.Content>
+                    </Popover.Root>
+                  {:else if header.column.id === 'status'}
+                    <DropdownMenu.Root bind:open={statusDropdownOpen}>
                       <DropdownMenu.Trigger>
-                          <Button variant="outline" size="sm" class="w-full justify-start">
-                              {#if statusFilter !== ''}
-                                  <Badge variant="secondary">{statusFilter}</Badge>
-                              {:else}
-                                  <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                              {/if}
-                          </Button>
+                        <Button variant="outline" size="sm" class="w-full justify-start">
+                          {#if statusFilter !== ''}
+                            <Badge variant="secondary">{statusFilter}</Badge>
+                          {:else}
+                            <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                          {/if}
+                        </Button>
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Content class="w-48">
-                          <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
+                        <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
+                        <DropdownMenu.Separator />
+                        <DropdownMenu.RadioGroup bind:value={statusFilter}>
+                          {#each possibleStatus as status (status)}
+                            <DropdownMenu.RadioItem
+                              value={status}
+                              onSelect={() => {
+                                statusDropdownOpen = false;
+                              }}
+                            >
+                              {status}
+                            </DropdownMenu.RadioItem>
+                          {/each}
+                        </DropdownMenu.RadioGroup>
+                        {#if statusFilter !== ''}
                           <DropdownMenu.Separator />
-                          <DropdownMenu.RadioGroup bind:value={statusFilter}>
-                              {#each possibleStatus as status (status)}
-                                  <DropdownMenu.RadioItem
-                                      value={status}
-                                      onSelect={() => {
-                                          statusDropdownOpen = false;
-                                      }}
-                                  >
-                                      {status}
-                                  </DropdownMenu.RadioItem>
-                              {/each}
-                          </DropdownMenu.RadioGroup>
-                          {#if statusFilter !== ''}
-                              <DropdownMenu.Separator />
-                              <DropdownMenu.Item
-                                  onSelect={() => {
-                                      statusFilter = '';
-                                      console.log('Status filter state cleared to \', $effect will apply undefined.');
-                                      statusDropdownOpen = false;
-                                  }}>
-                                  Limpar Filtro
-                              </DropdownMenu.Item>
-                          {/if}
+                          <DropdownMenu.Item
+                            onSelect={() => {
+                              statusFilter = '';
+                              console.log('Status filter state cleared to \'\', $effect will apply undefined.');
+                              statusDropdownOpen = false;
+                            }}>
+                            Limpar Filtro
+                          </DropdownMenu.Item>
+                        {/if}
                       </DropdownMenu.Content>
-                  </DropdownMenu.Root>
-                {:else}
-                  <!-- Coluna sem filtro (ex: Tipo, Ações) -->
-                {/if}
-              </Table.Head>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Header>
-      <Table.Body>
-        {#each table.getRowModel().rows as row (row.id)}
-          <Table.Row data-state={row.getIsSelected() && 'selected'}>
-            {#each row.getVisibleCells() as cell (cell.id)}
-              <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
-                {#if cell.column.id === 'type'}
-                  {@const typeValue = cell.getValue() as string}
+                    </DropdownMenu.Root>
+                  {:else}
+                    <!-- Coluna sem filtro (ex: Tipo, Ações) -->
+                  {/if}
+                </Table.Head>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Header>
+        <Table.Body>
+          {#each table.getRowModel().rows as row (row.id)}
+            <Table.Row data-state={row.getIsSelected() && 'selected'}>
+              {#each row.getVisibleCells() as cell (cell.id)}
+                <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
+                  {#if cell.column.id === 'type'}
+                    {@const typeValue = cell.getValue() as string}
                     {#if typeValue}
                       {#if typeValue === "Ler Mais Tarde"}
                         <Clock class="inline w-4 h-4 mr-1 align-text-bottom text-blue-500" />
@@ -637,196 +643,198 @@
                     {:else}
                       <span>-</span>
                     {/if}
-                {:else}
-                   <!-- Renderização padrão da célula -->
-                   <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
-                {/if}
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-          {#if row.getIsExpanded()}
-            {@const reactiveItem = $savedItems.find(item => item.id === row.original.id)}
-            <Table.Row>
-              <Table.Cell colspan={columns.length} class="bg-muted/40 p-0">
-                <div class="p-4">
-                  <Card class="w-full">
-                    <CardHeader>
-                      <CardTitle level={4}>{row.original.title}</CardTitle>
-                      <div class="flex items-center gap-2 mt-1">
-                        <a href={row.original.url} target="_blank" class="text-xs text-primary underline break-all">{row.original.url}</a>
-                        <span class="text-xs text-muted-foreground ml-2">ID: {row.original.id}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div class="flex flex-wrap gap-2 mb-4">
-                        <!-- Dialog de Notas -->
-                        <Dialog.Root>
-                          <Dialog.Trigger>
-                            <Button size="sm" variant="outline">Ver Notas</Button>
-                          </Dialog.Trigger>
-                          <Dialog.Content class="max-w-lg w-full">
-                            <Dialog.Title>Notas associadas</Dialog.Title>
-                            {#if reactiveItem?.noteIds?.length}
-                              {#each notes() as note (note.id)}
-                                {#if reactiveItem.noteIds.includes(note.id)}
-                                  <NoteCard {note} showActions={false} />
-                                {/if}
-                              {/each}
-                            {:else}
-                              <div class="text-xs text-muted-foreground">Nenhuma nota associada.</div>
-                            {/if}
-                          </Dialog.Content>
-                        </Dialog.Root>
-                        <!-- Dialog de Flashcards -->
-                        <Dialog.Root>
-                          <Dialog.Trigger>
-                            <Button size="sm" variant="outline">Ver Flashcards</Button>
-                          </Dialog.Trigger>
-                          <Dialog.Content class="max-w-lg w-full">
-                            <Dialog.Title>Flashcards associados</Dialog.Title>
-                            {#if reactiveItem?.flashcardIds?.length}
-                              {#each flashcards() as flashcard (flashcard.id)}
-                                {#if reactiveItem.flashcardIds.includes(flashcard.id)}
-                                  <FlashcardCard card={flashcard} showActions={false} />
-                                {/if}
-                              {/each}
-                            {:else}
-                              <div class="text-xs text-muted-foreground">Nenhum flashcard associado.</div>
-                            {/if}
-                          </Dialog.Content>
-                        </Dialog.Root>
-                        <!-- Dialog de Comentário -->
-                        <Dialog.Root>
-                          <Dialog.Trigger>
-                            <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = reactiveItem?.comments || ""}>Editar Comentário</Button>
-                          </Dialog.Trigger>
-                          <Dialog.Content class="max-w-md w-full">
-                            <Dialog.Title>Editar Comentário</Dialog.Title>
-                            <form onsubmit={(e) => { e.preventDefault(); }}>
-                              <textarea bind:value={editingComment[row.original.id]} class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none mb-2"></textarea>
-                              <div class="flex gap-2 justify-end">
-                                <Button type="submit" size="sm">Salvar</Button>
-                                <Button type="button" size="sm" variant="outline" onclick={() => { }}>Cancelar</Button>
-                              </div>
-                            </form>
-                          </Dialog.Content>
-                        </Dialog.Root>
-                        <!-- Dialog de Grupos/Tags -->
-                        <Dialog.Root>
-                          <Dialog.Trigger>
-                            <Button size="sm" variant="outline">Gerenciar Grupos/Tags</Button>
-                          </Dialog.Trigger>
-                          <Dialog.Content class="max-w-md w-full">
-                            <Dialog.Title>Gerenciar Grupos e Tags</Dialog.Title>
-                            <div class="mb-2">
-                              <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                              <!-- Exibir e permitir edição dos grupos -->
-                            </div>
-                            <div>
-                              <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                              <!-- Exibir e permitir edição das tags -->
-                            </div>
-                          </Dialog.Content>
-                        </Dialog.Root>
-                      </div>
-                      {#if reactiveItem?.comments}
-                        <div class="mb-2">
-                          <span class="font-medium text-xs text-muted-foreground">Comentário:</span>
-                          <div class="text-sm mt-1">{reactiveItem.comments}</div>
+                  {:else}
+                    <!-- Renderização padrão da célula -->
+                    <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                  {/if}
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+            {#if row.getIsExpanded()}
+              {@const reactiveItem = $savedItems.find(item => item.id === row.original.id)}
+              <Table.Row>
+                <Table.Cell colspan={columns.length} class="bg-muted/40 p-0">
+                  <div class="p-4">
+                    <Card class="w-full">
+                      <CardHeader>
+                        <CardTitle level={4}>{row.original.title}</CardTitle>
+                        <div class="flex items-center gap-2 mt-1">
+                          <a href={row.original.url} target="_blank" class="text-xs text-primary underline break-all">{row.original.url}</a>
+                          <span class="text-xs text-muted-foreground ml-2">ID: {row.original.id}</span>
                         </div>
-                      {/if}
-                      <div class="flex flex-wrap gap-2 mb-2">
-                        <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                        {#if reactiveItem && reactiveItem.groupIds && reactiveItem.groupIds.length > 0}
-                          {#each reactiveItem.groupIds as gid (gid)}
-                            {@const groupInfo = $groupsStore.find((g: Group) => g.id === gid)}
-                            {#if groupInfo}
-                              <Badge variant="secondary" style={groupInfo.color ? `background-color: ${groupInfo.color}` : ''}>
-                                {groupInfo.name}
-                              </Badge>
-                            {:else}
-                              <Badge variant="outline">{gid}</Badge>
-                            {/if}
-                          {/each}
-                        {:else}
-                          <span class="text-xs text-muted-foreground">Nenhum</span>
+                      </CardHeader>
+                      <CardContent>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                          <!-- Dialog de Notas -->
+                          <Dialog.Root>
+                            <Dialog.Trigger>
+                              <Button size="sm" variant="outline">Ver Notas</Button>
+                            </Dialog.Trigger>
+                            <Dialog.Content class="max-w-lg w-full">
+                              <Dialog.Title>Notas associadas</Dialog.Title>
+                              {#if reactiveItem?.noteIds?.length}
+                                {#each notes() as note (note.id)}
+                                  {#if reactiveItem.noteIds.includes(note.id)}
+                                    <NoteCard {note} showActions={false} />
+                                  {/if}
+                                {/each}
+                              {:else}
+                                <div class="text-xs text-muted-foreground">Nenhuma nota associada.</div>
+                              {/if}
+                            </Dialog.Content>
+                          </Dialog.Root>
+                          <!-- Dialog de Flashcards -->
+                          <Dialog.Root>
+                            <Dialog.Trigger>
+                              <Button size="sm" variant="outline">Ver Flashcards</Button>
+                            </Dialog.Trigger>
+                            <Dialog.Content class="max-w-lg w-full">
+                              <Dialog.Title>Flashcards associados</Dialog.Title>
+                              {#if reactiveItem?.flashcardIds?.length}
+                                {#each flashcards() as flashcard (flashcard.id)}
+                                  {#if reactiveItem.flashcardIds.includes(flashcard.id)}
+                                    <FlashcardCard card={flashcard} showActions={false} />
+                                  {/if}
+                                {/each}
+                              {:else}
+                                <div class="text-xs text-muted-foreground">Nenhum flashcard associado.</div>
+                              {/if}
+                            </Dialog.Content>
+                          </Dialog.Root>
+                          <!-- Dialog de Comentário -->
+                          <Dialog.Root>
+                            <Dialog.Trigger>
+                              <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = reactiveItem?.comments || ""}>Editar Comentário</Button>
+                            </Dialog.Trigger>
+                            <Dialog.Content class="max-w-md w-full">
+                              <Dialog.Title>Editar Comentário</Dialog.Title>
+                              <form onsubmit={(e) => { e.preventDefault(); }}>
+                                <textarea bind:value={editingComment[row.original.id]} class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none mb-2"></textarea>
+                                <div class="flex gap-2 justify-end">
+                                  <Button type="submit" size="sm">Salvar</Button>
+                                  <Button type="button" size="sm" variant="outline" onclick={() => { }}>Cancelar</Button>
+                                </div>
+                              </form>
+                            </Dialog.Content>
+                          </Dialog.Root>
+                          <!-- Dialog de Grupos/Tags -->
+                          <Dialog.Root>
+                            <Dialog.Trigger>
+                              <Button size="sm" variant="outline">Gerenciar Grupos/Tags</Button>
+                            </Dialog.Trigger>
+                            <Dialog.Content class="max-w-md w-full">
+                              <Dialog.Title>Gerenciar Grupos e Tags</Dialog.Title>
+                              <div class="mb-2">
+                                <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
+                                <!-- Exibir e permitir edição dos grupos -->
+                              </div>
+                              <div>
+                                <span class="font-medium text-xs text-muted-foreground">Tags:</span>
+                                <!-- Exibir e permitir edição das tags -->
+                              </div>
+                            </Dialog.Content>
+                          </Dialog.Root>
+                        </div>
+                        {#if reactiveItem?.comments}
+                          <div class="mb-2">
+                            <span class="font-medium text-xs text-muted-foreground">Comentário:</span>
+                            <div class="text-sm mt-1">{reactiveItem.comments}</div>
+                          </div>
                         {/if}
-                      </div>
-                      <div class="flex flex-wrap gap-2 mb-2">
-                        <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                        {#if reactiveItem && reactiveItem.tags && reactiveItem.tags.length > 0}
-                          {#each reactiveItem.tags as tag (tag)}
-                            <Badge variant="outline">{tag}</Badge>
-                          {/each}
-                        {:else}
-                          <span class="text-xs text-muted-foreground">Nenhuma</span>
-                        {/if}
-                      </div>
-                      <div class="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>Criado em: {new Date(row.original.dateAdded).toLocaleString('pt-BR')}</span>
-                        <span>Notas: {reactiveItem?.noteIds?.length || 0}</span>
-                        <span>Flashcards: {reactiveItem?.flashcardIds?.length || 0}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                          <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
+                          {#if reactiveItem && reactiveItem.groupIds && reactiveItem.groupIds.length > 0}
+                            {#each reactiveItem.groupIds as gid (gid)}
+                              {@const groupInfo = $groupsStore.find((g: Group) => g.id === gid)}
+                              {#if groupInfo}
+                                <Badge variant="secondary" style={groupInfo.color ? `background-color: ${groupInfo.color}` : ''}>
+                                  {groupInfo.name}
+                                </Badge>
+                              {:else}
+                                <Badge variant="outline">{gid}</Badge>
+                              {/if}
+                            {/each}
+                          {:else}
+                            <span class="text-xs text-muted-foreground">Nenhum</span>
+                          {/if}
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                          <span class="font-medium text-xs text-muted-foreground">Tags:</span>
+                          {#if reactiveItem && reactiveItem.tags && reactiveItem.tags.length > 0}
+                            {#each reactiveItem.tags as tag (tag)}
+                              <Badge variant="outline">{tag}</Badge>
+                            {/each}
+                          {:else}
+                            <span class="text-xs text-muted-foreground">Nenhuma</span>
+                          {/if}
+                        </div>
+                        <div class="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
+                          <span>Criado em: {new Date(row.original.dateAdded).toLocaleString('pt-BR')}</span>
+                          <span>Notas: {reactiveItem?.noteIds?.length || 0}</span>
+                          <span>Flashcards: {reactiveItem?.flashcardIds?.length || 0}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </Table.Cell>
+              </Table.Row>
+            {/if}
+          {:else}
+            <Table.Row>
+              <Table.Cell colspan={columns.length} class="h-24 text-center">
+                Nenhum resultado.
               </Table.Cell>
             </Table.Row>
-          {/if}
-        {:else}
-          <Table.Row>
-            <Table.Cell colspan={columns.length} class="h-24 text-center">
-              Nenhum resultado.
-            </Table.Cell>
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
+          {/each}
+        </Table.Body>
+      </Table.Root>
+    </div>
   </div>
-</div>
 
-<!-- Rodapé Dinâmico com Ações em Lote -->
-<div class="flex items-center justify-between text-sm mt-4">
-  {#if selectedItemCount > 0}
-    <div class="flex items-center gap-2 flex-wrap">
-      <span class="text-muted-foreground font-medium">
-        {selectedItemCount} selecionado(s)
-      </span>
-      <!-- Botões de Ação em Lote -->
-      <Button variant="destructive" size="sm" onclick={handleBulkDelete}>
-        <Trash2 class="w-4 h-4 mr-1"/> Excluir
-      </Button>
-      <Button variant="outline" size="sm" onclick={openBulkGroupDialog}>
-         <Folder class="w-4 h-4 mr-1"/> Alterar Grupos
-      </Button>
-      <Button variant="outline" size="sm" onclick={openBulkTagDialog}>
-         <Tags class="w-4 h-4 mr-1"/> Alterar Tags
-      </Button>
-      <!-- Botão Abrir com Dropdown (Sintaxe corrigida) -->
-      <DropdownMenu.Root>
+  <!-- Rodapé Dinâmico com Ações em Lote (agora fixo na parte inferior) -->
+  <div class="flex items-center justify-between text-sm mt-4 shrink-0">
+    {#if selectedItemCount > 0}
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-muted-foreground font-medium">
+          {selectedItemCount} selecionado(s)
+        </span>
+        <!-- Botões de Ação em Lote -->
+        <Button variant="destructive" size="sm" onclick={handleBulkDelete}>
+          <Trash2 class="w-4 h-4 mr-1"/> Excluir
+        </Button>
+        <Button variant="outline" size="sm" onclick={openBulkGroupDialog}>
+          <Folder class="w-4 h-4 mr-1"/> Alterar Grupos
+        </Button>
+        <Button variant="outline" size="sm" onclick={openBulkTagDialog}>
+          <Tags class="w-4 h-4 mr-1"/> Alterar Tags
+        </Button>
+        <!-- Botão Abrir com Dropdown (Sintaxe corrigida) -->
+        <DropdownMenu.Root>
           <DropdownMenu.Trigger>
-              <Button variant="outline" size="sm">
-                  <ExternalLink class="w-4 h-4 mr-1"/> Abrir em...
-              </Button>
+            <Button variant="outline" size="sm">
+              <ExternalLink class="w-4 h-4 mr-1"/> Abrir em...
+            </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-              <DropdownMenu.Item onSelect={() => handleBulkOpen('current')}>Aba(s) na Janela Atual</DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => handleBulkOpen('new')}>Nova Janela</DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={() => handleBulkOpen('incognito')}>Nova Janela Anônima</DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => handleBulkOpen('current')}>Aba(s) na Janela Atual</DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => handleBulkOpen('new')}>Nova Janela</DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => handleBulkOpen('incognito')}>Nova Janela Anônima</DropdownMenu.Item>
           </DropdownMenu.Content>
-      </DropdownMenu.Root>
+        </DropdownMenu.Root>
+      </div>
+    {:else}
+      <span class="text-muted-foreground">
+        {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
+      </span>
+      <!-- Pode adicionar paginação aqui futuramente -->
+    {/if}
+    <!-- Elementos adicionais do rodapé (ex: paginação) podem ir aqui -->
+    <div>
+      <!-- Controles de Paginação (a serem implementados) -->
     </div>
-  {:else}
-    <span class="text-muted-foreground">
-      {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
-    </span>
-    <!-- Pode adicionar paginação aqui futuramente -->
-  {/if}
-   <!-- Elementos adicionais do rodapé (ex: paginação) podem ir aqui -->
-   <div>
-       <!-- Controles de Paginação (a serem implementados) -->
-   </div>
-</div>
+  </div>
+
+</div> <!-- Fim do container flex principal -->
 
 <!-- PLACEHOLDERS PARA DIÁLOGOS -->
 <AlertDialog.Root bind:open={isDeleteDialogOpen}>
@@ -839,10 +847,8 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
-      <!-- Corrigido: Aninhar Button dentro de Action, sem asChild na Action -->
-      <AlertDialog.Action>
-         <Button onclick={confirmBulkDelete} variant="destructive">Excluir</Button>
-      </AlertDialog.Action>
+      <!-- Corrigido: Aplicar variant diretamente na Action -->
+      <AlertDialog.Action onclick={confirmBulkDelete}>Excluir</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
