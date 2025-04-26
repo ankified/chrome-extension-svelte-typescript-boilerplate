@@ -4,6 +4,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 
 ## Correções prioritárias
 
+- [ ] Corrigir problema com o carregamento de dados da tabela. Tando no carregamento inicial quanto diante de exclusão ou criação de mum item, os dados sõ são atualizados na UI quando ela é atualizada manualmente.
 - [✅] O botão de expandir/colapsar só está funcionando para expandir mas não para colapsar.
 - [✅] As colunas "Agendado para" e "Status" não estão sendo exibidas e a página de erros mostra mensagens dizendo que essas colunas não existem.
 - [✅] O input de pesquisa exibe dois botões de excluir.
@@ -41,12 +42,13 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [✅] **Botão para Expandir/Recolher Todos**
   - [✅] Adicionado botão no header da coluna de expansão para expandir ou recolher todas as linhas de uma vez, centralizando o controle global de expansão na tabela.
 
-- [ ] **Ações em Lote**
-  - [ ] Exibir barra de ações quando um ou mais itens estiverem selecionados.
-  - [ ] Implementar ação de exclusão em lote.
-  - [ ] Implementar ação de alteração de grupo em lote.
-  - [ ] Implementar ação de alteração de tags em lote.
-  - [ ] Implementar ação de abrir em uma nova aba ou nova janela em lote.
+- [✅] **Ações em Lote**
+  - [✅] Exibir barra de ações quando um ou mais itens estiverem selecionados.
+  - [✅] Implementar ação de exclusão em lote.
+  - [✅] Implementar ação de alteração de grupo em lote.
+  - [✅] Implementar ação de alteração de tags em lote.
+  - [✅] Implementar ação de abrir em uma nova aba ou nova janela em lote.
+  - [✅] Corrigido erro de loop infinito ao abrir o diálogo de atribuição de tags em lote.
   - [ ] Outras ações relevantes para múltiplos itens.
 
 - [✅] **Melhorias de Interface e Usabilidade**

@@ -33,30 +33,32 @@
   // Estado interno para gerenciar as tags conhecidas, incluindo as recém-criadas
   let currentKnownTags = $state<string[]>([]);
 
-  // Obter tags da store global e sincronizar com o estado local
+  // Efeito para sincronizar currentKnownTags com a store global quando aberto
   $effect(() => {
+    if (open) {
+      // Simplesmente reflete a store global. Tags adicionadas localmente
+      // serão adicionadas diretamente a currentKnownTags em handleCreateAndAddTag.
       const globalTags = $tagsStore;
-      // Adiciona novas tags criadas localmente que ainda não estão na store global
-      // e garante unicidade e ordenação
-      //TODO: ESTÁ GERANDO LOOP INFINITO. CORRIGIR.
-      currentKnownTags = [...new Set([...globalTags, ...currentKnownTags])]
-        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      // Verifica se a lista atual é diferente da global para evitar atualizações desnecessárias
+      if (currentKnownTags.length !== globalTags.length || !globalTags.every((tag, i) => tag === currentKnownTags[i])) {
+          currentKnownTags = [...globalTags].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      }
+    } 
+    // Não faz nada ao fechar neste efeito
   });
 
-  // Limpa seleções e input quando o diálogo é fechado
+  // Efeito para limpar o estado local quando o diálogo é fechado
   $effect(() => {
       if (!open) {
           newTagInput = '';
           tagsToAdd = [];
           tagsToRemove = [];
-          // Reset currentKnownTags based on global store when reopening might be needed
-          // but let's keep locally created ones until save/cancel for now.
-      } else {
-         // Ao abrir, garante que currentKnownTags comece com o estado global
-         currentKnownTags = $tagsStore.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-      }
+          // Opcional: Resetar currentKnownTags aqui pode ser redundante se o efeito acima
+          // sempre o define corretamente ao abrir. Vamos omitir por enquanto.
+          // currentKnownTags = []; 
+      } 
+      // Não faz nada ao abrir neste efeito
   });
-
 
   // Estado derivado para desativar botão Salvar
   let isSaveDisabled = $derived(tagsToAdd.length === 0 && tagsToRemove.length === 0);
@@ -83,20 +85,17 @@
     if (!tagName) return;
 
     const lowerCaseTagName = tagName.toLowerCase();
+    // Verifica se a tag já existe na lista *atual* (que inclui globais + locais já adicionadas)
     const exists = currentKnownTags.some(t => t.toLowerCase() === lowerCaseTagName);
 
     if (exists) {
         toast.info(`Tag "${tagName}" já existe.`);
-        // Seleciona a tag existente na lista de adição, se ainda não estiver
-        if (!tagsToAdd.includes(tagName)) {
-             // Encontra a capitalização correta existente
-            const existingTag = currentKnownTags.find(t => t.toLowerCase() === lowerCaseTagName) || tagName;
-             if (!tagsToAdd.includes(existingTag)) {
-                tagsToAdd = [...tagsToAdd, existingTag];
-             }
+        const existingTag = currentKnownTags.find(t => t.toLowerCase() === lowerCaseTagName) || tagName;
+        if (!tagsToAdd.includes(existingTag)) {
+            tagsToAdd = [...tagsToAdd, existingTag];
         }
     } else {
-        // Adiciona à lista local de tags conhecidas para exibição imediata
+        // Adiciona DIRETAMENTE à lista visível e ordena
         currentKnownTags = [...currentKnownTags, tagName].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
         // Seleciona automaticamente para adição
         tagsToAdd = [...tagsToAdd, tagName];
