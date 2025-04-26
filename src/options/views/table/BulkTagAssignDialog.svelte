@@ -38,6 +38,7 @@
       const globalTags = $tagsStore;
       // Adiciona novas tags criadas localmente que ainda não estão na store global
       // e garante unicidade e ordenação
+      //TODO: ESTÁ GERANDO LOOP INFINITO. CORRIGIR.
       currentKnownTags = [...new Set([...globalTags, ...currentKnownTags])]
         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   });

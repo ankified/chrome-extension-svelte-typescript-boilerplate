@@ -50,6 +50,7 @@
     if (typeFilter === 'all') return data && data.length > 0 ? data : mockData;
     if (typeFilter === 'readlater') return (data && data.length > 0 ? data : mockData).filter(item => item.readLater);
     if (typeFilter === 'bookmark') return (data && data.length > 0 ? data : mockData).filter(item => !item.readLater);
+    $inspect("filteredData", data)
     return data && data.length > 0 ? data : mockData;
   });
 </script>

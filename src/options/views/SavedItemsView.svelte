@@ -656,7 +656,7 @@
       // ...
   }
 
-  let { viewMode = "cards" } = $props();
+  let { viewMode = "table" } = $props();
 
 </script>
 

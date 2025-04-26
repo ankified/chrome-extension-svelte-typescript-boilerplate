@@ -20,7 +20,7 @@
   ];
   
   // Agora o valor padrão é 'saved-cards'
-  let activeTab = $state('saved-cards');
+  let activeTab = $state('saved-table');
   let isFixingReferences = $state(false);
   let fixResults = $state(null);
   let fixingGroupRelations = $state(false);

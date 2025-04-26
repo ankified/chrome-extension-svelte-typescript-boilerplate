@@ -44,6 +44,7 @@
   import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
 
   let { columns = [], data = [] } = $props();
+  $inspect("data",data)
 
   let typeFilter = $state('all');
 
@@ -79,6 +80,7 @@
     if (datePopoverOpen && dateFilter) {
       datePopoverOpen = false;
     }
+    $inspect("datePopoverOpen", datePopoverOpen)
   });
 
   $effect(() => {
@@ -86,6 +88,7 @@
     if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
       table.getColumn('dateAdded')?.setFilterValue(undefined);
     }
+    $inspect("dateFilter", dateFilter)
   });
 
   $effect(() => {
@@ -97,6 +100,7 @@
        console.log('Limpando filtro scheduledDate da coluna', current);
        table.getColumn('scheduledDate')?.setFilterValue(undefined);
      }
+     $inspect("scheduledDateFilter", scheduledDateFilter)
   });
 
   $effect(() => {
@@ -110,6 +114,7 @@
         typeColumn.setFilterValue(newFilterValue);
       }
     }
+    $inspect("typeFilter", typeFilter)
   });
 
   let columnVisibilityState = $state<{ [key: string]: boolean }>({});
@@ -244,6 +249,7 @@
       console.log('Applying status filter via $effect:', filterValueForTable);
       table.getColumn('status')?.setFilterValue(filterValueForTable);
     }
+    $inspect("filterValueForTable", filterValueForTable)
   });
 
   function formatDate(filter: DateRange | undefined) {
@@ -854,11 +860,11 @@
 </AlertDialog.Root>
 
 <!-- Componente real para BulkGroupAssignDialog -->
-<BulkGroupAssignDialog
+<!-- <BulkGroupAssignDialog
   bind:open={isBulkGroupDialogOpen} 
   itemCount={selectedItemCount}
   onUpdate={handleBulkGroupUpdate} 
-/>
+/> -->
 
 <!-- Componente real para BulkTagAssignDialog -->
 <BulkTagAssignDialog 
