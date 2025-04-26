@@ -77,13 +77,6 @@
   });
 
   $effect(() => {
-    if (datePopoverOpen && dateFilter) {
-      datePopoverOpen = false;
-    }
-    $inspect("datePopoverOpen", datePopoverOpen)
-  });
-
-  $effect(() => {
     const current = table.getColumn('dateAdded')?.getFilterValue();
     if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
       table.getColumn('dateAdded')?.setFilterValue(undefined);
@@ -180,7 +173,9 @@
   let columnFilters = $state<{ id: string; value: any }[]>([]);
 
   const table = createSvelteTable({
-    data,
+    get data() {
+        return data;
+    },
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

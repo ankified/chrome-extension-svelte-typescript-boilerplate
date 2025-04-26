@@ -143,5 +143,3 @@ Este documento descreve o plano para implementar funcionalidades de ações em l
 *   **Permissões:** Verificar se a permissão `tabs` está no `manifest.json` para `chrome.tabs.create` e `chrome.windows.create`.
 
 Este planejamento detalhado servirá como guia para a implementação da funcionalidade de ações em lote. 
-
-TODO: um efeito em BulkTagAssignDialog.svelte está gerando loop infinito. Corrigir.

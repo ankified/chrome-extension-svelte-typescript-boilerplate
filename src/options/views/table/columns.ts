@@ -222,15 +222,20 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       cell: ({ row }) => formatDate(row.original.dateAdded),
       sortingFn: 'datetime',
       enableSorting: true,
-      filterFn: (row, columnId, filterValue) => {
-        if (!filterValue || !filterValue.start) return true;
+      filterFn: (row, columnId, filterValue: { start?: number, end?: number } | undefined) => {
+        if (!filterValue || typeof filterValue.start === 'undefined') {
+          return true;
+        }
         const date = row.original.dateAdded;
-        const start = filterValue.start ? filterValue.start.toDate(getLocalTimeZone()).setHours(0,0,0,0) : null;
-        console.log("START: " + JSON.stringify(start));
-        const end = filterValue.end ? filterValue.end.toDate(getLocalTimeZone()).setHours(23,59,59,999) : start;
-        console.log("END: " + JSON.stringify(end));
-        if (!start) return true;
-        return date >= start && date <= (end ?? start);
+
+        if (!date) {
+          return false;
+        }
+
+        const start = filterValue.start;
+        const end = typeof filterValue.end === 'undefined' ? start : filterValue.end;
+
+        return date >= start && date <= end;
       },
     },
     {
