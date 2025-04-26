@@ -5,8 +5,8 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 ## Correções prioritárias
 
 - [✅] Corrigir problema com a exibição dos popovers de calendário das colunas "Criado em" e "Agendado para". Quando clico no botão, o popover é aberto por uma fração de segundos e fecha.
-- [ ] Corrigir problemas com a não exibição de grupos e tags nos Dialog correspondentes.
-- [ ] O Dialog de "Alterar Grupos" não está sendo aberto e nenhum erro é emitido.
+- [✅] Corrigir problemas com a não exibição de grupos e tags nos Dialog correspondentes.
+- [✅] O Dialog de "Alterar Grupos" não está sendo aberto e nenhum erro é emitido.
 - [✅] Corrigir problema com o carregamento de dados da tabela. Tando no carregamento inicial quanto diante de exclusão ou criação de mum item, os dados sõ são atualizados na UI quando ela é atualizada manualmente.
 - [✅] O botão de expandir/colapsar só está funcionando para expandir mas não para colapsar.
 - [✅] As colunas "Agendado para" e "Status" não estão sendo exibidas e a página de erros mostra mensagens dizendo que essas colunas não existem.

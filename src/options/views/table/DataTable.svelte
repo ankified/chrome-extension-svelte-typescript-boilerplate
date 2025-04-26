@@ -855,11 +855,11 @@
 </AlertDialog.Root>
 
 <!-- Componente real para BulkGroupAssignDialog -->
-<!-- <BulkGroupAssignDialog
+<BulkGroupAssignDialog
   bind:open={isBulkGroupDialogOpen} 
   itemCount={selectedItemCount}
   onUpdate={handleBulkGroupUpdate} 
-/> -->
+/>
 
 <!-- Componente real para BulkTagAssignDialog -->
 <BulkTagAssignDialog 
