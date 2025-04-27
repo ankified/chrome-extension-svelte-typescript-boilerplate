@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState, PaginationState, Row } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -53,7 +53,9 @@
 
   let typeFilter = $state('all');
 
+  // PAGINATION: Restore state
   let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 25 });
+  
   let rowSelection = $state({});
   let sorting = $state<SortingState>([]);
   let expanded = $state({});
@@ -153,6 +155,7 @@
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    // PAGINATION: Restore model
     getPaginationRowModel: getPaginationRowModel(),
     globalFilterFn,
     initialState: {
@@ -161,7 +164,8 @@
         pageSize: 25,
       }
     },
-    autoResetPageIndex: false,
+    // PAGINATION: Restore option
+    autoResetPageIndex: false, 
     state: {
       get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
@@ -169,6 +173,7 @@
       get sorting() { return sorting; },
       get expanded() { return expanded; },
       get columnFilters() { return columnFilters; },
+      // PAGINATION: Restore state binding
       get pagination() { return pagination; },
     },
     onGlobalFilterChange: (value) => {
@@ -214,6 +219,7 @@
         columnFilters = updater;
       }
     },
+    // PAGINATION: Restore event handler
     onPaginationChange: (updater) => {
       let newState: PaginationState;
       if (typeof updater === 'function') {
@@ -224,7 +230,7 @@
 
       // Apenas atualiza o estado se os valores mudaram para evitar loops
       if (newState.pageIndex !== pagination.pageIndex || newState.pageSize !== pagination.pageSize) {
-        console.log('[onPaginationChange] Applying update. Current:', pagination, 'New:', newState);
+        // console.log('[onPaginationChange] Applying update. Current:', pagination, 'New:', newState);
         pagination = newState;
       } else {
         // Opcional: Log para quando a atualização é pulada
@@ -232,19 +238,6 @@
       }
     },
     enableRowSelection: true,
-  });
-
-  // Estado derivado tipado para garantir reatividade das linhas com a paginação
-  let paginatedRows: Row<SavedItem>[] = $derived.by(() => {
-    // Dependência explícita no estado de paginação
-    const _currentPage = pagination.pageIndex; 
-    const _pageSize = pagination.pageSize;
-    // Adicionar outras dependências se necessário...
-    
-    const model = table.getRowModel();
-    const rows = model.rows;
-    
-    return rows; 
   });
 
   let notes = $derived(() => {
@@ -629,7 +622,7 @@
           {/each}
         </Table.Header>
         <Table.Body>
-          {#each paginatedRows as row (row.id)}
+          {#each table.getRowModel().rows as row (row.id)}
             <Table.Row data-state={row.getIsSelected() && 'selected'}>
               {#each row.getVisibleCells() as cell (cell.id)}
                 <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
@@ -832,13 +825,14 @@
       </div>
     {/if}
 
-      <!-- Descomentar Controles de Paginação -->
+      <!-- PAGINATION: Restore UI Controls -->
+       
       <div class="flex items-center space-x-2">
         <Select.Root
           type="single"
           value={String(table.getState().pagination.pageSize)}
           onValueChange={(value: string | undefined) => {
-            console.log("Select Change", value);
+            // console.log("Select Change", value);
             if (value) {
               table.setPageSize(Number(value));
             }
@@ -859,7 +853,7 @@
         <Button
           variant="outline"
           class="hidden h-8 w-8 p-0 lg:flex"
-          onclick={() => { console.log('Click First'); table.firstPage(); }}
+          onclick={() => { /* console.log('Click First'); */ table.firstPage(); }}
           disabled={!table.getCanPreviousPage()}
         >
           <span class="sr-only">Primeira página</span>
@@ -868,7 +862,7 @@
         <Button
           variant="outline"
           class="h-8 w-8 p-0"
-          onclick={() => { console.log('Click Prev'); table.previousPage(); }}
+          onclick={() => { /* console.log('Click Prev'); */ table.previousPage(); }}
           disabled={!table.getCanPreviousPage()}
         >
           <span class="sr-only">Página anterior</span>
@@ -877,7 +871,7 @@
         <Button
           variant="outline"
           class="h-8 w-8 p-0"
-          onclick={() => { console.log('Click Next'); table.nextPage(); }}
+          onclick={() => { /* console.log('Click Next'); */ table.nextPage(); }}
           disabled={!table.getCanNextPage()}
         >
           <span class="sr-only">Próxima página</span>
@@ -886,13 +880,14 @@
         <Button
           variant="outline"
           class="hidden h-8 w-8 p-0 lg:flex"
-          onclick={() => { console.log('Click Last'); table.lastPage(); }}
+          onclick={() => { /* console.log('Click Last'); */ table.lastPage(); }}
           disabled={!table.getCanNextPage()}
         >
           <span class="sr-only">Última página</span>
           <ChevronsRight class="h-4 w-4" />
         </Button>
       </div>
+      
     </div>
   </div>
 

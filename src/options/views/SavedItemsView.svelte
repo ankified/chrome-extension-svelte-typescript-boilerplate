@@ -662,12 +662,15 @@
 
 </script>
 
-{#if viewMode === 'table'}
-  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
+<!-- Container Principal para as Visualizações -->
+<div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
+  <!-- Tabela (Sempre no DOM, controla visibilidade com display) -->
+  <div style="display: {viewMode === 'table' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
     <SavedItemsTableView data={sortedItems} />
   </div>
-{:else if viewMode === 'cards'}
-  <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
+
+  <!-- Cartões (Sempre no DOM, controla visibilidade com display) -->
+  <div style="display: {viewMode === 'cards' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
     <SavedItemsCardsTab
       searchQuery={searchQuery}
       searchScope={searchScope}
@@ -691,17 +694,19 @@
       onClearDateRange={handleClearDateRange}
     />
   </div>
-{:else if viewMode === 'kanban'}
-  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
+
+  <!-- Kanban (Controla visibilidade com display) -->
+  <div style="display: {viewMode === 'kanban' ? 'block' : 'none'};" class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
     <p class="font-medium">Visualização Kanban</p>
     <p class="text-sm">(Em desenvolvimento)</p>
   </div>
-{:else if viewMode === 'flow'}
-  <div class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
+
+  <!-- Fluxo (Controla visibilidade com display) -->
+  <div style="display: {viewMode === 'flow' ? 'block' : 'none'};" class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
     <p class="font-medium">Visualização em Fluxo</p>
     <p class="text-sm">(Em desenvolvimento)</p>
   </div>
-{/if}
+</div>
 
 <div class="flex flex-col h-full min-h-0 p-1 md:p-2 space-y-0">
   <header class="mb-0 flex-shrink-0">
