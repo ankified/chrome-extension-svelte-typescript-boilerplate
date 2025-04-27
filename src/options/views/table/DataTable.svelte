@@ -2,8 +2,8 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState } from '@tanstack/table-core';
-  import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState } from '@tanstack/table-core';
+  import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
   import Button from '../../../lib/components/ui/button/button.svelte';
@@ -22,6 +22,10 @@
   import * as ToggleGroup from '../../../lib/components/ui/toggle-group/index';
   import ChevronUp from '@lucide/svelte/icons/chevron-up';
   import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ChevronsLeft from '@lucide/svelte/icons/chevrons-left';
+  import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
   import { Card, CardHeader, CardTitle, CardContent } from '../../../lib/components/ui/card';
   import * as Dialog from '../../../lib/components/ui/dialog/index';
@@ -38,16 +42,18 @@
   import * as AlertDialog from '../../../lib/components/ui/alert-dialog/index';
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Folder from '@lucide/svelte/icons/folder';
-  import Tags from '@lucide/svelte/icons/tags';
+  import TagsIcon from '@lucide/svelte/icons/tags';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import BulkGroupAssignDialog from './BulkGroupAssignDialog.svelte';
   import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
 
   let { columns = [], data = [] } = $props();
+  $inspect("DataTable data prop", data);
   $inspect("data",data)
 
   let typeFilter = $state('all');
 
+  let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 25 });
   let rowSelection = $state({});
   let sorting = $state<SortingState>([]);
   let expanded = $state({});
@@ -74,40 +80,6 @@
     let arr: string[] = [];
     tagsStore.subscribe(val => arr = val)();
     return arr;
-  });
-
-  $effect(() => {
-    const current = table.getColumn('dateAdded')?.getFilterValue();
-    if ((!dateFilter || (!dateFilter.start && !dateFilter.end)) && current !== undefined) {
-      table.getColumn('dateAdded')?.setFilterValue(undefined);
-    }
-    $inspect("dateFilter", dateFilter)
-  });
-
-  $effect(() => {
-    const current = table.getColumn('scheduledDate')?.getFilterValue();
-    const filterStartTs = scheduledDateFilter?.start?.toDate(getLocalTimeZone()).getTime();
-    const filterEndTs = scheduledDateFilter?.end?.toDate(getLocalTimeZone()).getTime();
-
-    if ((!scheduledDateFilter || (!filterStartTs && !filterEndTs)) && current !== undefined) {
-       console.log('Limpando filtro scheduledDate da coluna', current);
-       table.getColumn('scheduledDate')?.setFilterValue(undefined);
-     }
-     $inspect("scheduledDateFilter", scheduledDateFilter)
-  });
-
-  $effect(() => {
-    const typeColumn = table.getColumn('type');
-    if (typeColumn) {
-      const newFilterValue = typeFilter === 'all' ? undefined : typeFilter;
-      const currentFilterValue = typeColumn.getFilterValue();
-
-      if (newFilterValue !== currentFilterValue) {
-        console.log(`Applying type filter. Current: ${currentFilterValue}, New: ${newFilterValue}`);
-        typeColumn.setFilterValue(newFilterValue);
-      }
-    }
-    $inspect("typeFilter", typeFilter)
   });
 
   let columnVisibilityState = $state<{ [key: string]: boolean }>({});
@@ -181,7 +153,14 @@
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     globalFilterFn,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 25,
+      }
+    },
     state: {
       get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
@@ -233,41 +212,16 @@
         columnFilters = updater;
       }
     },
+    onPaginationChange: (updater) => {
+      if (typeof updater === 'function') {
+        const newState = updater(table.getState().pagination); 
+        pagination = newState;
+      } else {
+        pagination = updater;
+      }
+    },
     enableRowSelection: true,
   });
-
-  $effect(() => {
-    const filterValueForTable = statusFilter !== '' ? statusFilter : undefined;
-    const currentTableFilter = table.getColumn('status')?.getFilterValue();
-
-    if (filterValueForTable !== currentTableFilter) {
-      console.log('Applying status filter via $effect:', filterValueForTable);
-      table.getColumn('status')?.setFilterValue(filterValueForTable);
-    }
-    $inspect("filterValueForTable", filterValueForTable)
-  });
-
-  function formatDate(filter: DateRange | undefined) {
-    if (!filter) return;
-    const start = filter.start?.toDate(getLocalTimeZone());
-    const end = filter.end?.toDate(getLocalTimeZone());
-    if (!start) return;
-    if (end && end.getTime() !== start.getTime()) {
-      return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
-    }
-    return start.toLocaleDateString('pt-BR');
-  }
-
-  function formatDateFilterDisplay(filter: DateRange | undefined) {
-    if (!filter) return null;
-    const start = filter.start?.toDate(getLocalTimeZone());
-    const end = filter.end?.toDate(getLocalTimeZone());
-    if (!start) return null;
-    if (end && end.getTime() !== start.getTime()) {
-      return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
-    }
-    return start.toLocaleDateString('pt-BR');
-  }
 
   let notes = $derived(() => {
     let arr: import('../../../types').Note[] = [];
@@ -395,6 +349,28 @@
        console.error(`Erro ao abrir URLs no modo ${mode}:`, error);
        toast.error("Erro ao abrir links.", { description: error instanceof Error ? error.message : String(error) });
     }
+  }
+
+  function formatDate(filter: DateRange | undefined) {
+    if (!filter) return;
+    const start = filter.start?.toDate(getLocalTimeZone());
+    const end = filter.end?.toDate(getLocalTimeZone());
+    if (!start) return;
+    if (end && end.getTime() !== start.getTime()) {
+      return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
+    }
+    return start.toLocaleDateString('pt-BR');
+  }
+
+  function formatDateFilterDisplay(filter: DateRange | undefined) {
+    if (!filter) return null;
+    const start = filter.start?.toDate(getLocalTimeZone());
+    const end = filter.end?.toDate(getLocalTimeZone());
+    if (!start) return null;
+    if (end && end.getTime() !== start.getTime()) {
+      return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
+    }
+    return start.toLocaleDateString('pt-BR');
   }
 
 </script>
@@ -792,14 +768,22 @@
     </div>
   </div>
 
-  <!-- Rodapé Dinâmico com Ações em Lote (agora fixo na parte inferior) -->
+  <!-- Rodapé Dinâmico -->
   <div class="flex items-center justify-between text-sm mt-4 shrink-0">
+    <!-- Lado Esquerdo: Selecionados / Contagem Total -->
+    <div class="flex-1 text-muted-foreground">
+      {#if selectedItemCount > 0}
+        {selectedItemCount} de {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+      {:else}
+        {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
+      {/if}
+    </div>
+
+    <!-- Lado Direito: Ações em Lote e Paginação -->
+    <div class="flex items-center space-x-6 lg:space-x-8">
+      <!-- Ações em Lote -->
     {#if selectedItemCount > 0}
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-muted-foreground font-medium">
-          {selectedItemCount} selecionado(s)
-        </span>
-        <!-- Botões de Ação em Lote -->
         <Button variant="destructive" size="sm" onclick={handleBulkDelete}>
           <Trash2 class="w-4 h-4 mr-1"/> Excluir
         </Button>
@@ -807,9 +791,8 @@
           <Folder class="w-4 h-4 mr-1"/> Alterar Grupos
         </Button>
         <Button variant="outline" size="sm" onclick={openBulkTagDialog}>
-          <Tags class="w-4 h-4 mr-1"/> Alterar Tags
+            <TagsIcon class="w-4 h-4 mr-1"/> Alterar Tags
         </Button>
-        <!-- Botão Abrir com Dropdown (Sintaxe corrigida) -->
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             <Button variant="outline" size="sm">
@@ -823,21 +806,75 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
-    {:else}
-      <span class="text-muted-foreground">
-        {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
-      </span>
-      <!-- Pode adicionar paginação aqui futuramente -->
     {/if}
-    <!-- Elementos adicionais do rodapé (ex: paginação) podem ir aqui -->
-    <div>
-      <!-- Controles de Paginação (a serem implementados) -->
+
+      <!-- Descomentar Controles de Paginação -->
+      <div class="flex items-center space-x-2">
+        <Select.Root
+          type="single"
+          value={String(table.getState().pagination.pageSize)}
+          onValueChange={(value: string | undefined) => {
+            console.log("Select Change", value);
+            if (value) {
+              table.setPageSize(Number(value));
+            }
+          }}
+        >
+          <Select.Trigger class="h-8 w-[70px]">
+            {table.getState().pagination.pageSize}
+          </Select.Trigger>
+          <Select.Content side="top">
+            {#each [10, 25, 50, 100] as size (size)}
+              <Select.Item value={String(size)}>{size}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+        <span class="font-medium">
+          Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+        </span>
+        <Button
+          variant="outline"
+          class="hidden h-8 w-8 p-0 lg:flex"
+          onclick={() => { console.log('Click First'); table.firstPage(); }}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <span class="sr-only">Primeira página</span>
+          <ChevronsLeft class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          class="h-8 w-8 p-0"
+          onclick={() => { console.log('Click Prev'); table.previousPage(); }}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <span class="sr-only">Página anterior</span>
+          <ChevronLeft class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          class="h-8 w-8 p-0"
+          onclick={() => { console.log('Click Next'); table.nextPage(); }}
+          disabled={!table.getCanNextPage()}
+        >
+          <span class="sr-only">Próxima página</span>
+          <ChevronRight class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          class="hidden h-8 w-8 p-0 lg:flex"
+          onclick={() => { console.log('Click Last'); table.lastPage(); }}
+          disabled={!table.getCanNextPage()}
+        >
+          <span class="sr-only">Última página</span>
+          <ChevronsRight class="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   </div>
 
 </div> <!-- Fim do container flex principal -->
 
-<!-- PLACEHOLDERS PARA DIÁLOGOS -->
+<!-- Diálogos -->
 <AlertDialog.Root bind:open={isDeleteDialogOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
@@ -848,20 +885,17 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
-      <!-- Corrigido: Aplicar variant diretamente na Action -->
       <AlertDialog.Action onclick={confirmBulkDelete}>Excluir</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
 
-<!-- Componente real para BulkGroupAssignDialog -->
 <BulkGroupAssignDialog
   bind:open={isBulkGroupDialogOpen} 
   itemCount={selectedItemCount}
   onUpdate={handleBulkGroupUpdate} 
 />
 
-<!-- Componente real para BulkTagAssignDialog -->
 <BulkTagAssignDialog 
   bind:open={isBulkTagDialogOpen}
   itemCount={selectedItemCount}

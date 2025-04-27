@@ -3,56 +3,21 @@
   import type { SavedItem } from '../../../types';
   import DataTable from './DataTable.svelte';
 
+  // A prop 'data' agora recebe sortedItems diretamente de SavedItemsView
   let { data = [] } = $props();
 
-  // Mock temporário para fallback
-  const mockData: SavedItem[] = [
-    {
-      id: '1',
-      url: 'https://exemplo.com',
-      title: 'Exemplo de Página',
-      favicon: '',
-      dateAdded: Date.now(),
-      comments: '',
-      tags: ['exemplo', 'teste'],
-      groupIds: ['g1'],
-      readLater: true,
-      scheduledDate: undefined,
-      position: undefined,
-      previewImage: undefined,
-      noteIds: ['n1', 'n2'],
-      flashcardIds: ['f1'],
-    },
-    {
-      id: '2',
-      url: 'https://svelte.dev',
-      title: 'Svelte',
-      favicon: '',
-      dateAdded: Date.now(),
-      comments: '',
-      tags: ['svelte', 'web'],
-      groupIds: ['g2'],
-      readLater: false,
-      scheduledDate: undefined,
-      position: undefined,
-      previewImage: undefined,
-      noteIds: [],
-      flashcardIds: [],
-    },
-  ];
+  // Remover mockData
+  // Remover typeFilter e lógica derivada
+  // const showReadLaterColumns = $derived(() => typeFilter === 'readlater');
 
-  // Reatividade Svelte 5 para alternar colunas
-  let typeFilter = $state('all');
-  const showReadLaterColumns = $derived(() => typeFilter === 'readlater');
-  const dynamicColumns = $derived(() => getColumns(showReadLaterColumns()));
+  // Passar showReadLaterColumns=false para getColumns por enquanto, 
+  // DataTable agora controla a visibilidade internamente.
+  // Idealmente, a visibilidade controlada por DataTable deveria ser passada para getColumns,
+  // mas isso requer refatoração mais complexa. Por agora, focamos em fazer a data fluir.
+  const dynamicColumns = getColumns(false); // Simplificado por enquanto
 
-  const filteredData = $derived(() => {
-    if (typeFilter === 'all') return data && data.length > 0 ? data : mockData;
-    if (typeFilter === 'readlater') return (data && data.length > 0 ? data : mockData).filter(item => item.readLater);
-    if (typeFilter === 'bookmark') return (data && data.length > 0 ? data : mockData).filter(item => !item.readLater);
-    $inspect("filteredData", data)
-    return data && data.length > 0 ? data : mockData;
-  });
+  // Remover filteredData
 </script>
 
-<DataTable columns={dynamicColumns()} data={filteredData()} /> 
+<!-- Passar a prop 'data' diretamente para DataTable -->
+<DataTable columns={dynamicColumns} data={data} /> 

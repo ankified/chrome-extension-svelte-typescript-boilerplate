@@ -408,7 +408,8 @@
     }
   });
 
-  // --- Salvar Filtros Automaticamente com $effect --- (MODIFICADO)
+  // --- Salvar Filtros Automaticamente com $effect --- (COMENTADO TEMPORARIAMENTE)
+  /*
   $effect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
       // Salvar último filtro usado
@@ -420,6 +421,7 @@
       // Não precisamos salvar aqui, mas é bom ter o effect para o último filtro.
     }
   });
+  */
 
   // --- Funções para Gerenciar Filtros Nomeados ---
   async function saveNamedFilterSet(name: string) {
