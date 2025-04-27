@@ -790,9 +790,21 @@
     <!-- Lado Esquerdo: Selecionados / Contagem Total -->
     <div class="flex-1 text-muted-foreground">
       {#if selectedItemCount > 0}
-        {selectedItemCount} de {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+        {@const totalItems = table.getFilteredRowModel().rows.length}
+        {selectedItemCount} de {totalItems} linha{selectedItemCount > 1 ? 's' : ''} selecionada{selectedItemCount > 1 ? 's' : ''}.
       {:else}
-        {table.getFilteredRowModel().rows.length} item(ns) exibido(s).
+        {@const totalFilteredRows = table.getFilteredRowModel().rows.length}
+        {#if totalFilteredRows > 0}
+          {@const pageIndex = table.getState().pagination.pageIndex}
+          {@const pageSize = table.getState().pagination.pageSize}
+          {@const startItemIndex = (pageIndex * pageSize) + 1}
+          {@const endItemIndex = Math.min((pageIndex + 1) * pageSize, totalFilteredRows)}
+          {@const itemText = totalFilteredRows === 1 ? 'item' : 'itens'}
+          {@const exibidoText = totalFilteredRows === 1 ? 'exibido' : 'exibidos'}
+          {startItemIndex} - {endItemIndex} de {totalFilteredRows} {itemText} {exibidoText}.
+        {:else}
+          Nenhum item encontrado.
+        {/if}
       {/if}
     </div>
 

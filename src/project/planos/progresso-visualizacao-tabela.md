@@ -67,14 +67,14 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
   - [ ] Gerenciamento global de grupos;
   - [ ] Gerenciamento global de tags;
 
-- [ ] **Funcionalidade de Paginação**
-  - [ ] Implementar paginação na tabela de itens salvos.
-  - [ ] Permitir navegação entre páginas e seleção de quantidade de itens por página.
-  - [ ] Exibir controles de paginação fixos no rodapé da tabela.
-  - [ ] Indicar visualmente a página atual e desabilitar botões quando não aplicável (ex: início/fim).
-  - [ ] Garantir responsividade dos controles de paginação em telas menores.
-  - [ ] Exibir total de itens e intervalo atual (ex: "21-40 de 120").
-  - [ ] Manter seleção de itens ao navegar entre páginas (se aplicável).
+- [✅] **Funcionalidade de Paginação**
+  - [✅] Implementar paginação na tabela de itens salvos.
+  - [✅] Permitir navegação entre páginas e seleção de quantidade de itens por página.
+  - [✅] Exibir controles de paginação fixos no rodapé da tabela.
+  - [✅] Indicar visualmente a página atual e desabilitar botões quando não aplicável (ex: início/fim).
+  - [✅] Garantir responsividade dos controles de paginação em telas menores.
+  - [✅] Exibir total de itens e intervalo atual (ex: "21-40 de 120").
+  - [✅] Manter seleção de itens ao navegar entre páginas (se aplicável).
 
 ## Observações e Datas de Conclusão
 
