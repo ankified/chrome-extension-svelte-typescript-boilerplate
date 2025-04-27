@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState, PaginationState } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState, Row } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -161,6 +161,7 @@
         pageSize: 25,
       }
     },
+    autoResetPageIndex: false,
     state: {
       get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
@@ -168,6 +169,7 @@
       get sorting() { return sorting; },
       get expanded() { return expanded; },
       get columnFilters() { return columnFilters; },
+      get pagination() { return pagination; },
     },
     onGlobalFilterChange: (value) => {
       if (typeof value === 'object' && value !== null) {
@@ -213,14 +215,36 @@
       }
     },
     onPaginationChange: (updater) => {
+      let newState: PaginationState;
       if (typeof updater === 'function') {
-        const newState = updater(table.getState().pagination); 
+        newState = updater(pagination);
+      } else {
+        newState = updater;
+      }
+
+      // Apenas atualiza o estado se os valores mudaram para evitar loops
+      if (newState.pageIndex !== pagination.pageIndex || newState.pageSize !== pagination.pageSize) {
+        console.log('[onPaginationChange] Applying update. Current:', pagination, 'New:', newState);
         pagination = newState;
       } else {
-        pagination = updater;
+        // Opcional: Log para quando a atualização é pulada
+        // console.log('[onPaginationChange] Skipping update - values unchanged.');
       }
     },
     enableRowSelection: true,
+  });
+
+  // Estado derivado tipado para garantir reatividade das linhas com a paginação
+  let paginatedRows: Row<SavedItem>[] = $derived.by(() => {
+    // Dependência explícita no estado de paginação
+    const _currentPage = pagination.pageIndex; 
+    const _pageSize = pagination.pageSize;
+    // Adicionar outras dependências se necessário...
+    
+    const model = table.getRowModel();
+    const rows = model.rows;
+    
+    return rows; 
   });
 
   let notes = $derived(() => {
@@ -605,7 +629,7 @@
           {/each}
         </Table.Header>
         <Table.Body>
-          {#each table.getRowModel().rows as row (row.id)}
+          {#each paginatedRows as row (row.id)}
             <Table.Row data-state={row.getIsSelected() && 'selected'}>
               {#each row.getVisibleCells() as cell (cell.id)}
                 <Table.Cell class={cell.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
