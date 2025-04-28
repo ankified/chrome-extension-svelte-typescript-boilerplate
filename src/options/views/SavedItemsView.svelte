@@ -9,7 +9,8 @@
       deleteTagGlobally, 
       deleteAllTagsGlobally, 
       deleteAllGroupsGlobally, // Descomentar quando implementado e exportado
-      addKnownTagIfNotExists // ADICIONAR importação
+      addKnownTagIfNotExists, // ADICIONAR importação
+      deleteItems // <<< Adicionar deleteItems
   } from "../../storage";
   import type { SavedItem, Group } from "../../types";
   // Importar os novos tipos
@@ -92,6 +93,8 @@
   let showLoadFilterDialog = $state(false);
   let showManageGroupsDialog = $state(false);
   let showManageTagsDialog = $state(false);
+  // NOVO estado para diálogo de exclusão total
+  let showDeleteAllItemsDialog = $state(false);
 
   // --- NOVO: Estado para Filtros Nomeados ---
   let namedFilterSets = $state<NamedFilterSet[]>([]);
@@ -658,6 +661,31 @@
       // ...
   }
 
+  // NOVA função para abrir diálogo de exclusão total
+  function handleOpenDeleteAllItemsDialog() {
+    showDeleteAllItemsDialog = true;
+  }
+
+  // NOVA FUNÇÃO para confirmar exclusão total de itens
+  async function confirmDeleteAllItems() {
+    const allItemIds = $savedItems.map(item => item.id);
+    if (allItemIds.length === 0) {
+      toast.info("Não há itens para remover.");
+      showDeleteAllItemsDialog = false;
+      return;
+    }
+    console.log(`[SavedItemsView] Tentando excluir ${allItemIds.length} itens...`);
+    try {
+      await deleteItems(allItemIds);
+      toast.success("Todos os itens salvos foram removidos.");
+      showDeleteAllItemsDialog = false;
+    } catch (error) {
+      console.error("Erro ao remover todos os itens:", error);
+      toast.error("Erro ao remover todos os itens.");
+      showDeleteAllItemsDialog = false; // Fecha mesmo em caso de erro
+    }
+  }
+
   let { viewMode = "table" } = $props();
 
 </script>
@@ -666,7 +694,12 @@
 <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
   <!-- Tabela (Sempre no DOM, controla visibilidade com display) -->
   <div style="display: {viewMode === 'table' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
-    <SavedItemsTableView data={sortedItems} />
+    <SavedItemsTableView
+      data={sortedItems}
+      onOpenManageGroupsDialog={handleOpenManageGroupsDialog}
+      onOpenManageTagsDialog={handleOpenManageTagsDialog}
+      onOpenDeleteAllItemsDialog={handleOpenDeleteAllItemsDialog}
+    />
   </div>
 
   <!-- Cartões (Sempre no DOM, controla visibilidade com display) -->
@@ -860,5 +893,22 @@
         onDeleteAll={handleDeleteAllTags}
      />
   {/if}
+
+  <!-- NOVO AlertDialog para Exclusão Total de Itens -->
+  <AlertDialog.Root bind:open={showDeleteAllItemsDialog}>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Confirmar Exclusão Total</AlertDialog.Title>
+        <AlertDialog.Description>
+          Tem certeza que deseja remover <strong>TODOS</strong> os itens salvos?
+          Esta ação é <strong>irreversível</strong> e não pode ser desfeita.
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel onclick={() => showDeleteAllItemsDialog = false}>Cancelar</AlertDialog.Cancel>
+        <AlertDialog.Action onclick={confirmDeleteAllItems}>Sim, Excluir Tudo</AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 
 </div>

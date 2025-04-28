@@ -9,10 +9,11 @@
     import { Separator } from '../../lib/components/ui/separator/index.js';
     import { Trash2, Edit, Check, X as IconX, Folder } from '@lucide/svelte'; // Renomeado X para IconX
     import { toast } from 'svelte-sonner';
-    import { savedItems, groups } from "../../storage";
-    import type { SavedItem } from "../../types";
+    // Remover importações não usadas diretamente aqui (a lógica virá das props)
+    // import { savedItems, groups } from "../../storage";
+    // import type { SavedItem } from "../../types";
     import chroma from 'chroma-js';
-    import { createGroup } from "../../storage";
+    // import { createGroup } from "../../storage";
 
     // Cores pré-definidas (igual a SavedItemsCardView e SaveItemForm)
     const groupColors = [
@@ -23,18 +24,30 @@
     type Props = {
       open?: boolean;
       allGroups?: Group[];
-      item: SavedItem;
-      onClose: () => void;
+      // Remover prop 'item'
+      // item: SavedItem;
+      onClose?: () => void; // Manter onClose opcional
+
+      // Adicionar props para callbacks CRUD
+      onCreate?: (name: string, color?: string) => Promise<Group | null>;
+      onUpdate?: (id: string, updates: { name?: string; color?: string }) => Promise<boolean>;
+      onDelete?: (id: string) => Promise<boolean>;
+      onDeleteAll?: () => Promise<boolean>;
     };
 
     let {
       open = $bindable(false),
       allGroups = [],
-      item,
-      onClose,
+      // Remover 'item' da desestruturação
+      onClose = () => {}, // Definir um padrão vazio se não fornecido
+      // Definir padrões para os callbacks para evitar erros se não forem passados
+      onCreate = async () => null,
+      onUpdate = async () => false,
+      onDelete = async () => false,
+      onDeleteAll = async () => false,
     }: Props = $props();
 
-    console.log('open', open);
+    console.log('ManageGroupsDialog - open:', open); // Manter log útil
     let newGroupNameDialog = $state('');
     let newGroupDialogColor = $state(groupColors[0]); // Cor padrão inicial
     let editingGroupId = $state<string | null>(null);
@@ -56,6 +69,7 @@
     async function handleSaveEdit() {
         if (!editingGroupId || !editingGroupName.trim()) return;
 
+        // Chamar a prop onUpdate
         const success = await onUpdate(editingGroupId, {
             name: editingGroupName.trim(),
             color: editingGroupColor
@@ -65,17 +79,24 @@
             toast.success(`Grupo "${editingGroupName.trim()}" atualizado.`);
             cancelEditing();
         } else {
-            toast.error(`Erro ao atualizar grupo "${editingGroupName.trim()}".`);
+            // A função onUpdate (em storage.ts) já deve lidar com o toast de erro
+            // toast.error(`Erro ao atualizar grupo "${editingGroupName.trim()}".`);
         }
     }
 
     async function handleCreateGroupInDialog() {
         if (!newGroupNameDialog.trim()) return;
-        const createdGroup = await createGroup(newGroupNameDialog, newGroupDialogColor);
+        // Chamar a prop onCreate
+        const createdGroup = await onCreate(newGroupNameDialog, newGroupDialogColor);
         if (createdGroup) {
-            addItemToGroup(item.id, createdGroup.id);
+            toast.success(`Grupo "${createdGroup.name}" criado.`);
+            // Remover a lógica de adicionar item
+            // addItemToGroup(item.id, createdGroup.id);
             newGroupNameDialog = '';
             newGroupDialogColor = groupColors[0];
+        } else {
+             // A função onCreate (em storage.ts) já deve lidar com o toast de erro/aviso
+             // toast.warning(`Grupo "${newGroupNameDialog.trim()}" já existe ou ocorreu um erro.`);
         }
     }
 
@@ -83,55 +104,25 @@
         try {
             return chroma(bgColor).luminance() > 0.5 ? '#000000' : '#ffffff';
         } catch (e) {
+            // Retornar preto como fallback seguro em caso de erro no chroma
+            console.error("Erro ao calcular luminância da cor:", bgColor, e);
             return '#000000';
         }
     }
 
+    // Remover addItemToGroup
+    /*
     function addItemToGroup(itemId: string, groupId: string) {
-        savedItems.update(items =>
-            items.map(item => {
-                if (item.id === itemId) {
-                    const currentGroupIds = Array.isArray(item.groupIds) ? item.groupIds : [];
-                    if (!currentGroupIds.includes(groupId)) {
-                        return { ...item, groupIds: [...currentGroupIds, groupId] };
-                    }
-                }
-                return item;
-            })
-        );
-        groups.update(currentGroups =>
-            currentGroups.map(group => {
-                if (group.id === groupId) {
-                    const currentItemIds = Array.isArray(group.itemIds) ? group.itemIds : [];
-                    if (!currentItemIds.includes(itemId)) {
-                        return { ...group, itemIds: [...currentItemIds, itemId] };
-                    }
-                }
-                return group;
-            })
-        );
+        // ... lógica removida ...
     }
+    */
 
+    // Remover removeItemFromGroup
+    /*
     function removeItemFromGroup(itemId: string, groupId: string) {
-        savedItems.update(items =>
-            items.map(item => {
-                if (item.id === itemId) {
-                    const currentGroupIds = Array.isArray(item.groupIds) ? item.groupIds : [];
-                    return { ...item, groupIds: currentGroupIds.filter(gid => gid !== groupId) };
-                }
-                return item;
-            })
-        );
-        groups.update(currentGroups =>
-            currentGroups.map(group => {
-                if (group.id === groupId) {
-                    const currentItemIds = Array.isArray(group.itemIds) ? group.itemIds : [];
-                    return { ...group, itemIds: currentItemIds.filter(id => id !== itemId) };
-                }
-                return group;
-            })
-        );
+        // ... lógica removida ...
     }
+    */
 
      // Reseta o estado de edição e criação ao fechar
      $effect(() => {
@@ -139,18 +130,37 @@
             cancelEditing();
             newGroupNameDialog = '';
             newGroupDialogColor = groupColors[0];
+            console.log('ManageGroupsDialog - Effect Fechando'); // Log de fechamento
         }
     });
+
+     // Funções auxiliares para chamar os callbacks de exclusão (para clareza no template)
+     async function handleDeleteGroup(id: string) {
+        const success = await onDelete(id);
+        if (success) {
+            toast.success(`Grupo excluído.`);
+        } // Erro tratado na função onDelete passada
+     }
+
+     async function handleDeleteAllGroups() {
+         const success = await onDeleteAll();
+         if (success) {
+             toast.success("Todos os grupos foram excluídos.");
+             // Opcional: fechar o diálogo após excluir tudo?
+             // open = false;
+         } // Erro tratado na função onDeleteAll passada
+     }
+
 
 </script>
 
 <!-- {#if open} -->
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) open = false; }}>
+<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) { open = false; onClose(); } }}>
   <Dialog.Content class="sm:max-w-[650px]">
     <Dialog.Header>
-      <Dialog.Title>Gerenciar Grupos</Dialog.Title>
+      <Dialog.Title>Gerenciar Grupos Globalmente</Dialog.Title>
       <Dialog.Description>
-        Crie, edite ou exclua grupos de organização.
+        Crie, edite ou exclua grupos de organização para toda a extensão.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -201,7 +211,12 @@
                      <!-- Modo de Edição -->
                      <div class="flex-grow flex items-center gap-2">
                           <Input type="text" bind:value={editingGroupName} class="h-8 flex-grow" placeholder="Nome do grupo"/>
-                          <Input type="color" bind:value={editingGroupColor} class="h-8 w-10 p-1"/>
+                          {#if editingGroupColor}
+                            <Input type="color" bind:value={editingGroupColor} class="h-8 w-10 p-1"/>
+                          {:else}
+                            <!-- Fallback se a cor for undefined, talvez um botão para definir? -->
+                            <Input type="color" value="#cccccc" class="h-8 w-10 p-1" onchange={(e) => editingGroupColor = e.currentTarget.value} />
+                          {/if}
                      </div>
                      <div class="flex-shrink-0 flex items-center gap-1">
                          <Button variant="ghost" size="icon" class="h-7 w-7 text-green-600" onclick={handleSaveEdit} title="Salvar">
@@ -229,8 +244,8 @@
                           <AlertDialog.Root>
                               <AlertDialog.Trigger>
                                    <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground hover:text-destructive" title="Excluir">
-                              <Trash2 class="h-4 w-4" />
-                          </Button>
+                                      <Trash2 class="h-4 w-4" />
+                                   </Button>
                               </AlertDialog.Trigger>
                               <AlertDialog.Content>
                                   <AlertDialog.Header>
@@ -243,7 +258,7 @@
                                   </AlertDialog.Header>
                                   <AlertDialog.Footer>
                                       <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
-                                      <AlertDialog.Action onclick={() => onDelete(group.id)}>Sim, Excluir Grupo</AlertDialog.Action>
+                                      <AlertDialog.Action onclick={() => handleDeleteGroup(group.id)}>Sim, Excluir Grupo</AlertDialog.Action>
                                   </AlertDialog.Footer>
                               </AlertDialog.Content>
                           </AlertDialog.Root>
@@ -278,12 +293,12 @@
                 </AlertDialog.Header>
                 <AlertDialog.Footer>
                     <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
-                    <AlertDialog.Action onclick={onDeleteAll}>Sim, Excluir Todos</AlertDialog.Action>
+                    <AlertDialog.Action onclick={handleDeleteAllGroups}>Sim, Excluir Todos</AlertDialog.Action>
                 </AlertDialog.Footer>
             </AlertDialog.Content>
         </AlertDialog.Root>
 
-       <Button variant="outline" onclick={() => open = false}>Fechar</Button>
+       <Button variant="outline" onclick={() => { open = false; onClose(); }}>Fechar</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

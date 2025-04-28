@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/table-core';
+import type { ColumnDef, Table } from '@tanstack/table-core';
 import type { SavedItem } from '../../../types';
 import { renderComponent } from '../../../lib/components/ui/data-table/index';
 import DataTableCheckbox from './data-table-checkbox.svelte';
@@ -28,7 +28,12 @@ function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, any>[] {
+export function getColumns(
+  showReadLaterColumns: boolean,
+  onOpenManageGroupsDialog: () => void,
+  onOpenManageTagsDialog: () => void,
+  onOpenDeleteAllItemsDialog: () => void
+): ColumnDef<SavedItem, any>[] {
   const baseColumns: ColumnDef<SavedItem, any>[] = [
     {
       id: 'expand',
@@ -62,6 +67,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       id: 'item',
+      meta: { displayName: 'Item' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Item',
@@ -79,6 +85,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       id: 'type',
+      meta: { displayName: 'Tipo' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Tipo',
@@ -105,6 +112,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       accessorKey: 'groupIds',
+      meta: { displayName: 'Grupos' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Grupos',
@@ -132,6 +140,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       accessorKey: 'tags',
+      meta: { displayName: 'Tags' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Tags',
@@ -159,6 +168,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       accessorKey: 'noteIds',
+      meta: { displayName: 'Notas' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Notas',
@@ -186,6 +196,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       accessorKey: 'flashcardIds',
+      meta: { displayName: 'Flashcards' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Flashcards',
@@ -213,6 +224,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       accessorKey: 'dateAdded',
+      meta: { displayName: 'Criado em' },
       header: ({ column }) =>
         renderComponent(SortableHeader, {
           label: 'Criado em',
@@ -240,19 +252,28 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
     },
     {
       id: 'actions',
-      header: () => (
+      header: ({ table }) => (
         renderComponent(
           DropdownMenuHeaderButton,
-          {}
+          {
+            table: table,
+            onOpenManageGroupsDialog: onOpenManageGroupsDialog,
+            onOpenManageTagsDialog: onOpenManageTagsDialog,
+            onOpenDeleteAllItemsDialog: onOpenDeleteAllItemsDialog
+          }
         )
       ),
       cell: ({ row }) => renderComponent(DataTableActions, { id: row.original.id }),
       enableSorting: false,
       enableHiding: false,
+      size: 48,
+      minSize: 48,
+      maxSize: 48,
     },
   ];
   const agendadoParaCol: ColumnDef<SavedItem, any> = {
     id: 'scheduledDate',
+    meta: { displayName: 'Agendado p/' },
     header: ({ column }) =>
       renderComponent(SortableHeader, {
         label: 'Agendado p/',
@@ -284,6 +305,7 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
   };
   const statusCol: ColumnDef<SavedItem, any> = {
     id: 'status',
+    meta: { displayName: 'Status' },
     header: ({ column }) =>
       renderComponent(SortableHeader, {
         label: 'Status',
