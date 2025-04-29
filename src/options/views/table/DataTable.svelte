@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState, PaginationState } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState, VisibilityState } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -73,6 +73,41 @@
   let tagDialogOpen = $state(false);
   let searchScope: 'title' | 'url' | 'groups' | 'tags' | 'comment' = $state('title');
 
+  // --- State for Column Visibility ---
+  // Initialize state as an empty object, effect will populate initial values
+  let columnVisibilityState = $state<VisibilityState>({});
+
+  // Effect to update base visibility when typeFilter changes
+  $effect(() => {
+    console.log("[Effect] typeFilter changed to:", typeFilter);
+
+    // 1. Determine the 'base' visibility dictated by typeFilter
+    const baseVisibility = {
+        type: typeFilter === 'all',
+        scheduledDate: typeFilter === 'readlater',
+        status: typeFilter === 'readlater',
+    };
+
+    // 2. Create the potential new state by merging base visibility
+    //    with the current state.
+    const newState: VisibilityState = {
+      ...columnVisibilityState,
+      type: baseVisibility.type,
+      scheduledDate: baseVisibility.scheduledDate,
+      status: baseVisibility.status,
+    };
+
+    // 3. Compare the calculated newState with the current state (using JSON stringify for simplicity).
+    //    Only update if there's a difference to prevent loops.
+    if (JSON.stringify(newState) !== JSON.stringify(columnVisibilityState)) {
+        console.log("[Effect] Updating columnVisibilityState based on typeFilter change.", newState);
+        columnVisibilityState = newState;
+    } else {
+        // console.log("[Effect] No change needed in columnVisibilityState based on typeFilter.");
+    }
+  });
+
+  // --- Derived data (Groups, Tags) ---
   let groups = $derived(() => {
     let arr: Group[] = [];
     groupsStore.subscribe(val => arr = val)();
@@ -83,13 +118,6 @@
     tagsStore.subscribe(val => arr = val)();
     return arr;
   });
-
-  let columnVisibilityState = $state<{ [key: string]: boolean }>({});
-  let columnVisibility = $derived(() => ({
-    type: typeFilter === 'all',
-    scheduledDate: typeFilter === 'readlater',
-    status: typeFilter === 'readlater',
-  }));
 
   let globalFilter = $state('');
 
@@ -169,7 +197,7 @@
     state: {
       get globalFilter() { return globalFilterObj(); },
       get rowSelection() { return rowSelection; },
-      get columnVisibility() { return columnVisibility(); },
+      get columnVisibility() { return columnVisibilityState; },
       get sorting() { return sorting; },
       get expanded() { return expanded; },
       get columnFilters() { return columnFilters; },
@@ -192,11 +220,13 @@
       }
     },
     onColumnVisibilityChange: (updater) => {
+      console.log("[onColumnVisibilityChange] Updater:", updater);
       if (typeof updater === 'function') {
         columnVisibilityState = updater(columnVisibilityState);
       } else {
         columnVisibilityState = updater;
       }
+       console.log("[onColumnVisibilityChange] New columnVisibilityState:", columnVisibilityState);
     },
     onSortingChange: (updater) => {
       if (typeof updater === 'function') {
@@ -240,6 +270,25 @@
     enableRowSelection: true,
   });
 
+  // NOVO: Effect para aplicar o filtro de tipo na coluna da tabela
+  $effect(() => {
+    console.log("[Effect] Checking type filter application for table column:", typeFilter);
+    const typeColumn = table.getColumn('type');
+    if (typeColumn) {
+      // Obter o valor atual do filtro da coluna
+      const currentFilter = typeColumn.getFilterValue();
+      // Apenas chamar setFilterValue se o valor mudou
+      if (currentFilter !== typeFilter) {
+        console.log(`[Effect] Updating type column filter from "${currentFilter}" to "${typeFilter}"`);
+        typeColumn.setFilterValue(typeFilter);
+      } else {
+        // console.log("[Effect] Type column filter already set to:", typeFilter);
+      }
+    } else {
+      console.warn("[Effect] Could not find 'type' column to apply filter.");
+    }
+  });
+
   let notes = $derived(() => {
     let arr: import('../../../types').Note[] = [];
     notesStore.subscribe(val => arr = val)();
@@ -277,6 +326,9 @@
   let isBulkGroupDialogOpen = $state(false);
   let isBulkTagDialogOpen = $state(false);
   let isDeleteDialogOpen = $state(false);
+
+  // NOVO: Estado para diálogo de exclusão total
+  let isDeleteAllConfirmOpen = $state(false);
 
   function handleBulkDelete() {
     if (selectedItemCount === 0) return;
@@ -388,6 +440,24 @@
       return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
     }
     return start.toLocaleDateString('pt-BR');
+  }
+
+  // NOVO: Função para abrir o diálogo de confirmação de exclusão total
+  function openDeleteAllDialog() {
+    isDeleteAllConfirmOpen = true;
+  }
+
+  // NOVO: Função para confirmar a exclusão total
+  async function confirmDeleteAllItems() {
+    isDeleteAllConfirmOpen = false;
+    try {
+      await storage.deleteAllItems(); // Chama a função no storage
+      toast.success("Todos os itens foram excluídos com sucesso.");
+      rowSelection = {}; // Limpa a seleção
+    } catch (error) {
+      console.error("Erro ao excluir todos os itens:", error);
+      toast.error("Erro ao excluir todos os itens.", { description: error instanceof Error ? error.message : String(error) });
+    }
   }
 
 </script>
@@ -931,4 +1001,21 @@
   bind:open={isBulkTagDialogOpen}
   itemCount={selectedItemCount}
   onUpdate={handleBulkTagUpdate}
-/> 
+/>
+
+<!-- NOVO: AlertDialog para confirmar exclusão total -->
+<AlertDialog.Root bind:open={isDeleteAllConfirmOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Confirmar Exclusão Total</AlertDialog.Title>
+      <AlertDialog.Description>
+        Tem certeza que deseja excluir <strong>TODOS</strong> os itens salvos do banco de dados?
+        Esta ação <strong>NÃO PODE</strong> ser desfeita.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
+      <AlertDialog.Action class="bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={confirmDeleteAllItems}>Excluir Tudo</AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root> 

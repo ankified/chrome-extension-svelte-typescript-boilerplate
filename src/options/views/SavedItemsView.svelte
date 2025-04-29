@@ -9,8 +9,7 @@
       deleteTagGlobally, 
       deleteAllTagsGlobally, 
       deleteAllGroupsGlobally, // Descomentar quando implementado e exportado
-      addKnownTagIfNotExists, // ADICIONAR importação
-      deleteItems // <<< Adicionar deleteItems
+      addKnownTagIfNotExists // ADICIONAR importação
   } from "../../storage";
   import type { SavedItem, Group } from "../../types";
   // Importar os novos tipos
@@ -61,6 +60,9 @@
   // Importação do componente de tabela
   import SavedItemsTableView from "./table/SavedItemsTableView.svelte";
   import { Root as ToggleGroup, Item as ToggleGroupItem } from '../../lib/components/ui/toggle-group/index';
+  // Importar o store de estado da UI
+  // import * as uiState from '../../lib/stores/uiState'; // Remover import antigo
+  import { dialogState } from '../../lib/stores/uiState.svelte'; // Importar novo objeto
 
   // Novo estado para ordenação múltipla
   let sortDescriptors = $state<SortDescriptor[]>([
@@ -91,10 +93,6 @@
   let isFilterSheetOpen = $state(false);
   let showSaveFilterDialog = $state(false);
   let showLoadFilterDialog = $state(false);
-  let showManageGroupsDialog = $state(false);
-  let showManageTagsDialog = $state(false);
-  // NOVO estado para diálogo de exclusão total
-  let showDeleteAllItemsDialog = $state(false);
 
   // --- NOVO: Estado para Filtros Nomeados ---
   let namedFilterSets = $state<NamedFilterSet[]>([]);
@@ -532,10 +530,14 @@
 
   // --- Adicionar Funções para abrir os diálogos de gerenciamento --- 
   function handleOpenManageGroupsDialog() {
-    showManageGroupsDialog = true;
+    // Modificar para usar o store
+    // uiState.showManageGroupsDialog = true;
+    dialogState.showManageGroups = true;
   }
   function handleOpenManageTagsDialog() {
-    showManageTagsDialog = true;
+    // Modificar para usar o store
+    // uiState.showManageTagsDialog = true;
+    dialogState.showManageTags = true;
   }
 
   // --- Funções de Gerenciamento para Diálogos --- (MODIFICADO com lógica real)
@@ -588,7 +590,8 @@
       toast.success("Todos os grupos foram removidos.");
       includedGroups = []; 
       excludedGroups = [];
-      showManageGroupsDialog = false; 
+      // Não fechar o diálogo aqui, deixar o store controlar
+      // showManageGroupsDialog = false; 
       return true;
       
       /* Lógica após implementação:
@@ -641,7 +644,8 @@
       toast.success("Todas as tags foram removidas de todos os itens.");
       includedTags = [];
       excludedTags = [];
-      showManageTagsDialog = false; 
+      // Não fechar o diálogo aqui, deixar o store controlar
+      // showManageTagsDialog = false; 
       return true;
     } catch (error) {
       console.error("Erro ao excluir todas as tags globalmente:", error);
@@ -661,31 +665,6 @@
       // ...
   }
 
-  // NOVA função para abrir diálogo de exclusão total
-  function handleOpenDeleteAllItemsDialog() {
-    showDeleteAllItemsDialog = true;
-  }
-
-  // NOVA FUNÇÃO para confirmar exclusão total de itens
-  async function confirmDeleteAllItems() {
-    const allItemIds = $savedItems.map(item => item.id);
-    if (allItemIds.length === 0) {
-      toast.info("Não há itens para remover.");
-      showDeleteAllItemsDialog = false;
-      return;
-    }
-    console.log(`[SavedItemsView] Tentando excluir ${allItemIds.length} itens...`);
-    try {
-      await deleteItems(allItemIds);
-      toast.success("Todos os itens salvos foram removidos.");
-      showDeleteAllItemsDialog = false;
-    } catch (error) {
-      console.error("Erro ao remover todos os itens:", error);
-      toast.error("Erro ao remover todos os itens.");
-      showDeleteAllItemsDialog = false; // Fecha mesmo em caso de erro
-    }
-  }
-
   let { viewMode = "table" } = $props();
 
 </script>
@@ -694,12 +673,7 @@
 <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
   <!-- Tabela (Sempre no DOM, controla visibilidade com display) -->
   <div style="display: {viewMode === 'table' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
-    <SavedItemsTableView
-      data={sortedItems}
-      onOpenManageGroupsDialog={handleOpenManageGroupsDialog}
-      onOpenManageTagsDialog={handleOpenManageTagsDialog}
-      onOpenDeleteAllItemsDialog={handleOpenDeleteAllItemsDialog}
-    />
+    <SavedItemsTableView data={sortedItems} />
   </div>
 
   <!-- Cartões (Sempre no DOM, controla visibilidade com display) -->
@@ -873,9 +847,9 @@
     onOpenManageTagsDialog={handleOpenManageTagsDialog}
   />
 
-  {#if showManageGroupsDialog}
+  {#if dialogState.showManageGroups}
     <ManageGroupsDialog
-       bind:open={showManageGroupsDialog}
+       bind:open={dialogState.showManageGroups}
        allGroups={$groups ?? []}
        onCreate={handleGroupCreate}
        onUpdate={handleGroupUpdate}
@@ -884,31 +858,14 @@
     />
   {/if}
 
-  {#if showManageTagsDialog}
+  {#if dialogState.showManageTags}
      <ManageTagsDialog
-        bind:open={showManageTagsDialog}
+        bind:open={dialogState.showManageTags}
         allTags={availableTags}
         onRename={handleTagRename}
         onDelete={handleTagDelete}
         onDeleteAll={handleDeleteAllTags}
      />
   {/if}
-
-  <!-- NOVO AlertDialog para Exclusão Total de Itens -->
-  <AlertDialog.Root bind:open={showDeleteAllItemsDialog}>
-    <AlertDialog.Content>
-      <AlertDialog.Header>
-        <AlertDialog.Title>Confirmar Exclusão Total</AlertDialog.Title>
-        <AlertDialog.Description>
-          Tem certeza que deseja remover <strong>TODOS</strong> os itens salvos?
-          Esta ação é <strong>irreversível</strong> e não pode ser desfeita.
-        </AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel onclick={() => showDeleteAllItemsDialog = false}>Cancelar</AlertDialog.Cancel>
-        <AlertDialog.Action onclick={confirmDeleteAllItems}>Sim, Excluir Tudo</AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
 
 </div>

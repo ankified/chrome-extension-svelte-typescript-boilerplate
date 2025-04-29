@@ -243,6 +243,26 @@ flashcards.subscribe(cards => {
 });
 }
 
+// Função para excluir TODOS os itens salvos
+export async function deleteAllItems(): Promise<void> {
+  console.log("[Storage] Iniciando exclusão de todos os itens salvos...");
+  return new Promise((resolve, reject) => {
+    // Remover a chave 'savedItems' do storage local
+    chrome.storage.local.remove('savedItems', () => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        console.error("[Storage] Erro ao remover 'savedItems' do storage local:", error);
+        reject(error);
+      } else {
+        console.log("[Storage] Chave 'savedItems' removida do storage local com sucesso.");
+        // Opcional: Limpar também as referências em grupos, notas, flashcards?
+        // Por enquanto, apenas remove os itens. O onChanged listener deve atualizar a store.
+        resolve();
+      }
+    });
+  });
+}
+
 // Função otimizada para corrigir as referências cruzadas entre itens, notas e flashcards
 export function fixReferences() {
     console.log("[Storage] Iniciando correção de referências");

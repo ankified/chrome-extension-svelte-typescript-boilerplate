@@ -4,20 +4,7 @@
   import DataTable from './DataTable.svelte';
 
   // A prop 'data' agora recebe sortedItems diretamente de SavedItemsView
-  // Adicionar props para os callbacks
-  type Props = {
-    data?: SavedItem[];
-    onOpenManageGroupsDialog: () => void;
-    onOpenManageTagsDialog: () => void;
-    onOpenDeleteAllItemsDialog: () => void;
-  };
-
-  let { 
-    data = [],
-    onOpenManageGroupsDialog,
-    onOpenManageTagsDialog,
-    onOpenDeleteAllItemsDialog
-  }: Props = $props();
+  let { data = [] } = $props();
 
   // Remover mockData
   // Remover typeFilter e lógica derivada
@@ -27,12 +14,7 @@
   // DataTable agora controla a visibilidade internamente.
   // Idealmente, a visibilidade controlada por DataTable deveria ser passada para getColumns,
   // mas isso requer refatoração mais complexa. Por agora, focamos em fazer a data fluir.
-  const dynamicColumns = getColumns(
-    false, // showReadLaterColumns - simplificado por enquanto
-    onOpenManageGroupsDialog,
-    onOpenManageTagsDialog,
-    onOpenDeleteAllItemsDialog
-  );
+  const dynamicColumns = getColumns(false); // Simplificado por enquanto
 
   // Remover filteredData
 </script>
