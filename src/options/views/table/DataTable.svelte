@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState, PaginationState, VisibilityState } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState, VisibilityState, RowSelectionState } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -56,7 +56,8 @@
   // PAGINATION: Restore state
   let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 25 });
   
-  let rowSelection = $state({});
+  // Use the imported RowSelectionState type
+  let rowSelection = $state<RowSelectionState>({});
   let sorting = $state<SortingState>([]);
   let expanded = $state({});
 
@@ -204,6 +205,11 @@
       // PAGINATION: Restore state binding
       get pagination() { return pagination; },
     },
+    meta: {
+      openEditDialog: handleOpenEditDialog,
+      openDeleteConfirmDialog: handleOpenDeleteConfirmDialog,
+      openDeleteAllDialog: openDeleteAllDialog
+    },
     onGlobalFilterChange: (value) => {
       if (typeof value === 'object' && value !== null) {
         globalFilter = value.value;
@@ -330,6 +336,53 @@
   // NOVO: Estado para diálogo de exclusão total
   let isDeleteAllConfirmOpen = $state(false);
 
+  // --- REAL HANDLERS FOR INDIVIDUAL ACTIONS ---
+  let editItemId: string | null = $state(null);
+  let isEditDialogOpen: boolean = $state(false);
+  let deleteItemId: string | null = $state(null);
+  let isConfirmDeleteDialogOpen: boolean = $state(false);
+
+  function handleOpenEditDialog(itemId: string) {
+    console.log(`[DataTable] handleOpenEditDialog called for ID: ${itemId}`);
+    if (!itemId) return;
+    console.log(`[DataTable] Abrindo diálogo de edição para item: ${itemId}`);
+    editItemId = itemId;
+    isEditDialogOpen = true;
+    // Por enquanto, apenas abre o diálogo. A lógica de edição virá depois.
+  }
+
+  function handleOpenDeleteConfirmDialog(itemId: string) {
+    console.log(`[DataTable] handleOpenDeleteConfirmDialog called for ID: ${itemId}`);
+    if (!itemId) return;
+    console.log(`[DataTable] Abrindo confirmação para excluir item: ${itemId}`);
+    deleteItemId = itemId;
+    isConfirmDeleteDialogOpen = true;
+  }
+
+  async function handleConfirmDelete() {
+    console.log(`[DataTable] handleConfirmDelete called for ID: ${deleteItemId}`);
+    if (!deleteItemId) return;
+    const idToDelete = deleteItemId;
+    console.log(`[DataTable] Confirmado! Excluindo item: ${idToDelete}`);
+    isConfirmDeleteDialogOpen = false; // Fecha o diálogo primeiro
+
+    try {
+      await storage.deleteItems([idToDelete]); // Usa a função existente de exclusão em lote
+      toast.success(`Item excluído com sucesso.`);
+      // Limpa a seleção se o item excluído estava selecionado
+      if (rowSelection[idToDelete]) {
+        rowSelection = { ...rowSelection }; // Cria nova referência para trigger de reatividade
+        delete rowSelection[idToDelete];
+      }
+    } catch (error) {
+      console.error("Erro ao excluir item:", error);
+      toast.error("Erro ao excluir o item.", { description: error instanceof Error ? error.message : String(error) });
+    } finally {
+      deleteItemId = null; // Limpa o ID após a tentativa
+    }
+  }
+  // --------------------------------------------
+
   function handleBulkDelete() {
     if (selectedItemCount === 0) return;
     isDeleteDialogOpen = true;
@@ -444,6 +497,7 @@
 
   // NOVO: Função para abrir o diálogo de confirmação de exclusão total
   function openDeleteAllDialog() {
+    console.log('[DataTable] openDeleteAllDialog called');
     isDeleteAllConfirmOpen = true;
   }
 
@@ -1018,4 +1072,49 @@
       <AlertDialog.Action class="bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={confirmDeleteAllItems}>Excluir Tudo</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
-</AlertDialog.Root> 
+</AlertDialog.Root>
+
+<!-- NOVO: AlertDialog para confirmar exclusão INDIVIDUAL -->
+<AlertDialog.Root bind:open={isConfirmDeleteDialogOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Confirmar Exclusão</AlertDialog.Title>
+      <AlertDialog.Description>
+        Tem certeza que deseja excluir este item?
+        {#if deleteItemId} 
+          {@const itemToDelete = data.find(item => item.id === deleteItemId)} 
+          {#if itemToDelete} 
+            <span class="block mt-2 font-medium break-all">{itemToDelete.title || itemToDelete.url}</span> 
+          {/if} 
+        {/if} 
+        Esta ação não pode ser desfeita.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel onclick={() => { isConfirmDeleteDialogOpen = false; deleteItemId = null; }}>Cancelar</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={handleConfirmDelete}>Excluir Item</AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- NOVO: Dialog para Editar Item (placeholder) -->
+<Dialog.Root bind:open={isEditDialogOpen} onOpenChange={(open) => { if (!open) editItemId = null; }}>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>Editar Item</Dialog.Title>
+       <Dialog.Description>
+        {#if editItemId}
+           ID: {editItemId} 
+        {/if}
+      </Dialog.Description>
+    </Dialog.Header>
+    <div class="py-6 text-center text-muted-foreground">
+      (Funcionalidade de edição em desenvolvimento)
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => isEditDialogOpen = false}>Fechar</Button>
+       <!-- Botão Salvar desabilitado por enquanto -->
+      <Button disabled>Salvar Alterações</Button> 
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root> 

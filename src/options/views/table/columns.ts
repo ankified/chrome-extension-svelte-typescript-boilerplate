@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/table-core';
 import type { SavedItem } from '../../../types';
 import { renderComponent } from '../../../lib/components/ui/data-table/index';
 import DataTableCheckbox from './data-table-checkbox.svelte';
-import DataTableActions from './data-table-actions.svelte';
+import DataTableActions from './DataTableActions.svelte';
 import ItemCell from './ItemCell.svelte';
 import ExpandButton from './ExpandButton.svelte';
 import SortableHeader from './SortableHeader.svelte';
@@ -243,10 +243,18 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       header: ({ table }) => (
         renderComponent(
           DropdownMenuHeaderButton,
-          { table }
+          { 
+            table, 
+            onOpenDeleteAllDialog: table.options.meta?.openDeleteAllDialog ?? (() => console.warn('onOpenDeleteAllDialog not provided via meta'))
+          }
         )
       ),
-      cell: ({ row }) => renderComponent(DataTableActions, { id: row.original.id }),
+      cell: ({ row, table }) => renderComponent(DataTableActions, { 
+        id: row.original.id,
+        url: row.original.url,
+        onEdit: table.options.meta?.openEditDialog,
+        onDelete: table.options.meta?.openDeleteConfirmDialog
+      }),
       enableSorting: false,
       enableHiding: false,
     },
