@@ -2,7 +2,7 @@
   import { toast } from 'svelte-sonner';
   import * as DropdownMenu from '../../../lib/components/ui/dropdown-menu/index';
   import Button from '../../../lib/components/ui/button/button.svelte';
-  import { MoreHorizontal, Eye, Pencil, Trash2, Copy, ExternalLink } from '@lucide/svelte';
+  import { MoreHorizontal, Eye, Trash2, Copy, ExternalLink } from '@lucide/svelte';
 
   console.log('[DataTableActions] Component Script Initialized');
 
@@ -10,7 +10,6 @@
   let { 
     id = '', 
     url = '',
-    onEdit = (itemId: string) => console.warn('[DataTableActions] onEdit called but not provided', itemId), 
     onDelete = (itemId: string) => console.warn('[DataTableActions] onDelete called but not provided', itemId) 
   } = $props();
 
@@ -51,11 +50,6 @@
   // ----------------------------
 
   // Funções wrapper para logging
-  function triggerOnEdit() {
-    console.log(`[DataTableActions] Triggering onEdit for ID: ${id}`);
-    console.log('[DataTableActions] typeof onEdit:', typeof onEdit);
-    onEdit(id);
-  }
   function triggerOnDelete() {
     console.log(`[DataTableActions] Triggering onDelete for ID: ${id}`);
     console.log('[DataTableActions] typeof onDelete:', typeof onDelete);
@@ -95,10 +89,6 @@
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>
 
-    <DropdownMenu.Item onclick={triggerOnEdit}>
-       <Pencil class="mr-2 h-4 w-4" />
-      Editar
-    </DropdownMenu.Item>
     <DropdownMenu.Item onclick={copyId}> 
       <Copy class="mr-2 h-4 w-4" />
       Copiar ID

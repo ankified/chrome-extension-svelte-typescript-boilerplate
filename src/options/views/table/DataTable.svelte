@@ -206,7 +206,6 @@
       get pagination() { return pagination; },
     },
     meta: {
-      openEditDialog: handleOpenEditDialog,
       openDeleteConfirmDialog: handleOpenDeleteConfirmDialog,
       openDeleteAllDialog: openDeleteAllDialog
     },
@@ -337,19 +336,8 @@
   let isDeleteAllConfirmOpen = $state(false);
 
   // --- REAL HANDLERS FOR INDIVIDUAL ACTIONS ---
-  let editItemId: string | null = $state(null);
-  let isEditDialogOpen: boolean = $state(false);
   let deleteItemId: string | null = $state(null);
   let isConfirmDeleteDialogOpen: boolean = $state(false);
-
-  function handleOpenEditDialog(itemId: string) {
-    console.log(`[DataTable] handleOpenEditDialog called for ID: ${itemId}`);
-    if (!itemId) return;
-    console.log(`[DataTable] Abrindo diálogo de edição para item: ${itemId}`);
-    editItemId = itemId;
-    isEditDialogOpen = true;
-    // Por enquanto, apenas abre o diálogo. A lógica de edição virá depois.
-  }
 
   function handleOpenDeleteConfirmDialog(itemId: string) {
     console.log(`[DataTable] handleOpenDeleteConfirmDialog called for ID: ${itemId}`);
@@ -1095,26 +1083,4 @@
       <AlertDialog.Action onclick={handleConfirmDelete}>Excluir Item</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
-</AlertDialog.Root>
-
-<!-- NOVO: Dialog para Editar Item (placeholder) -->
-<Dialog.Root bind:open={isEditDialogOpen} onOpenChange={(open) => { if (!open) editItemId = null; }}>
-  <Dialog.Content class="max-w-lg">
-    <Dialog.Header>
-      <Dialog.Title>Editar Item</Dialog.Title>
-       <Dialog.Description>
-        {#if editItemId}
-           ID: {editItemId} 
-        {/if}
-      </Dialog.Description>
-    </Dialog.Header>
-    <div class="py-6 text-center text-muted-foreground">
-      (Funcionalidade de edição em desenvolvimento)
-    </div>
-    <Dialog.Footer>
-      <Button variant="outline" onclick={() => isEditDialogOpen = false}>Fechar</Button>
-       <!-- Botão Salvar desabilitado por enquanto -->
-      <Button disabled>Salvar Alterações</Button> 
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root> 
+</AlertDialog.Root> 

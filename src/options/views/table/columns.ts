@@ -252,7 +252,6 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       cell: ({ row, table }) => renderComponent(DataTableActions, { 
         id: row.original.id,
         url: row.original.url,
-        onEdit: table.options.meta?.openEditDialog,
         onDelete: table.options.meta?.openDeleteConfirmDialog
       }),
       enableSorting: false,
