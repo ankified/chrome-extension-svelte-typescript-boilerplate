@@ -27,7 +27,6 @@
   import ChevronsLeft from '@lucide/svelte/icons/chevrons-left';
   import ChevronsRight from '@lucide/svelte/icons/chevrons-right';
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
-  import { Card, CardHeader, CardTitle, CardContent } from '../../../lib/components/ui/card';
   import * as Dialog from '../../../lib/components/ui/dialog/index';
   import NoteCard from '../../../lib/components/NoteCard.svelte';
   import FlashcardCard from '../../../lib/components/FlashcardCard.svelte';
@@ -46,6 +45,8 @@
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import BulkGroupAssignDialog from './BulkGroupAssignDialog.svelte';
   import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
+  // NOVO: Importar o componente da linha expandida
+  import ExpandedRowView from './ExpandedRowView.svelte';
 
   let { columns = [], data = [] } = $props();
   $inspect("DataTable data prop", data);
@@ -757,9 +758,15 @@
               {/each}
             </Table.Row>
             {#if row.getIsExpanded()}
+            <!-- Mantido temporariamente para evitar quebrar a lógica antiga comentada -->
               {@const reactiveItem = $savedItems.find(item => item.id === row.original.id)}
-              <Table.Row>
-                <Table.Cell colspan={columns.length} class="bg-muted/40 p-0">
+              <Table.Row data-state="expanded">
+                <Table.Cell colspan={columns.length} class="p-0 border-b">
+                  <!-- NOVO: Renderizar o componente ExpandedRowView -->
+                  <ExpandedRowView itemId={row.original.id} />
+
+                  <!-- Conteúdo antigo comentado -->
+                  <!-- 
                   <div class="p-4">
                     <Card class="w-full">
                       <CardHeader>
@@ -771,7 +778,6 @@
                       </CardHeader>
                       <CardContent>
                         <div class="flex flex-wrap gap-2 mb-4">
-                          <!-- Dialog de Notas -->
                           <Dialog.Root>
                             <Dialog.Trigger>
                               <Button size="sm" variant="outline">Ver Notas</Button>
@@ -789,7 +795,6 @@
                               {/if}
                             </Dialog.Content>
                           </Dialog.Root>
-                          <!-- Dialog de Flashcards -->
                           <Dialog.Root>
                             <Dialog.Trigger>
                               <Button size="sm" variant="outline">Ver Flashcards</Button>
@@ -807,7 +812,6 @@
                               {/if}
                             </Dialog.Content>
                           </Dialog.Root>
-                          <!-- Dialog de Comentário -->
                           <Dialog.Root>
                             <Dialog.Trigger>
                               <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = reactiveItem?.comments || ""}>Editar Comentário</Button>
@@ -823,7 +827,6 @@
                               </form>
                             </Dialog.Content>
                           </Dialog.Root>
-                          <!-- Dialog de Grupos/Tags -->
                           <Dialog.Root>
                             <Dialog.Trigger>
                               <Button size="sm" variant="outline">Gerenciar Grupos/Tags</Button>
@@ -832,11 +835,9 @@
                               <Dialog.Title>Gerenciar Grupos e Tags</Dialog.Title>
                               <div class="mb-2">
                                 <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                                <!-- Exibir e permitir edição dos grupos -->
                               </div>
                               <div>
                                 <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                                <!-- Exibir e permitir edição das tags -->
                               </div>
                             </Dialog.Content>
                           </Dialog.Root>
@@ -881,7 +882,8 @@
                         </div>
                       </CardContent>
                     </Card>
-                  </div>
+                  </div> 
+                  -->
                 </Table.Cell>
               </Table.Row>
             {/if}
