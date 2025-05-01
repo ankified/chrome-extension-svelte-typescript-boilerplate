@@ -16,6 +16,7 @@ export interface SavedItem {
   previewImage?: string; // URL da captura de tela para exibição no popover
   noteIds: string[];
   flashcardIds: string[];
+  visitHistory?: VisitItem[];
 }
 
 export interface Group {
@@ -88,4 +89,13 @@ export type NamedFilterSet = {
   id: string;
   name: string;
   settings: FilterSettings;
-}; 
+};
+
+// ---- ADICIONADO: Tipos para Histórico de Visitas ----
+export type VisitTransition = chrome.history.VisitItem["transition"];
+
+export interface VisitItem {
+  visitId: string;
+  visitTime: number; // Timestamp em milissegundos desde a epoch
+  transition: VisitTransition;
+} 

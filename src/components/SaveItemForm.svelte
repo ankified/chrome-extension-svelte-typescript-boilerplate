@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { savedItems, groups, getAllTags } from "../storage";
-  import type { SavedItem, Group } from "../types";
+  import { savedItems, groups, getAllTags, itemLinksUtils } from "../storage";
+  import type { SavedItem, Group, VisitItem, VisitTransition } from "../types";
   import QuickNoteInput from "../lib/components/QuickNoteInput.svelte";
   import FlashcardInput from "../lib/components/FlashcardInput.svelte";
   import PagePreviewCard from "../lib/components/PagePreviewCard.svelte";
@@ -77,7 +77,18 @@
   // Carregar todas as tags disponíveis
   async function loadAllTags() {
     try {
-      const tags = await getAllTags();
+      // Buscar os itens salvos primeiro
+      const currentItems = await new Promise<SavedItem[]>((resolve) => {
+          const unsubscribe = savedItems.subscribe(items => {
+              // Usar setTimeout para garantir que a store foi atualizada antes de resolver
+              setTimeout(() => {
+                  unsubscribe();
+                  resolve(items);
+              }, 0);
+          });
+      });
+      // Agora chamar getAllTags com os itens
+      const tags = getAllTags(currentItems); 
       // Garantir que todas as tags são strings válidas
       allAvailableTags = tags.filter(tag => typeof tag === 'string');
     } catch (error) {
@@ -194,97 +205,131 @@
       tags: selectedTags.filter(tag => typeof tag === 'string'), // Garantir que todas as tags são strings
       groupIds: [...selectedGroups],
       readLater: saveMode === "read_later",
-      scheduledDate: saveMode === "read_later" && scheduledDate ? new Date(scheduledDate).getTime() : undefined,
+      scheduledDates: saveMode === "read_later" && scheduledDate ? [new Date(scheduledDate).getTime()] : [], // Inicializa como array
       noteIds: [],
-      flashcardIds: []
+      flashcardIds: [],
+      // visitHistory será preenchido abaixo
     };
-    
-    // Console log para depuração
-    console.log(`[SaveItemForm] Salvando item com ${selectedGroups.length} grupos:`, selectedGroups);
-    console.log(`[SaveItemForm] Detalhes do item a ser salvo:`, newItem);
-    
-    // Obter itens atuais diretamente do storage para evitar duplicação
-    chrome.storage.local.get(['savedItems'], (result) => {
-      const existingItems: SavedItem[] = result.savedItems || [];
-      
-      // Verificar se já existe um item com esta URL para evitar duplicação
-      const isDuplicate = existingItems.some((item: SavedItem) => item.url === newItem.url);
-      
-      if (isDuplicate) {
-        console.log(`[SaveItemForm] Item já existe com esta URL: ${newItem.url}`);
-        toast.error("Item já existe", {
-          description: "Um item com esta URL já existe nos seus favoritos.",
-          duration: 3000,
-        });
-        return;
-      }
-      
-      // Adicionar o novo item à lista
-      const updatedItems = [...existingItems, newItem];
-      console.log(`[SaveItemForm] Salvando no storage. Total: ${updatedItems.length}`);
-      
-      // Primeiro salvar apenas em storage.local para garantir persistência rápida
-      chrome.storage.local.set({ savedItems: updatedItems }, () => {
-        // Atualizar a store Svelte após confirmar o salvamento no storage local
-        savedItems.set(updatedItems);
-        
-        // Em seguida, atualizar grupos para incluir o novo item (apenas em storage.local)
-    if (selectedGroups.length > 0) {
-          console.log("[SaveItemForm] Atualizando grupos com o novo item");
-          
-          chrome.storage.local.get(['groups'], (groupsResult) => {
-            const existingGroups: Group[] = groupsResult.groups || [];
-            const updatedGroups = existingGroups.map((group: Group) => {
-          if (selectedGroups.includes(group.id)) {
-                console.log(`[SaveItemForm] Adicionando item ao grupo: ${group.name}`);
-                // Certificar que o grupo tenha um array itemIds válido
-                const currentItemIds = Array.isArray(group.itemIds) ? [...group.itemIds] : [];
-                
-            return {
-              ...group,
-                  itemIds: [...currentItemIds, newItem.id]
-            };
-          }
-          return group;
-        });
-            
-            // Salvar grupos atualizados apenas em storage.local
-            chrome.storage.local.set({ groups: updatedGroups }, () => {
-              // Atualizar a store Svelte após confirmar o salvamento
-              groups.set(updatedGroups);
-              
-              // Exibir toast de sucesso após confirmar salvamento
-              console.log("[SaveItemForm] Salvamento completo");
-              toast.success(`"${currentTitle}" foi salvo com sucesso!`, {
-                description: saveMode === "read_later" ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
-                duration: 3000,
-              });
-              
-              // Recarregar todas as tags após um breve atraso para atualizar o popover
-              setTimeout(() => {
-                loadAllTags();
-                // Resetar o formulário
-                resetForm();
-              }, 500);
+
+    console.log("[SaveItemForm] Tentando salvar item:", newItem);
+
+    // Função interna para encapsular a lógica de salvamento principal
+    const completeSaving = (itemToSave: SavedItem) => {
+        console.log("[SaveItemForm] Completando salvamento para item:", itemToSave);
+        chrome.storage.local.get(['savedItems'], (result) => {
+            const existingItems: SavedItem[] = result.savedItems || [];
+            const isDuplicate = existingItems.some((item: SavedItem) => item.url === itemToSave.url);
+
+            if (isDuplicate) {
+                console.log(`[SaveItemForm] Item já existe com esta URL: ${itemToSave.url}`);
+                toast.error("Item já existe", {
+                    description: "Um item com esta URL já existe nos seus favoritos.",
+                    duration: 3000,
+                });
+                return;
+            }
+
+            const updatedItems = [...existingItems, itemToSave];
+            console.log(`[SaveItemForm] Salvando no storage local. Total: ${updatedItems.length}`);
+
+            chrome.storage.local.set({ savedItems: updatedItems }, () => {
+                const setError = chrome.runtime.lastError;
+                if (setError) {
+                    console.error("[SaveItemForm] Erro ao salvar savedItems:", setError);
+                    toast.error("Erro ao salvar item", { description: setError.message });
+                    return;
+                }
+
+                savedItems.set(updatedItems);
+
+                if (itemToSave.groupIds && itemToSave.groupIds.length > 0) {
+                    console.log("[SaveItemForm] Atualizando grupos com o novo item");
+                    chrome.storage.local.get(['groups'], (groupsResult) => {
+                        const existingGroups: Group[] = groupsResult.groups || [];
+                        const updatedGroups = existingGroups.map((group: Group) => {
+                            if (itemToSave.groupIds.includes(group.id)) {
+                                const currentItemIds = Array.isArray(group.itemIds) ? [...group.itemIds] : [];
+                                return { ...group, itemIds: [...currentItemIds, itemToSave.id] };
+                            }
+                            return group;
+                        });
+
+                        chrome.storage.local.set({ groups: updatedGroups }, () => {
+                            const groupSetError = chrome.runtime.lastError;
+                            if (groupSetError) {
+                                console.error("[SaveItemForm] Erro ao salvar grupos atualizados:", groupSetError);
+                                toast.error("Erro ao atualizar grupos", { description: groupSetError.message });
+                                // Continua mesmo com erro nos grupos?
+                            } else {
+                                groups.set(updatedGroups);
+                            }
+                            // Exibir toast de sucesso APÓS tentar atualizar grupos
+                            toast.success(`"${itemToSave.title}" foi salvo com sucesso!`, {
+                                description: itemToSave.readLater ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
+                                duration: 3000,
+                            });
+                            // Recarregar e resetar
+                            setTimeout(() => { loadAllTags(); resetForm(); }, 500);
+                        });
+                    });
+                } else {
+                    // Se não houver grupos, exibir toast imediatamente após salvar item
+                    toast.success(`"${itemToSave.title}" foi salvo com sucesso!`, {
+                        description: itemToSave.readLater ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
+                        duration: 3000,
+                    });
+                    // Recarregar e resetar
+                    setTimeout(() => { loadAllTags(); resetForm(); }, 500);
+                }
             });
-          });
-        } else {
-          // Se não houver grupos para atualizar, exibir toast imediatamente
-          console.log("[SaveItemForm] Salvamento completo (sem grupos)");
-          toast.success(`"${currentTitle}" foi salvo com sucesso!`, {
-            description: saveMode === "read_later" ? "Adicionado à lista de leitura." : "Adicionado aos favoritos.",
-            duration: 3000,
-          });
-          
-          // Recarregar todas as tags após um breve atraso para atualizar o popover
-          setTimeout(() => {
-            loadAllTags();
-            // Resetar o formulário
-            resetForm();
-          }, 500);
-        }
-      });
-    });
+        });
+    };
+
+    // Tenta buscar o histórico ANTES de salvar
+    if (typeof chrome !== 'undefined' && chrome.history && chrome.history.getVisits) {
+      console.log(`[SaveItemForm] Buscando histórico para: ${newItem.url}`);
+      try {
+        chrome.history.getVisits({ url: newItem.url }, (visits) => {
+          const historyError = chrome.runtime.lastError;
+          if (historyError) {
+            console.warn('[SaveItemForm] Erro ao buscar histórico (provavelmente permissão faltando ou URL inválida):', historyError.message);
+            // Prossegue salvando SEM histórico
+            completeSaving(newItem);
+          } else if (visits && visits.length > 0) {
+            console.log(`[SaveItemForm] Histórico encontrado: ${visits.length} visitas.`);
+            // Ordena (mais recentes primeiro) e limita
+            const sortedAndLimitedVisits = visits
+              .sort((a, b) => (b.visitTime ?? 0) - (a.visitTime ?? 0))
+              .slice(0, 20); // Limite de 20 visitas
+            
+            // Mapeia para a interface VisitItem
+            const mappedVisits: VisitItem[] = sortedAndLimitedVisits.map(v => ({
+              visitId: String(v.id), // Garante que visitId seja string
+              visitTime: v.visitTime ?? 0,
+              transition: (v.transition as VisitTransition) ?? 'link'
+            }));
+            
+            // Adiciona o histórico ao item
+            newItem.visitHistory = mappedVisits;
+            console.log('[SaveItemForm] Histórico processado e adicionado ao item.');
+            // Chama a função para salvar o item COM histórico
+            completeSaving(newItem);
+          } else {
+            console.log('[SaveItemForm] Nenhum histórico de visitas encontrado para esta URL.');
+            // Prossegue salvando SEM histórico (visitHistory continuará undefined)
+            completeSaving(newItem);
+          }
+        });
+      } catch (e) {
+        console.error('[SaveItemForm] Erro inesperado ao chamar chrome.history.getVisits:', e);
+        // Prossegue salvando SEM histórico em caso de erro síncrono
+        completeSaving(newItem);
+      }
+    } else {
+      console.warn('[SaveItemForm] API chrome.history não disponível. Salvando sem histórico.');
+      // Prossegue salvando SEM histórico
+      completeSaving(newItem);
+    }
   }
   
   function toggleNoteInput() {

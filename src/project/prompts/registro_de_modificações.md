@@ -15,7 +15,7 @@ Registre a modificação recém-implementada no diário do projeto. Para isso:
 
 3. Se não existir, crie o arquivo com o título `# Diário de Desenvolvimento - $dataAtual`.
 
-4. No arquivo de diário correspondente à `$dataAtual`, adicione uma nova entrada para a modificação atual:
+4. No arquivo de diário correspondente à `$dataAtual` você deverá descrever de forma clara e detalhada as modificações realizadas. Para isso adicione uma nova entrada para cada modificação:
    - Use um subtítulo de nível 3 com a hora da modificação (`### $horaAtual`).
    - Descreva a modificação específica realizada.
    - Liste os arquivos modificados ou adicionados *nesta modificação específica*.
@@ -36,5 +36,5 @@ Registre a modificação recém-implementada no diário do projeto. Para isso:
       - Adicionar testes para o componente BotaoSecundario.
    ```
 
-5. Prepare também uma mensagem de commit com um resumo conciso das mudanças acumuladas desde o último commit para uso no GitHub.
+5. Prepare também uma mensagem de commit em português do Brasil com um resumo conciso das mudanças acumuladas desde o último commit para uso no GitHub.
 ``` 

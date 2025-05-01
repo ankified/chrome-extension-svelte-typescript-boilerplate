@@ -53,7 +53,8 @@ export default defineManifest(async () => ({
         "activeTab",
         "notifications", 
         "alarms", 
-        "sidePanel"
+        "sidePanel",
+        "history"
     ] as chrome.runtime.ManifestPermissions[],
     host_permissions: ["<all_urls>"],
 }));

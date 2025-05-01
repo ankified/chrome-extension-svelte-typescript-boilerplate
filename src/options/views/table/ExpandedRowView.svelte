@@ -332,9 +332,22 @@
             {/if}
 
         {:else if activeSection === 'history'}
-            <!-- Seção: Histórico (Placeholder) -->
-             <h4 class="text-sm font-medium mb-2">Histórico</h4>
-             <p class="text-sm text-muted-foreground italic">(Funcionalidade em desenvolvimento)</p>
+            <!-- Seção: Histórico -->
+             <h4 class="text-sm font-medium mb-2">Histórico de Visitas</h4>
+             <ScrollArea class="h-[calc(100%-3rem)] border rounded-md p-2">
+                {#if item.visitHistory && item.visitHistory.length > 0}
+                    <ul class="space-y-2">
+                        {#each item.visitHistory as visit (visit.visitId)}
+                            <li class="text-xs border-b border-dashed border-gray-700 pb-1 last:border-b-0">
+                                <span class="font-mono text-muted-foreground">{format(new Date(visit.visitTime), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}</span>
+                                <span class="ml-2 text-primary/80">({visit.transition})</span>
+                            </li>
+                        {/each}
+                    </ul>
+                {:else}
+                    <p class="text-sm text-muted-foreground italic text-center py-4">Nenhum histórico de visitas registrado para este item.</p>
+                {/if}
+             </ScrollArea>
         {/if}
 
       </div>
@@ -364,12 +377,8 @@
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
              <Sidebar.MenuItem>
-              <Sidebar.MenuButton isActive={activeSection === 'history'} onclick={() => activeSection = 'history'} >
-                {#snippet child({ props })}
-                  <button {...props} disabled>
-                    <History class="size-4 mr-2"/> Histórico
-                  </button>
-                {/snippet}
+              <Sidebar.MenuButton isActive={activeSection === 'history'} onclick={() => activeSection = 'history'}>
+                  <History class="size-4 mr-2"/> Histórico
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
           </Sidebar.Menu>
