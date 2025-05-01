@@ -758,132 +758,14 @@
               {/each}
             </Table.Row>
             {#if row.getIsExpanded()}
-            <!-- Mantido temporariamente para evitar quebrar a lógica antiga comentada -->
-              {@const reactiveItem = $savedItems.find(item => item.id === row.original.id)}
-              <Table.Row data-state="expanded">
-                <Table.Cell colspan={columns.length} class="p-0 border-b">
-                  <!-- NOVO: Renderizar o componente ExpandedRowView -->
-                  <ExpandedRowView itemId={row.original.id} />
+             <!-- Mantido temporariamente para evitar quebrar a lógica antiga comentada REMOVED -->
+                <Table.Row data-state="expanded">
+                  <Table.Cell colspan={columns.length} class="p-0 border-b">
+                    <!-- NOVO: Renderizar o componente ExpandedRowView -->
+                    <ExpandedRowView itemId={row.original.id} />
 
-                  <!-- Conteúdo antigo comentado -->
-                  <!-- 
-                  <div class="p-4">
-                    <Card class="w-full">
-                      <CardHeader>
-                        <CardTitle level={4}>{row.original.title}</CardTitle>
-                        <div class="flex items-center gap-2 mt-1">
-                          <a href={row.original.url} target="_blank" class="text-xs text-primary underline break-all">{row.original.url}</a>
-                          <span class="text-xs text-muted-foreground ml-2">ID: {row.original.id}</span>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                          <Dialog.Root>
-                            <Dialog.Trigger>
-                              <Button size="sm" variant="outline">Ver Notas</Button>
-                            </Dialog.Trigger>
-                            <Dialog.Content class="max-w-lg w-full">
-                              <Dialog.Title>Notas associadas</Dialog.Title>
-                              {#if reactiveItem?.noteIds?.length}
-                                {#each notes() as note (note.id)}
-                                  {#if reactiveItem.noteIds.includes(note.id)}
-                                    <NoteCard {note} showActions={false} />
-                                  {/if}
-                                {/each}
-                              {:else}
-                                <div class="text-xs text-muted-foreground">Nenhuma nota associada.</div>
-                              {/if}
-                            </Dialog.Content>
-                          </Dialog.Root>
-                          <Dialog.Root>
-                            <Dialog.Trigger>
-                              <Button size="sm" variant="outline">Ver Flashcards</Button>
-                            </Dialog.Trigger>
-                            <Dialog.Content class="max-w-lg w-full">
-                              <Dialog.Title>Flashcards associados</Dialog.Title>
-                              {#if reactiveItem?.flashcardIds?.length}
-                                {#each flashcards() as flashcard (flashcard.id)}
-                                  {#if reactiveItem.flashcardIds.includes(flashcard.id)}
-                                    <FlashcardCard card={flashcard} showActions={false} />
-                                  {/if}
-                                {/each}
-                              {:else}
-                                <div class="text-xs text-muted-foreground">Nenhum flashcard associado.</div>
-                              {/if}
-                            </Dialog.Content>
-                          </Dialog.Root>
-                          <Dialog.Root>
-                            <Dialog.Trigger>
-                              <Button size="sm" variant="outline" onclick={() => editingComment[row.original.id] = reactiveItem?.comments || ""}>Editar Comentário</Button>
-                            </Dialog.Trigger>
-                            <Dialog.Content class="max-w-md w-full">
-                              <Dialog.Title>Editar Comentário</Dialog.Title>
-                              <form onsubmit={(e) => { e.preventDefault(); }}>
-                                <textarea bind:value={editingComment[row.original.id]} class="w-full p-2 rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-900 h-24 resize-none mb-2"></textarea>
-                                <div class="flex gap-2 justify-end">
-                                  <Button type="submit" size="sm">Salvar</Button>
-                                  <Button type="button" size="sm" variant="outline" onclick={() => { }}>Cancelar</Button>
-                                </div>
-                              </form>
-                            </Dialog.Content>
-                          </Dialog.Root>
-                          <Dialog.Root>
-                            <Dialog.Trigger>
-                              <Button size="sm" variant="outline">Gerenciar Grupos/Tags</Button>
-                            </Dialog.Trigger>
-                            <Dialog.Content class="max-w-md w-full">
-                              <Dialog.Title>Gerenciar Grupos e Tags</Dialog.Title>
-                              <div class="mb-2">
-                                <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                              </div>
-                              <div>
-                                <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                              </div>
-                            </Dialog.Content>
-                          </Dialog.Root>
-                        </div>
-                        {#if reactiveItem?.comments}
-                          <div class="mb-2">
-                            <span class="font-medium text-xs text-muted-foreground">Comentário:</span>
-                            <div class="text-sm mt-1">{reactiveItem.comments}</div>
-                          </div>
-                        {/if}
-                        <div class="flex flex-wrap gap-2 mb-2">
-                          <span class="font-medium text-xs text-muted-foreground">Grupos:</span>
-                          {#if reactiveItem && reactiveItem.groupIds && reactiveItem.groupIds.length > 0}
-                            {#each reactiveItem.groupIds as gid (gid)}
-                              {@const groupInfo = $groupsStore.find((g: Group) => g.id === gid)}
-                              {#if groupInfo}
-                                <Badge variant="secondary" style={groupInfo.color ? `background-color: ${groupInfo.color}` : ''}>
-                                  {groupInfo.name}
-                                </Badge>
-                              {:else}
-                                <Badge variant="outline">{gid}</Badge>
-                              {/if}
-                            {/each}
-                          {:else}
-                            <span class="text-xs text-muted-foreground">Nenhum</span>
-                          {/if}
-                        </div>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                          <span class="font-medium text-xs text-muted-foreground">Tags:</span>
-                          {#if reactiveItem && reactiveItem.tags && reactiveItem.tags.length > 0}
-                            {#each reactiveItem.tags as tag (tag)}
-                              <Badge variant="outline">{tag}</Badge>
-                            {/each}
-                          {:else}
-                            <span class="text-xs text-muted-foreground">Nenhuma</span>
-                          {/if}
-                        </div>
-                        <div class="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>Criado em: {new Date(row.original.dateAdded).toLocaleString('pt-BR')}</span>
-                          <span>Notas: {reactiveItem?.noteIds?.length || 0}</span>
-                          <span>Flashcards: {reactiveItem?.flashcardIds?.length || 0}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div> 
-                  -->
+                    <!-- Conteúdo antigo comentado REMOVED -->
+
                 </Table.Cell>
               </Table.Row>
             {/if}
@@ -1085,4 +967,4 @@
       <AlertDialog.Action onclick={handleConfirmDelete}>Excluir Item</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
-</AlertDialog.Root> 
+</AlertDialog.Root>

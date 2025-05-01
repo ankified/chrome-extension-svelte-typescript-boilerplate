@@ -45,7 +45,7 @@
       return "Data inválida";
     }
   }
-  
+
   function formatDate(timestamp: number): string {
     if (!timestamp) return "Data não definida";
     try {
@@ -60,7 +60,7 @@
       return "Data inválida";
     }
   }
-  
+
   // Função original para tooltip de data de adição
   function formatDateAddedTooltip(timestamp: number): string {
     if (!timestamp) return "Data não definida";
@@ -77,9 +77,12 @@
     }
   }
 
-  // Nova função para tooltip de agendamento
-  function formatScheduleTooltip(timestamp: number): string {
-    if (!timestamp) return "Não agendado";
+  // Nova função para tooltip de agendamento (AJUSTADA PARA scheduledDates)
+  function formatScheduleTooltip(scheduledTimestamps: number[] | undefined): string {
+    if (!scheduledTimestamps || scheduledTimestamps.length === 0) return "Não agendado";
+    // Pega a primeira data para o tooltip principal (assume que está ordenado ou pega a mais próxima?)
+    // Por simplicidade, pegamos a primeira. Ordenação deve ser feita antes se necessário.
+    const timestamp = scheduledTimestamps[0];
     try {
       const date = new Date(timestamp);
       const now = new Date();
@@ -99,7 +102,11 @@
       }
 
       const timePart = formatDateFn(date, 'HH:mm') + 'h';
-      return `${relativePart}, às ${timePart}`;
+      let tooltipText = `${relativePart}, às ${timePart}`;
+      if (scheduledTimestamps.length > 1) {
+        tooltipText += ` (+${scheduledTimestamps.length - 1} outra${scheduledTimestamps.length > 2 ? 's' : ''})`;
+      }
+      return tooltipText;
     } catch (e) {
       console.error("Erro ao formatar data de agendamento:", e);
       return "Data inválida";
@@ -111,6 +118,8 @@
     toast.info("Edição de agendamento ainda não implementada.", {
         description: `Item: ${item.title}`
     });
+    // TODO: Talvez abrir a página de opções na tabela com a linha expandida?
+    // chrome.runtime.sendMessage({ action: "openOptionsPage", tab: "saved-table", expandItem: item.id });
   }
 
   function addItemToGroup(itemId: string, groupId: string) {
@@ -146,7 +155,7 @@
         );
         // toast.success("Item adicionado ao grupo.");
   }
-  
+
   // Funções de ação (precisam acessar savedItems store)
   function deleteItem(id: string) {
     // Adicionar confirmação se desejado
@@ -159,7 +168,7 @@
     );
     toast.success("Item excluído com sucesso.");
   }
-  
+
   function removeItemFromGroup(itemId: string, groupId: string) {
       savedItems.update(items =>
           items.map(item => {
@@ -189,14 +198,14 @@
       );
       toast.success("Item removido do grupo.");
   }
-  
+
   function openURL(url: string) {
     chrome.tabs.create({ url });
   }
-  
+
   function removeTagFromItem(item: SavedItem, tagToRemove: string) {
     if (!item.tags || !Array.isArray(item.tags)) return;
-    
+
     savedItems.update(items => {
       return items.map(i => {
         if (i.id === item.id) {
@@ -208,16 +217,16 @@
         return i;
       });
     });
-    
+
     toast.success(`Tag "${tagToRemove}" removida com sucesso.`);
   }
-  
+
   // Função para lidar com a criação de grupo no diálogo
   async function handleCreateGroupInDialog(item: SavedItem) {
     if (!newGroupNameDialog.trim()) return;
-    
+
     const createdGroup = await createGroup(newGroupNameDialog, newGroupDialogColor);
-    
+
     if (createdGroup) {
       // Adicionar o item ao grupo recém-criado automaticamente
       addItemToGroup(item.id, createdGroup.id);
@@ -229,7 +238,7 @@
     } else {
       // Adicionar feedback de erro/aviso aqui (se createGroup retornou null)
       // O warning de grupo existente já deve ter sido mostrado por createGroup
-      toast.error(`Não foi possível criar o grupo "${newGroupNameDialog}". Verifique se já existe.`);
+      // toast.error(`Não foi possível criar o grupo "${newGroupNameDialog}". Verifique se já existe.`);
     }
   }
 
@@ -257,12 +266,12 @@
       updatedTags = [...currentTags, tagToAddProperCase];
       toastMessage = `Tag "${tagToAddProperCase}" adicionada.`;
       if (!existingSystemTag) {
-           toastMessage += " (Nova tag)"; 
+           toastMessage += " (Nova tag)";
            isNewTagForSystem = true; // Marca se a tag é nova para o sistema
       }
     }
 
-    savedItems.update(items => 
+    savedItems.update(items =>
       items.map(i => i.id === item.id ? { ...i, tags: updatedTags } : i)
     );
     toast.success(toastMessage);
@@ -288,7 +297,7 @@
   // Estados para o diálogo de criação de grupo
   let newGroupNameDialog = $state("");
   let newGroupDialogColor = $state("#3b82f6"); // Cor padrão inicial
-  
+
   // Cores pré-definidas para os grupos (igual ao SaveItemForm)
   const groupColors = [
       "#3b82f6", // azul
@@ -322,18 +331,19 @@
       {@const flashcardCount = item.flashcardIds?.length || 0}
       {@const groupCount = Array.isArray(item.groupIds) ? item.groupIds.length : 0}
       {@const tagCount = Array.isArray(item.tags) ? item.tags.length : 0}
+      {@const isScheduled = item.readLater && item.scheduledDates && item.scheduledDates.length > 0}
 
       <div class="saved-item-card border rounded-lg overflow-hidden shadow-sm dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
         <!-- Header com Favicon e Título/URL -->
         <div class="p-3 flex items-start space-x-3 border-b dark:border-gray-700">
-          <img 
-            src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`} 
-            alt="Favicon" 
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`}
+            alt="Favicon"
             class="w-8 h-8 rounded flex-shrink-0 mt-1"
-            
+
           />
           <div class="flex-grow min-w-0 overflow-hidden w-full">
-            <a 
+            <a
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -342,7 +352,7 @@
             >
               {item.title || "Sem título"}
             </a>
-            <a 
+            <a
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -353,27 +363,27 @@
             </a>
           </div>
         </div>
-        
+
         <!-- Corpo com Grupos, Tags e Conteúdo Principal -->
         <div class="p-3 flex-grow flex flex-col justify-between min-h-0">
           <div class="flex-shrink mb-2">
             <!-- Grupos com Carousel -->
             {#if Array.isArray(item.groupIds) && item.groupIds.length > 0}
               <Carousel.Root class="w-full max-w-xs mx-auto relative mb-2 group" opts={{ align: "start", dragFree: true }}>
-                 <Carousel.Content class="-ml-1"> 
+                 <Carousel.Content class="-ml-1">
                   {#each item.groupIds as groupId}
-                     <Carousel.Item class="pl-1 basis-auto"> 
+                     <Carousel.Item class="pl-1 basis-auto">
                     {@const group = getGroupInfo(groupId)}
                     {@const bgColor = group.color || '#cccccc'}
                     {@const textColor = getTextColorForBackground(bgColor)}
-                    <span 
+                    <span
                          class="group-chip relative text-xs py-0.5 pl-2 pr-1.5 rounded-full flex items-center group whitespace-nowrap overflow-hidden flex-shrink-0 h-full"
                       style={`background-color: ${bgColor}; color: ${textColor};`}
                       title={group.name}
                     >
                       <Folder class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" style={`fill: ${textColor};`} />
-                      <span class="mr-1 flex-shrink-0">{group.name}</span> 
-                      <button 
+                      <span class="mr-1 flex-shrink-0">{group.name}</span>
+                      <button
                         class="delete-group-btn inline-flex items-center justify-center p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1"
                         onclick={(e) => { e.stopPropagation(); removeItemFromGroup(item.id, groupId); }}
                         title="Remover do grupo"
@@ -394,7 +404,7 @@
             {:else}
               <div class="text-xs text-muted-foreground italic py-1 px-2 text-center my-1">Nenhum grupo atribuído</div>
             {/if}
-            
+
             <!-- Tags com Carousel -->
             {#if Array.isArray(item.tags) && item.tags.length > 0}
               <Carousel.Root class="w-full max-w-xs mx-auto relative mb-2 group" opts={{ align: "start", dragFree: true }}>
@@ -405,7 +415,7 @@
                         <Tag class="h-3 w-3 mr-1 opacity-75 flex-shrink-0" />
                         <span class="mr-1 flex-shrink-0">{tag}</span>
                         <div class="flex items-center max-w-0 group-hover:max-w-4 transition-[max-width] duration-200 ease-in-out ml-1">
-                          <button 
+                          <button
                              class="text-red-500 hover:text-red-600 dark:text-red-400 p-0.5"
                              onclick={() => removeTagFromItem(item, tag)}
                              title="Remover tag"
@@ -427,7 +437,7 @@
               <div class="text-xs text-muted-foreground italic py-1 px-2 text-center my-1">Nenhuma tag atribuída</div>
             {/if}
           </div>
-            
+
           <!-- Comentário com ScrollArea -->
           <div class="flex-grow mb-2 overflow-hidden">
             {#if item.comments}
@@ -454,16 +464,16 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             </Tooltip.Provider>
-            
+
             <!-- Ícones da direita: Notas, Flashcards, Agendamento (se houver) e Ações -->
             <div class="flex items-center space-x-1">
               <!-- Botão/Contador de Notas -->
               <Tooltip.Provider>
                 <Tooltip.Root>
                   <Tooltip.Trigger>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       class="h-6 w-6 relative"
                       onclick={() => viewNotes(item)}
 
@@ -485,9 +495,9 @@
               <Tooltip.Provider>
                 <Tooltip.Root>
                   <Tooltip.Trigger>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       class="h-6 w-6 relative"
                       onclick={() => viewFlashcards(item)}
 
@@ -506,15 +516,15 @@
               </Tooltip.Provider>
 
               <!-- NOVO: Botão/Contador de Grupos com DIALOG DENTRO -->
-              <Dialog.Root> 
+              <Dialog.Root>
                 <Tooltip.Provider>
                   <Tooltip.Root>
                     <!-- Modificado para Dialog.Trigger -->
                     <Dialog.Trigger>
                       <Tooltip.Trigger>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             class="h-6 w-6 relative"
                             aria-label="Grupos"
                           >
@@ -535,14 +545,14 @@
                   <Dialog.Header class="p-0 max-w-[625px]">
                     <Dialog.Title>Gerenciar Grupos para</Dialog.Title>
                     <div class="p-3 flex items-start space-x-3 border-b max-w-[625px] dark:border-gray-700 -mx-6 px-6">
-                      <img 
-                        src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`} 
-                        alt="Favicon" 
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`}
+                        alt="Favicon"
                         class="w-8 h-8 rounded flex-shrink-0 mt-1"
-                        
+
                       />
                       <div class="flex-grow min-w-0 overflow-hidden w-full">
-                        <a 
+                        <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -551,7 +561,7 @@
                         >
                           {item.title || "Sem título"}
                         </a>
-                        <a 
+                        <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -568,7 +578,7 @@
                     <div class="text-sm font-medium mb-3 text-center text-muted-foreground">
                       Grupos Selecionados: {Array.isArray(item.groupIds) ? item.groupIds.length : 0} / {allGroups?.length ?? 0}
                     </div>
-                    
+
                      {#if allGroups && allGroups.length > 0}
                        <!-- MODIFICADO: ScrollArea com Pills clicáveis -->
                        <ScrollArea class="h-40 w-full rounded-md border p-2 mb-4">
@@ -577,7 +587,7 @@
                             {@const isChecked = Array.isArray(item.groupIds) && item.groupIds.includes(group.id)}
                              {@const bgColor = group.color || '#cccccc'}
                              {@const textColor = getTextColorForBackground(bgColor)}
-                             
+
                              <button
                                type="button"
                                class={`group-pill text-xs py-1 px-3 rounded-full flex items-center gap-1.5 cursor-pointer transition-all duration-150 ease-in-out relative border
@@ -605,13 +615,13 @@
                      {:else}
                         <p class="text-xs text-muted-foreground italic">Nenhum grupo criado ainda.</p>
                      {/if}
-                     
+
                      <!-- NOVO: Seção para Criar Novo Grupo -->
                      <div class="border-t dark:border-gray-700 pt-3">
                        <div class="text-sm font-medium mb-2">Criar Novo Grupo</div>
                        <div class="flex items-center space-x-2 mb-2">
-                           <Input 
-                             type="text" 
+                           <Input
+                             type="text"
                              class="flex-grow p-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
                              placeholder="Nome do novo grupo"
                              bind:value={newGroupNameDialog}
@@ -637,7 +647,7 @@
                          {/each}
                        </div>
                      </div>
-                     
+
                   </div>
                   <!-- REMOVIDO Dialog.Footer -->
                 </Dialog.Content>
@@ -650,9 +660,9 @@
                    <Tooltip.Root>
                      <Dialog.Trigger>
                         <Tooltip.Trigger>
-                           <Button 
-                             variant="ghost" 
-                             size="icon" 
+                           <Button
+                             variant="ghost"
+                             size="icon"
                              class="h-6 w-6 relative"
                              aria-label="Tags"
                            >
@@ -672,14 +682,14 @@
                    <Dialog.Header class="p-0 max-w-[625px]">
                      <Dialog.Title>Gerenciar Tags para</Dialog.Title>
                      <div class="p-3 flex items-start space-x-3 border-b max-w-[625px] dark:border-gray-700 -mx-6 px-6">
-                       <img 
-                         src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`} 
-                         alt="Favicon" 
+                       <img
+                         src={`https://www.google.com/s2/favicons?domain=${item.url}&sz=32`}
+                         alt="Favicon"
                          class="w-8 h-8 rounded flex-shrink-0 mt-1"
-                         
+
                        />
                        <div class="flex-grow min-w-0 overflow-hidden w-full">
-                         <a 
+                         <a
                            href={item.url}
                            target="_blank"
                            rel="noopener noreferrer"
@@ -688,7 +698,7 @@
                          >
                            {item.title || "Sem título"}
                          </a>
-                         <a 
+                         <a
                            href={item.url}
                            target="_blank"
                            rel="noopener noreferrer"
@@ -703,22 +713,22 @@
                    <div class="grid gap-4 py-4">
                      <!-- Input chama handleAddTagFromInput -->
                      <div class="flex items-center space-x-2">
-                       <Input 
-                         id="new-tag-input-{item.id}" 
-                         placeholder="Adicionar tag..." 
-                         bind:value={newTagInput} 
+                       <Input
+                         id="new-tag-input-{item.id}"
+                         placeholder="Adicionar tag..."
+                         bind:value={newTagInput}
                          onkeydown={(e) => { if(e.key === 'Enter') { handleAddTagFromInput(item); } }}
                        />
                        <Button onclick={() => handleAddTagFromInput(item)} disabled={!newTagInput.trim()}>Adicionar</Button>
                      </div>
-                     
+
                      <!-- Contador usa a prop -->
                      <div class="text-sm font-medium mb-1 text-center text-muted-foreground">
                          Tags Selecionadas: {tagCount} / {availableSystemTags?.length ?? 0}
                      </div>
-                     
+
                      <!-- Lista usa a prop -->
-                     <div class="text-sm font-medium mb-1">Selecionar Tags:</div>
+                     <div class="text-sm font-medium mb-1">Selecionar Tags Existentes:</div>
                      {#if availableSystemTags && availableSystemTags.length > 0}
                        <ScrollArea class="h-36 w-full rounded-md border p-2">
                            <div class="flex flex-wrap gap-2">
@@ -746,27 +756,28 @@
                      {/if}
                    </div>
                  </Dialog.Content>
-               </Dialog.Root> 
+               </Dialog.Root>
                <!-- FIM DO DIALOG DE TAGS -->
 
               <!-- Ícone de Agendamento (Ler Mais Tarde) - Apenas se estiver agendado -->
-              {#if item.readLater && item.scheduledDate}
+              {#if isScheduled}
                 <Tooltip.Provider>
                   <Tooltip.Root>
                     <Tooltip.Trigger>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-6 w-6 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300"
                         onclick={() => editSchedule(item)}
-  
+
                         aria-label="Editar agendamento"
                       >
                         <CalendarClock class="h-4 w-4" />
                       </Button>
                     </Tooltip.Trigger>
                     <Tooltip.Content>
-                      {formatScheduleTooltip(item.scheduledDate)}
+                       <!-- MODIFICADO: Passa o array de datas -->
+                      {formatScheduleTooltip(item.scheduledDates)}
                     </Tooltip.Content>
                   </Tooltip.Root>
                 </Tooltip.Provider>
@@ -785,7 +796,7 @@
                   <DropdownMenu.Separator />
                   <DropdownMenu.Item onclick={() => openURL(item.url)}>Abrir Link</DropdownMenu.Item>
                   <DropdownMenu.Item onclick={() => { /* Lógica para Editar Item */ toast.info('Edição de item ainda não implementada.'); }}>Editar Detalhes</DropdownMenu.Item>
-                  <DropdownMenu.Sub>
+                  <!-- <DropdownMenu.Sub>
                     <DropdownMenu.SubTrigger>
                       <Tags class="mr-2 h-4 w-4" />
                       <span>Gerenciar Tags</span>
@@ -800,7 +811,7 @@
                        {/if}
                     </DropdownMenu.SubContent>
                   </DropdownMenu.Sub>
-                  <DropdownMenu.Item onclick={() => { /* Lógica para Gerenciar Grupos */ toast.info('Gerenciamento de grupos ainda não implementado aqui.'); }}>Gerenciar Grupos</DropdownMenu.Item>
+                  <DropdownMenu.Item onclick={() => { /* Lógica para Gerenciar Grupos */ toast.info('Gerenciamento de grupos ainda não implementado aqui.'); }}>Gerenciar Grupos</DropdownMenu.Item> -->
                    <DropdownMenu.Item onclick={() => { /* Lógica para Agendar */ toast.info('Agendamento ainda não implementado aqui.'); }}>Agendar Leitura</DropdownMenu.Item>
                    <DropdownMenu.Separator />
                    <DropdownMenu.Item class="text-red-600 dark:text-red-500 focus:bg-red-100 dark:focus:bg-red-900/50 focus:text-red-700 dark:focus:text-red-400" onclick={() => deleteItem(item.id)}>
@@ -817,4 +828,4 @@
     {#if data.length === 0}
       <p class="col-span-full text-center text-gray-500 dark:text-gray-400 py-10">Nenhum item encontrado.</p>
     {/if}
-  </div> 
+  </div>

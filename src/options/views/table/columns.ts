@@ -266,28 +266,30 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
         sorted: column.getIsSorted?.(),
       }),
-    accessorFn: (row) => row.scheduledDate,
-    cell: ({ row }) => row.original.scheduledDate ? formatDate(row.original.scheduledDate) : '-',
+    accessorFn: (row) => row.scheduledDates?.[0],
+    cell: ({ row }) => {
+      const firstDate = row.original.scheduledDates?.[0];
+      return firstDate ? formatDate(firstDate) : '-';
+    },
     enableSorting: true,
     sortingFn: sortingFns.datetime,
     filterFn: (row, columnId, filterValue: { start?: number, end?: number } | undefined) => {
-      const date = row.original.scheduledDate;
-
+      const dates = row.original.scheduledDates;
       if (!filterValue || typeof filterValue.start === 'undefined') {
         return true;
       }
-
-      if (!date) {
+      if (!dates || dates.length === 0) {
         return false;
       }
 
       const start = filterValue.start;
       const end = typeof filterValue.end === 'undefined' ? start : filterValue.end;
 
-      return date >= start && date <= end;
+      return dates.some(date => date >= start && date <= end);
     },
     enableGrouping: true,
     aggregationFn: 'count',
+    enableHiding: true,
   };
   const statusCol: ColumnDef<SavedItem, any> = {
     id: 'status',
@@ -299,10 +301,10 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       }),
     accessorFn: (row) => {
       if (row.completed) return 'Concluído';
-      if (!row.scheduledDate) return 'Pendente';
+      if (!row.readLater || !row.scheduledDates || row.scheduledDates.length === 0) return 'Pendente';
 
+      const scheduled = row.scheduledDates[0];
       const now = Date.now();
-      const scheduled = row.scheduledDate;
       const todayStart = new Date(now).setHours(0, 0, 0, 0);
       const scheduledDateOnly = new Date(scheduled).setHours(0, 0, 0, 0);
 
@@ -323,12 +325,13 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
       return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
     },
     filterFn: (row, columnId, filterValue: string | undefined) => {
-      if (typeof filterValue === 'undefined') return true;
+      if (typeof filterValue === 'undefined' || filterValue === '') return true;
       const status = row.getValue(columnId) as string;
       return status === filterValue;
     },
     enableGrouping: true,
     aggregationFn: 'count',
+    enableHiding: true,
   };
   const baseColumnsWithScheduled: ColumnDef<SavedItem, any>[] = [...baseColumns];
   const typeIndex = baseColumnsWithScheduled.findIndex(col => col.id === 'type');

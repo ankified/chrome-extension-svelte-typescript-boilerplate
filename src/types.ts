@@ -10,7 +10,7 @@ export interface SavedItem {
   tags: string[];
   groupIds: string[];
   readLater: boolean;
-  scheduledDate?: number;
+  scheduledDates?: number[];
   completed?: boolean;
   position?: { x: number, y: number }; // Para SvelteFlow
   previewImage?: string; // URL da captura de tela para exibição no popover

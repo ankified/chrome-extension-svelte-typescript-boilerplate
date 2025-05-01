@@ -100,11 +100,12 @@
 
   let cardTypeFilter = $state<'all' | 'readLater' | 'bookmark'>('all');
 
-  // Novo derivado para filtrar por tipo de cartão
+  // Novo derivado para filtrar por tipo de cartão (MODIFICADO)
   let filteredByType = $derived((): SavedItem[] => {
     if (cardTypeFilter === 'all') return sortedItems;
-    if (cardTypeFilter === 'readLater') return sortedItems.filter((item: SavedItem) => item.scheduledDate);
-    if (cardTypeFilter === 'bookmark') return sortedItems.filter((item: SavedItem) => !item.scheduledDate);
+    // USA item.readLater diretamente
+    if (cardTypeFilter === 'readLater') return sortedItems.filter((item: SavedItem) => item.readLater);
+    if (cardTypeFilter === 'bookmark') return sortedItems.filter((item: SavedItem) => !item.readLater);
     return sortedItems;
   });
 
