@@ -1,6 +1,6 @@
 <script lang="ts">
   import { savedItems, notes, flashcards, updateItem } from '../../../storage';
-  import type { SavedItem, Note, Flashcard } from '../../../types';
+  import type { SavedItem, Note, Flashcard, VisitItem } from '../../../types';
   import { Button } from '../../../lib/components/ui/button/index';
   import { Input } from '../../../lib/components/ui/input/index';
   import { Textarea } from '../../../lib/components/ui/textarea/index.js';
@@ -28,10 +28,21 @@
   import X from '@lucide/svelte/icons/x';
   // NOVO: Importar AlertDialog
   import * as AlertDialog from "../../../lib/components/ui/alert-dialog/index.js";
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 
-
-  // Prop de entrada
-  let { itemId = "" } = $props();
+  // Props de entrada
+  let { 
+    itemId = "", 
+    historyFetchResult = undefined 
+  } = $props<{ 
+    itemId: string; 
+    historyFetchResult?: { 
+      status: 'idle' | 'loading' | 'error' | 'loaded'; 
+      data?: VisitItem[]; 
+      error?: string; 
+    }
+  }>();
 
   // Buscar o item reativamente
   const item = $derived($savedItems.find(i => i.id === itemId));
@@ -332,21 +343,34 @@
             {/if}
 
         {:else if activeSection === 'history'}
-            <!-- Seção: Histórico -->
+            <!-- Seção: Histórico (com base na prop) -->
              <h4 class="text-sm font-medium mb-2">Histórico de Visitas</h4>
              <ScrollArea class="h-[calc(100%-3rem)] border rounded-md p-2">
-                {#if item.visitHistory && item.visitHistory.length > 0}
-                    <ul class="space-y-2">
-                        {#each item.visitHistory as visit (visit.visitId)}
-                            <li class="text-xs border-b border-dashed border-gray-700 pb-1 last:border-b-0">
-                                <span class="font-mono text-muted-foreground">{format(new Date(visit.visitTime), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}</span>
-                                <span class="ml-2 text-primary/80">({visit.transition})</span>
-                            </li>
-                        {/each}
-                    </ul>
-                {:else}
-                    <p class="text-sm text-muted-foreground italic text-center py-4">Nenhum histórico de visitas registrado para este item.</p>
-                {/if}
+                  {#if historyFetchResult?.status === 'loading'}
+                      <div class="flex justify-center items-center h-full">
+                          <LoaderCircle class="w-6 h-6 animate-spin text-primary" />
+                          <span class="ml-2 text-muted-foreground">Carregando histórico...</span>
+                      </div>
+                  {:else if historyFetchResult?.status === 'error'}
+                      <div class="flex flex-col justify-center items-center h-full text-destructive">
+                          <CircleAlert class="w-8 h-8 mb-2" />
+                          <p class="text-sm font-medium">Erro ao buscar histórico</p>
+                          <p class="text-xs text-center mt-1">{historyFetchResult.error || 'Ocorreu um erro desconhecido.'}</p>
+                      </div>
+                  {:else if historyFetchResult?.status === 'loaded' && historyFetchResult.data && historyFetchResult.data.length > 0}
+                      <ul class="space-y-2">
+                          {#each historyFetchResult.data as visit (visit.visitId)}
+                              <li class="text-xs border-b border-dashed border-gray-700 pb-1 last:border-b-0">
+                                  <span class="font-mono text-muted-foreground">{format(new Date(visit.visitTime), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}</span>
+                                  <span class="ml-2 text-primary/80">({visit.transition})</span>
+                              </li>
+                          {/each}
+                      </ul>
+                  {:else if historyFetchResult?.status === 'loaded'}
+                      <p class="text-sm text-muted-foreground italic text-center py-4">Nenhum histórico de visitas registrado para este item.</p>
+                  {:else} <!-- Status idle ou undefined -->
+                       <p class="text-sm text-muted-foreground italic text-center py-4">Histórico não carregado.</p>
+                  {/if}
              </ScrollArea>
         {/if}
 

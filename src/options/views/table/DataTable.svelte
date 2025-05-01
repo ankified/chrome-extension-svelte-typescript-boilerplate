@@ -10,7 +10,7 @@
   import GroupFilterDialog from '../../components/GroupFilterDialog.svelte';
   import TagFilterDialog from '../../components/TagFilterDialog.svelte';
   import Badge from '../../../lib/components/ui/badge/badge.svelte';
-  import type { SavedItem, Group } from '../../../types';
+  import type { SavedItem, Group, VisitItem, VisitTransition } from '../../../types';
   import * as storage from '../../../storage';
   import { savedItems, groups as groupsStore, knownTags as tagsStore, notes as notesStore, flashcards as flashcardsStore } from '../../../storage';
   import { getLocalTimeZone, today, type DateValue } from "@internationalized/date";
@@ -61,6 +61,15 @@
   let rowSelection = $state<RowSelectionState>({});
   let sorting = $state<SortingState>([]);
   let expanded = $state({});
+
+  // NOVO: Estado para histórico pré-buscado
+  type HistoryFetchStatus = 'idle' | 'loading' | 'error' | 'loaded';
+  type PrefetchedHistoryEntry = { 
+    status: HistoryFetchStatus;
+    data?: VisitItem[];
+    error?: string;
+  };
+  let prefetchedHistories = $state<Record<string, PrefetchedHistoryEntry>>({});
 
   let itemFilter = $state('');
   let groupFilter = $state<string[]>([]);
@@ -188,6 +197,7 @@
     // PAGINATION: Restore model
     getPaginationRowModel: getPaginationRowModel(),
     globalFilterFn,
+    getRowId: (row: SavedItem) => row.id,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -274,6 +284,78 @@
       }
     },
     enableRowSelection: true,
+  });
+
+  // NOVO: Effect para pré-buscar histórico ao expandir
+  $effect(() => {
+      const currentExpandedState = table.getState().expanded;
+      const expandedRowIds = Object.keys(currentExpandedState).filter(id => currentExpandedState[id]);
+      
+      console.log("[Effect Expanded] Linhas expandidas:", expandedRowIds);
+
+      for (const itemId of expandedRowIds) {
+          // Verificar se já estamos buscando ou se já buscamos
+          const currentState = prefetchedHistories[itemId]?.status;
+          if (currentState === 'loading' || currentState === 'loaded' || currentState === 'error') {
+              // console.log(`[Effect Expanded] Histórico para ${itemId} já em estado: ${currentState}`);
+              continue; // Já em processo ou concluído
+          }
+
+          // Encontrar a URL do item
+          const item = data.find(d => d.id === itemId);
+          if (!item || !item.url) {
+              console.warn(`[Effect Expanded] Item ou URL não encontrados para ID ${itemId}`);
+              prefetchedHistories[itemId] = { status: 'error', error: 'Item ou URL não encontrado.' };
+              continue;
+          }
+
+          const itemUrl = item.url;
+          console.log(`[Effect Expanded] Iniciando pré-busca de histórico para ${itemId} (URL: ${itemUrl})`);
+          prefetchedHistories[itemId] = { status: 'loading' };
+
+          // Chamar a API de histórico
+          if (typeof chrome !== 'undefined' && chrome.history && chrome.history.getVisits) {
+              try {
+                  chrome.history.getVisits({ url: itemUrl }, (visits) => {
+                      const historyError = chrome.runtime.lastError;
+                      if (historyError) {
+                          console.warn(`[Effect Expanded] Erro ao buscar histórico para ${itemId}:`, historyError.message);
+                          prefetchedHistories[itemId] = { status: 'error', error: historyError.message };
+                      } else if (visits && visits.length > 0) {
+                          console.log(`[Effect Expanded] Histórico recebido para ${itemId}: ${visits.length} visitas.`);
+                          const sortedAndLimitedVisits = visits
+                              .sort((a, b) => (b.visitTime ?? 0) - (a.visitTime ?? 0))
+                              .slice(0, 20);
+                          const mappedVisits: VisitItem[] = sortedAndLimitedVisits.map(v => ({
+                              visitId: v.visitId,
+                              visitTime: v.visitTime ?? 0,
+                              transition: (v.transition as VisitTransition) ?? 'link'
+                          }));
+                          prefetchedHistories[itemId] = { status: 'loaded', data: mappedVisits };
+                          console.log(`[Effect Expanded] Histórico armazenado para ${itemId}.`);
+                      } else {
+                          console.log(`[Effect Expanded] Nenhum histórico encontrado para ${itemId}.`);
+                          prefetchedHistories[itemId] = { status: 'loaded', data: [] }; // Marca como carregado, mas vazio
+                      }
+                  });
+              } catch (e) {
+                  console.error(`[Effect Expanded] Erro inesperado ao chamar chrome.history.getVisits para ${itemId}:`, e);
+                  prefetchedHistories[itemId] = { status: 'error', error: 'Erro inesperado na API.' };
+              }
+          } else {
+              console.warn(`[Effect Expanded] API chrome.history não disponível para ${itemId}.`);
+              prefetchedHistories[itemId] = { status: 'error', error: 'API de histórico não disponível.' };
+          }
+      }
+      
+      // Opcional: Limpar histórico de linhas que não estão mais expandidas
+      const currentPrefetchedIds = Object.keys(prefetchedHistories);
+      for (const prefetchedId of currentPrefetchedIds) {
+          if (!expandedRowIds.includes(prefetchedId)) {
+              // console.log(`[Effect Expanded] Limpando histórico pré-buscado para ${prefetchedId}`);
+              delete prefetchedHistories[prefetchedId];
+          }
+      }
   });
 
   // NOVO: Effect para aplicar o filtro de tipo na coluna da tabela
@@ -762,7 +844,7 @@
                 <Table.Row data-state="expanded">
                   <Table.Cell colspan={columns.length} class="p-0 border-b">
                     <!-- NOVO: Renderizar o componente ExpandedRowView -->
-                    <ExpandedRowView itemId={row.original.id} />
+                    <ExpandedRowView itemId={row.original.id} historyFetchResult={prefetchedHistories[row.original.id]} />
 
                     <!-- Conteúdo antigo comentado REMOVED -->
 

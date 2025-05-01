@@ -16,7 +16,6 @@ export interface SavedItem {
   previewImage?: string; // URL da captura de tela para exibição no popover
   noteIds: string[];
   flashcardIds: string[];
-  visitHistory?: VisitItem[];
 }
 
 export interface Group {

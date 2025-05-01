@@ -127,24 +127,6 @@ function createPersistentStore<T>(key: string, initialValue: T) {
                     console.log(`[Storage] Dados salvos com sucesso no storage.local para \"${key}\"`);
                 }
                 
-                // Manter a lógica de sincronização com storage.sync (se aplicável)
-                const currentTime = Date.now();
-                if (key === 'savedItems' || key === 'groups') {
-                    // Verificar se passou tempo suficiente desde a última sincronização
-                    if (currentTime - lastSyncTime > MIN_SYNC_INTERVAL) {
-                        console.log(`[Storage] Gravando dados no chrome.storage.sync para \"${key}\"`);
-                        // Usar currentValue aqui também para garantir que estamos sincronizando o que foi salvo
-                        chrome.storage.sync.set({ [key]: currentValue }).then(() => {
-                            console.log(`[Storage] Dados salvos com sucesso no storage.sync para \"${key}\"`);
-                            lastSyncTime = currentTime;
-                        }).catch(err => {
-                            console.error(`[Storage] Erro ao sincronizar ${key} com storage.sync:`, err);
-                        });
-                    } else {
-                        console.log(`[Storage] Ignorando sincronização com storage.sync para \"${key}\" (intervalo muito curto)`);
-                    }
-                }
-                
                 // Liberar o agendamento apenas após todas as operações (local e sync) terem sido iniciadas/concluídas
                 updateScheduled = false; 
             });
