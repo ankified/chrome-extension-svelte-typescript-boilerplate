@@ -35,12 +35,15 @@ Este documento detalha os passos que **foram realizados** para implementar a se�
         *   Renderizado botão "Adicionar Agendamento" (`onclick={() => isSchedulingModeActive = true}`) para ativar a UI sem modificar o item.
     *   **[✅] Funções:** Implementadas ou ajustadas:
         *   `addDatesToSchedule`: Adiciona datas selecionadas (não duplicadas), define `readLater: true` e salva.
-        *   `removeDateFromSchedule`: Remove data específica.
-        *   `removeAllDates`: Remove todas as datas (com confirmação).
+        *   `removeDateFromSchedule`: Remove data específica. **[Atualizado]** Define `readLater = false` se o array `scheduledDates` ficar vazio após a remoção.
+        *   `tryDeleteAllDates`: Abre o `AlertDialog` de confirmação.
+        *   `confirmDeleteAllDates`: Chamada pelo `AlertDialog`, remove todas as datas e define `readLater = false`.
         *   `navigateCalendarToDate`: Atualiza `calendarMonth`.
         *   `formatListedDate`: Formata data para exibição na lista.
         *   Função `addFirstSchedule` foi removida.
-    *   **[ℹ️] Diálogos:** Confirmação de exclusão total feita com `confirm()` nativo. Exclusão individual não tem confirmação extra.
+    *   **[✅] Diálogos:**
+        *   **[✅] Exclusão Total:** Implementado `AlertDialog` (importado como `AlertDialog`) para confirmar a exclusão de todas as datas, substituindo o `confirm()` nativo.
+        *   **[ℹ️] Exclusão Individual:** Nenhuma confirmação adicional implementada para exclusão individual.
     *   **[✅] Sidebar:** Link "Agendamento" habilitado (remoção da condição `disabled`).
     *   **[✅] Correção de Linter:** Erros de tipo `ZonedDateTime`/`CalendarDate` corrigidos com `toCalendarDate`. Uso do componente `<Calendar>` corrigido. Avisos `$derived` corrigidos com closure.
 
@@ -48,4 +51,4 @@ Este documento detalha os passos que **foram realizados** para implementar a se�
     *   **[✅] `src/options/views/card/SavedItemsCardView.svelte`:** Atualizada a constante `isScheduled` e a função `formatScheduleTooltip` para usar `item.scheduledDates`.
     *   **[✅] `src/options/components/SavedItemsCardsTab.svelte`:** Atualizada a lógica `filteredByType` para usar `item.readLater`.
 
-4.  **[✅] Registro das Modificações:** Entrada adicionada ao diário `src/project/diario/2025-05-01.md`. 
+4.  **[✅] Registro das Modificações:** Entradas adicionadas ao diário `src/project/diario/2025-05-01.md`. 

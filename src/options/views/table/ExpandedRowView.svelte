@@ -26,6 +26,8 @@
   import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
   import CalendarX2 from '@lucide/svelte/icons/calendar-x-2';
   import X from '@lucide/svelte/icons/x';
+  // NOVO: Importar AlertDialog
+  import * as AlertDialog from "../../../lib/components/ui/alert-dialog/index.js";
 
 
   // Prop de entrada
@@ -50,6 +52,7 @@
   let selectedCalendarDates = $state<CalendarDate[]>([]);
   let sortedScheduledDates = $derived(item?.scheduledDates?.slice().sort((a, b) => a - b) ?? []);
   let isSchedulingModeActive = $state(false);
+  let showDeleteAllConfirmDialog = $state(false); // NOVO ESTADO para AlertDialog
 
   // Efeito para sincronizar selectedCalendarDates com item.scheduledDates
   $effect(() => {
@@ -118,25 +121,44 @@
 
       const updatedDates = item.scheduledDates.filter(ts => ts !== timestampToRemove);
       
+      // Prepara o objeto de atualizações
+      let updates: Partial<SavedItem> = { scheduledDates: updatedDates };
+
+      // Verifica se esta era a última data
+      if (updatedDates.length === 0) {
+          updates.readLater = false; // Reverte para bookmark
+      }
+
       try {
-          await updateItem(itemId, { scheduledDates: updatedDates });
+          await updateItem(itemId, updates); // Aplica as atualizações combinadas
           toast.success("Data removida do agendamento.");
+          // Adiciona feedback extra se voltou a ser bookmark
+          if (updates.readLater === false) {
+              toast.info("Item revertido para bookmark pois não há mais datas agendadas.");
+          }
       } catch (error) {
           toast.error("Erro ao remover data do agendamento.");
           console.error("Erro ao remover agendamento:", error);
       }
   }
 
-  async function removeAllDates() {
-      if (!item) return;
+  // MODIFICADO: Renomeado para indicar que apenas *tenta* abrir o diálogo
+  function tryDeleteAllDates() {
+      if (!item || !item.scheduledDates || item.scheduledDates.length === 0) return;
+      showDeleteAllConfirmDialog = true; // Apenas abre o diálogo
+  }
 
-      if (!confirm("Tem certeza que deseja remover todas as datas agendadas para este item?")) {
-          return;
-      }
+  // NOVO: Função para confirmar a exclusão (chamada pelo AlertDialog.Action)
+  async function confirmDeleteAllDates() {
+      if (!item) return;
+      showDeleteAllConfirmDialog = false; // Fecha o diálogo primeiro
 
       try {
-          await updateItem(itemId, { scheduledDates: [] }); 
-          toast.success("Todas as datas agendadas foram removidas.");
+          // MODIFICADO: Define readLater como false também
+          await updateItem(itemId, { scheduledDates: [], readLater: false });
+          toast.success("Todas as datas agendadas foram removidas e o item voltou a ser um bookmark.");
+          // isSchedulingModeActive = false; // Opcional: Resetar modo se voltou a ser bookmark? 
+                                        // Decisão: Não resetar, pode querer adicionar data logo em seguida.
       } catch (error) {
           toast.error("Erro ao remover todas as datas agendadas.");
           console.error("Erro ao remover agendamentos:", error);
@@ -265,7 +287,7 @@
                            <Button size="sm" variant="outline" onclick={addDatesToSchedule} disabled={selectedCalendarDates.length === 0}>
                               <CalendarPlus class="w-4 h-4 mr-2" /> Adicionar Data(s)
                            </Button>
-                           <Button size="sm" variant="destructive" onclick={removeAllDates} disabled={!item.scheduledDates || item.scheduledDates.length === 0}>
+                           <Button size="sm" variant="destructive" onclick={tryDeleteAllDates} disabled={!item.scheduledDates || item.scheduledDates.length === 0}>
                                <CalendarX2 class="w-4 h-4 mr-2" /> Excluir Todas
                            </Button>
                       </div>
@@ -355,3 +377,23 @@
       </Sidebar.Root>
     {/if}
 </div>
+
+<!-- NOVO: AlertDialog para confirmar exclusão de todas as datas -->
+<AlertDialog.Root bind:open={showDeleteAllConfirmDialog}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Confirmar Exclusão</AlertDialog.Title>
+      <AlertDialog.Description>
+        Tem certeza que deseja remover <strong>todas</strong> as datas agendadas para este item?
+        {#if item?.readLater} Isso também o converterá de volta para um bookmark.{/if}
+        Esta ação não pode ser desfeita.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel onclick={() => showDeleteAllConfirmDialog = false}>Cancelar</AlertDialog.Cancel>
+      <AlertDialog.Action class="bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={confirmDeleteAllDates}>
+        Excluir Todas
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
