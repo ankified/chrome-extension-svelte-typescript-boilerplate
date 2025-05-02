@@ -88,7 +88,7 @@ export type NamedFilterSet = {
   id: string;
   name: string;
   settings: FilterSettings;
-};
+}; 
 
 // ---- ADICIONADO: Tipos para Histórico de Visitas ----
 export type VisitTransition = chrome.history.VisitItem["transition"];

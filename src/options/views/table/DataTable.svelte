@@ -2,7 +2,7 @@
   import { createSvelteTable } from '../../../lib/components/ui/data-table/index';
   import * as Table from '../../../lib/components/ui/table/index';
   import { FlexRender } from '../../../lib/components/ui/data-table/index';
-  import type { ColumnDef, SortingState, PaginationState, VisibilityState, RowSelectionState } from '@tanstack/table-core';
+  import type { ColumnDef, SortingState, PaginationState, VisibilityState, RowSelectionState, TableMeta } from '@tanstack/table-core';
   import { getCoreRowModel, getSortedRowModel, getExpandedRowModel, getFilteredRowModel, getPaginationRowModel } from '@tanstack/table-core';
   import * as Popover from '../../../lib/components/ui/popover/index';
   import Calendar from '../../../lib/components/ui/calendar/calendar.svelte';
@@ -45,8 +45,8 @@
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import BulkGroupAssignDialog from './BulkGroupAssignDialog.svelte';
   import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
-  // NOVO: Importar o componente da linha expandida
   import ExpandedRowView from './ExpandedRowView.svelte';
+  import DomainFilterDialog from '../../components/DomainFilterDialog.svelte';
 
   let { columns = [], data = [] } = $props();
   $inspect("DataTable data prop", data);
@@ -218,7 +218,8 @@
     },
     meta: {
       openDeleteConfirmDialog: handleOpenDeleteConfirmDialog,
-      openDeleteAllDialog: openDeleteAllDialog
+      openDeleteAllDialog: openDeleteAllDialog,
+      openDomainFilterDialog: () => isDomainFilterOpen = true
     },
     onGlobalFilterChange: (value) => {
       if (typeof value === 'object' && value !== null) {
@@ -297,8 +298,7 @@
           // Verificar se já estamos buscando ou se já buscamos
           const currentState = prefetchedHistories[itemId]?.status;
           if (currentState === 'loading' || currentState === 'loaded' || currentState === 'error') {
-              // console.log(`[Effect Expanded] Histórico para ${itemId} já em estado: ${currentState}`);
-              continue; // Já em processo ou concluído
+              continue;
           }
 
           // Encontrar a URL do item
@@ -335,7 +335,7 @@
                           console.log(`[Effect Expanded] Histórico armazenado para ${itemId}.`);
                       } else {
                           console.log(`[Effect Expanded] Nenhum histórico encontrado para ${itemId}.`);
-                          prefetchedHistories[itemId] = { status: 'loaded', data: [] }; // Marca como carregado, mas vazio
+                          prefetchedHistories[itemId] = { status: 'loaded', data: [] };
                       }
                   });
               } catch (e) {
@@ -352,7 +352,6 @@
       const currentPrefetchedIds = Object.keys(prefetchedHistories);
       for (const prefetchedId of currentPrefetchedIds) {
           if (!expandedRowIds.includes(prefetchedId)) {
-              // console.log(`[Effect Expanded] Limpando histórico pré-buscado para ${prefetchedId}`);
               delete prefetchedHistories[prefetchedId];
           }
       }
@@ -435,24 +434,22 @@
     if (!deleteItemId) return;
     const idToDelete = deleteItemId;
     console.log(`[DataTable] Confirmado! Excluindo item: ${idToDelete}`);
-    isConfirmDeleteDialogOpen = false; // Fecha o diálogo primeiro
+    isConfirmDeleteDialogOpen = false;
 
     try {
-      await storage.deleteItems([idToDelete]); // Usa a função existente de exclusão em lote
+      await storage.deleteItems([idToDelete]);
       toast.success(`Item excluído com sucesso.`);
-      // Limpa a seleção se o item excluído estava selecionado
       if (rowSelection[idToDelete]) {
-        rowSelection = { ...rowSelection }; // Cria nova referência para trigger de reatividade
+        rowSelection = { ...rowSelection };
         delete rowSelection[idToDelete];
       }
     } catch (error) {
       console.error("Erro ao excluir item:", error);
       toast.error("Erro ao excluir o item.", { description: error instanceof Error ? error.message : String(error) });
     } finally {
-      deleteItemId = null; // Limpa o ID após a tentativa
+      deleteItemId = null;
     }
   }
-  // --------------------------------------------
 
   function handleBulkDelete() {
     if (selectedItemCount === 0) return;
@@ -566,23 +563,36 @@
     return start.toLocaleDateString('pt-BR');
   }
 
-  // NOVO: Função para abrir o diálogo de confirmação de exclusão total
   function openDeleteAllDialog() {
     console.log('[DataTable] openDeleteAllDialog called');
     isDeleteAllConfirmOpen = true;
   }
 
-  // NOVO: Função para confirmar a exclusão total
   async function confirmDeleteAllItems() {
     isDeleteAllConfirmOpen = false;
     try {
-      await storage.deleteAllItems(); // Chama a função no storage
+      await storage.deleteAllItems();
       toast.success("Todos os itens foram excluídos com sucesso.");
-      rowSelection = {}; // Limpa a seleção
+      rowSelection = {};
     } catch (error) {
       console.error("Erro ao excluir todos os itens:", error);
       toast.error("Erro ao excluir todos os itens.", { description: error instanceof Error ? error.message : String(error) });
     }
+  }
+
+  let selectedDomains = $state<string[]>([]);
+  let isDomainFilterOpen = $state(false);
+
+  function handleApplyDomainFilter(domains: string[]) {
+    selectedDomains = domains;
+    table.getColumn('item')?.setFilterValue(domains.length > 0 ? domains : undefined);
+    isDomainFilterOpen = false;
+    console.log("[DataTable] Domain filter applied:", domains);
+  }
+
+  function handleCloseDomainFilter() {
+    isDomainFilterOpen = false;
+    console.log("[DataTable] Domain filter dialog closed.");
   }
 
 </script>
@@ -657,9 +667,21 @@
               {#each headerGroup.headers as header (header.id)}
                 <Table.Head class={header.column.id === 'item' ? 'w-56 max-w-xs truncate whitespace-nowrap' : ''}>
                   {#if header.column.id === 'item'}
-                    <!-- Sem filtro de coluna para Item -->
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      class="w-full justify-start text-left truncate"
+                      onclick={table.options.meta?.openDomainFilterDialog}
+                    >
+                      {#if selectedDomains.length === 0}
+                        <Funnel class="inline w-4 h-4 mr-1 align-text-bottom shrink-0" />
+                      {:else}
+                         <Badge variant="secondary" class="mr-1 shrink-0">{selectedDomains.length}</Badge>
+                         <span class="truncate">{selectedDomains.join(', ')}</span>
+                      {/if}
+                    </Button>
                   {:else if header.column.id === 'groupIds'}
-                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
+                     <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => groupDialogOpen = true}>
                       {#if groupFilter.length === 0}
                         <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                       {:else}
@@ -676,11 +698,11 @@
                       onApply={(e) => {
                         groupFilter = e.included;
                         groupDialogOpen = false;
-                        table.getColumn('groupIds')?.setFilterValue(e.included);
+                        table.getColumn('groupIds')?.setFilterValue(e.included.length > 0 ? e.included : undefined);
                       }}
                     />
                   {:else if header.column.id === 'tags'}
-                    <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
+                     <Button variant="outline" size="sm" class="w-full justify-start" onclick={() => tagDialogOpen = true}>
                       {#if tagFilter.length === 0}
                         <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                       {:else}
@@ -697,7 +719,7 @@
                       onApply={(e) => {
                         tagFilter = e.included;
                         tagDialogOpen = false;
-                        table.getColumn('tags')?.setFilterValue(e.included);
+                        table.getColumn('tags')?.setFilterValue(e.included.length > 0 ? e.included : undefined);
                       }}
                     />
                   {:else if header.column.id === 'noteIds'}
@@ -709,7 +731,7 @@
                       <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
                     </Button>
                   {:else if header.column.id === 'dateAdded'}
-                    <Popover.Root bind:open={datePopoverOpen}>
+                     <Popover.Root bind:open={datePopoverOpen}>
                       <Popover.Trigger>
                         <Button variant="outline" size="sm" class="w-full justify-start">
                           {#if dateFilter && (dateFilter.start || dateFilter.end)}
@@ -737,7 +759,7 @@
                       </Popover.Content>
                     </Popover.Root>
                   {:else if header.column.id === 'scheduledDate'}
-                    <Popover.Root bind:open={scheduledDatePopoverOpen}>
+                     <Popover.Root bind:open={scheduledDatePopoverOpen}>
                       <Popover.Trigger>
                         <Button variant="outline" size="sm" class="w-full justify-start">
                           {#if scheduledDateFilter && (scheduledDateFilter.start || scheduledDateFilter.end)}
@@ -770,44 +792,44 @@
                       </Popover.Content>
                     </Popover.Root>
                   {:else if header.column.id === 'status'}
-                    <DropdownMenu.Root bind:open={statusDropdownOpen}>
-                      <DropdownMenu.Trigger>
-                        <Button variant="outline" size="sm" class="w-full justify-start">
-                          {#if statusFilter !== ''}
-                            <Badge variant="secondary">{statusFilter}</Badge>
-                          {:else}
-                            <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
-                          {/if}
-                        </Button>
-                      </DropdownMenu.Trigger>
-                      <DropdownMenu.Content class="w-48">
-                        <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
-                        <DropdownMenu.Separator />
-                        <DropdownMenu.RadioGroup bind:value={statusFilter}>
-                          {#each possibleStatus as status (status)}
-                            <DropdownMenu.RadioItem
-                              value={status}
-                              onSelect={() => {
-                                statusDropdownOpen = false;
-                              }}
-                            >
-                              {status}
-                            </DropdownMenu.RadioItem>
-                          {/each}
-                        </DropdownMenu.RadioGroup>
-                        {#if statusFilter !== ''}
+                     <DropdownMenu.Root bind:open={statusDropdownOpen}>
+                        <DropdownMenu.Trigger>
+                          <Button variant="outline" size="sm" class="w-full justify-start">
+                            {#if statusFilter !== ''}
+                              <Badge variant="secondary">{statusFilter}</Badge>
+                            {:else}
+                              <Funnel class="inline w-4 h-4 mr-1 align-text-bottom" />
+                            {/if}
+                          </Button>
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content class="w-48">
+                          <DropdownMenu.Label>Filtrar por Status</DropdownMenu.Label>
                           <DropdownMenu.Separator />
-                          <DropdownMenu.Item
-                            onSelect={() => {
-                              statusFilter = '';
-                              console.log('Status filter state cleared to \'\', $effect will apply undefined.');
-                              statusDropdownOpen = false;
-                            }}>
-                            Limpar Filtro
-                          </DropdownMenu.Item>
-                        {/if}
-                      </DropdownMenu.Content>
-                    </DropdownMenu.Root>
+                          <DropdownMenu.RadioGroup bind:value={statusFilter}>
+                            {#each possibleStatus as status (status)}
+                              <DropdownMenu.RadioItem
+                                value={status}
+                                onSelect={() => {
+                                  statusDropdownOpen = false;
+                                }}
+                              >
+                                {status}
+                              </DropdownMenu.RadioItem>
+                            {/each}
+                          </DropdownMenu.RadioGroup>
+                          {#if statusFilter !== ''}
+                            <DropdownMenu.Separator />
+                            <DropdownMenu.Item
+                              onSelect={() => {
+                                statusFilter = '';
+                                console.log('Status filter state cleared to \'\', $effect will apply undefined.');
+                                statusDropdownOpen = false;
+                              }}>
+                              Limpar Filtro
+                            </DropdownMenu.Item>
+                          {/if}
+                        </DropdownMenu.Content>
+                     </DropdownMenu.Root>
                   {:else}
                     <!-- Coluna sem filtro (ex: Tipo, Ações) -->
                   {/if}
@@ -840,14 +862,9 @@
               {/each}
             </Table.Row>
             {#if row.getIsExpanded()}
-             <!-- Mantido temporariamente para evitar quebrar a lógica antiga comentada REMOVED -->
                 <Table.Row data-state="expanded">
                   <Table.Cell colspan={columns.length} class="p-0 border-b">
-                    <!-- NOVO: Renderizar o componente ExpandedRowView -->
                     <ExpandedRowView itemId={row.original.id} historyFetchResult={prefetchedHistories[row.original.id]} />
-
-                    <!-- Conteúdo antigo comentado REMOVED -->
-
                 </Table.Cell>
               </Table.Row>
             {/if}
@@ -1050,3 +1067,13 @@
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>
+
+{#if isDomainFilterOpen}
+  <DomainFilterDialog
+    bind:open={isDomainFilterOpen}
+    allItems={data} 
+    initialSelectedDomains={selectedDomains}
+    onApply={handleApplyDomainFilter}
+    onClose={handleCloseDomainFilter}
+  />
+{/if}

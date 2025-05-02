@@ -23,6 +23,9 @@ import type ManageItemGroupsDialogType from '../../components/ManageItemGroupsDi
 import ManageItemGroupsDialog from '../../components/ManageItemGroupsDialog.svelte';
 import { type AggregationFn, sortingFns } from '@tanstack/table-core';
 import StatusCellButton from './StatusCellButton.svelte';
+import Funnel from '@lucide/svelte/icons/funnel';
+import Badge from '../../../lib/components/ui/badge/badge.svelte';
+import Button from '../../../lib/components/ui/button/button.svelte';
 
 function formatDate(date: number) {
   return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -68,6 +71,9 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
           onclick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
           sorted: column.getIsSorted?.(),
         }),
+      meta: {
+          // A lógica de renderização do botão de filtro será movida para DataTable.svelte
+      },
       accessorFn: (row) => row.title,
       cell: ({ row }) => renderComponent(ItemCell, { item: row.original }),
       enableSorting: true,
@@ -76,6 +82,20 @@ export function getColumns(showReadLaterColumns: boolean): ColumnDef<SavedItem, 
         const titleB = b.original.title || '';
         return titleA.localeCompare(titleB, 'pt-BR', { sensitivity: 'base' });
       },
+      filterFn: (row, columnId, filterValue: string[] | undefined) => {
+        if (!filterValue || filterValue.length === 0) {
+          return true;
+        }
+        try {
+          const url = row.original.url;
+          if (!url) return false;
+          const parsedUrl = new URL(url);
+          const domain = parsedUrl.hostname.replace(/^www\./, '');
+          return filterValue.includes(domain);
+        } catch (e) {
+          return false;
+        }
+      }
     },
     {
       id: 'type',

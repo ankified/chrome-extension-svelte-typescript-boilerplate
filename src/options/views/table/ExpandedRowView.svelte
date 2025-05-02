@@ -412,7 +412,7 @@
             </Sidebar.MenuItem>
              <Sidebar.MenuItem>
               <Sidebar.MenuButton isActive={activeSection === 'history'} onclick={() => activeSection = 'history'}>
-                  <History class="size-4 mr-2"/> Histórico
+                    <History class="size-4 mr-2"/> Histórico
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
           </Sidebar.Menu>

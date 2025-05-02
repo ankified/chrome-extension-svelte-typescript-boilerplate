@@ -13,8 +13,6 @@ Analise o projeto para entender sua estrutura, propósito e tecnologias utilizad
 
 2. Leia detalhadamente os arquivos:
    - src/project/planos/progresso-visualizacao-tabela.md
-   - src/project/planos/estado-atual-implementacao.md
-   - src/project/planos/plano-acoes-prioritarias.md
 
 3. Com base nessa análise:
    - Apresente um resumo do estado atual do projeto
