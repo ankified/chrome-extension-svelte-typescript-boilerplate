@@ -288,7 +288,7 @@
 
   // NOVO: Effect para pré-buscar histórico ao expandir
   $effect(() => {
-      const currentExpandedState = table.getState().expanded;
+      const currentExpandedState = table.getState().expanded as Record<string, boolean>;
       const expandedRowIds = Object.keys(currentExpandedState).filter(id => currentExpandedState[id]);
       
       console.log("[Effect Expanded] Linhas expandidas:", expandedRowIds);

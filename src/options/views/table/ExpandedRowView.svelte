@@ -15,6 +15,7 @@
   import Layers from '@lucide/svelte/icons/layers';
   import CalendarClock from '@lucide/svelte/icons/calendar-clock';
   import History from '@lucide/svelte/icons/history';
+  import AtSign from '@lucide/svelte/icons/at-sign';
   import { Separator } from "../../../lib/components/ui/separator/index.js";
   // Imports para Calendário e Datas
   import Calendar from "../../../lib/components/ui/calendar/calendar.svelte";
@@ -251,6 +252,10 @@
             {/if}
           </div>
 
+        {:else if activeSection === 'mentions'}
+          <h4 class="text-sm font-medium mb-2">Menções</h4>
+          <p class="text-sm text-muted-foreground italic">(Funcionalidade em desenvolvimento)</p>
+
         {:else if activeSection === 'notes'}
            <!-- Seção: Notas -->
            <h4 class="text-sm font-medium mb-2">Notas Associadas</h4>
@@ -386,6 +391,11 @@
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
             <Sidebar.MenuItem>
+              <Sidebar.MenuButton isActive={activeSection === 'mentions'} onclick={() => activeSection = 'mentions'}>
+                 <AtSign class="size-4 mr-2"/> Menções (0)
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+            <Sidebar.MenuItem>
               <Sidebar.MenuButton isActive={activeSection === 'notes'} onclick={() => activeSection = 'notes'}>
                  <StickyNote class="size-4 mr-2"/> Notas ({relatedNotes.length})
               </Sidebar.MenuButton>
@@ -397,7 +407,7 @@
             </Sidebar.MenuItem>
              <Sidebar.MenuItem>
               <Sidebar.MenuButton isActive={activeSection === 'scheduling'} onclick={() => activeSection = 'scheduling'} >
-                 <CalendarClock class="size-4 mr-2"/> Agendamento
+                 <CalendarClock class="size-4 mr-2"/> Agendamento ({item?.scheduledDates?.length ?? 0})
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
              <Sidebar.MenuItem>
