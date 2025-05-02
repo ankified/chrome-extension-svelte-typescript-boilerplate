@@ -56,14 +56,14 @@ Este documento descreve os passos para adicionar a funcionalidade de filtragem p
 
 ## Melhorias Adicionais no Filtro de Domínio
 
-1.  **[ ] Atualizar `DomainFilterDialog.svelte` - Adicionar Campo de Busca:**
+1.  **[✅] Atualizar `DomainFilterDialog.svelte` - Adicionar Campo de Busca:**
     *   Importar o componente `Input` de `../../lib/components/ui/input/index.js`.
     *   Adicionar um estado `$state` para a query de busca (ex: `let domainSearchQuery = $state('');`).
     *   Adicionar o componente `Input` no template, acima da `ScrollArea`.
     *   Vincular o valor do `Input` ao estado `domainSearchQuery` (`bind:value`).
     *   Modificar a função `calculateDomains` para incluir a filtragem pela `domainSearchQuery` (case-insensitive) na lista de domínios *antes* de retorná-la.
 
-2.  **[ ] Atualizar `DomainFilterDialog.svelte` - Adicionar ToggleGroup Alfanumérico:**
+2.  **[✅] Atualizar `DomainFilterDialog.svelte` - Adicionar ToggleGroup Alfanumérico:**
     *   Importar `Root as ToggleGroupRoot` e `Item as ToggleGroupItem` de `../../lib/components/ui/toggle-group/index.js`.
     *   Definir um array com os caracteres de filtro (ex: `const alphaChars = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];`).
     *   Adicionar um estado `$state` para o caractere alfanumérico selecionado (ex: `let alphaFilter = $state<string | null>(null);`).
@@ -75,7 +75,7 @@ Este documento descreve os passos para adicionar a funcionalidade de filtragem p
         *   Se `alphaFilter` for '#', filtrar domínios que começam com números ou símbolos.
         *   Se `alphaFilter` for `null`, não aplicar este filtro.
 
-3.  **[ ] Refinar UI e Testar:**
+3.  **[✅] Refinar UI e Testar:**
     *   Ajustar layout do `Input` e `ToggleGroup`.
     *   Testar a filtragem por busca.
     *   Testar a filtragem pelo `ToggleGroup`.
