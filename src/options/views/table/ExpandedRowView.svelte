@@ -57,7 +57,7 @@
 
   // Estados para edição do comentário
   let isEditingComment = $state(false);
-  let editedComment = $state(item?.comments ?? '');
+  let editedComment = $state('');
 
   // --- Estados para Agendamento ---
   let calendarMonth = $state(today(getLocalTimeZone()));
