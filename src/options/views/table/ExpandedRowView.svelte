@@ -218,7 +218,8 @@
 
 </script>
 
-<div class="flex min-h-[300px] max-h-[450px] border-t bg-background">  {#if !item}
+<div class="flex min-h-[300px] max-h-[450px] border-t bg-background">  
+  {#if !item}
       <p class="text-sm text-muted-foreground p-4">Carregando detalhes do item...</p>
     {:else}
       <!-- Coluna de Conteúdo Principal (Esquerda) -->
@@ -227,7 +228,7 @@
         {#if activeSection === 'overview'}
           <!-- Seção: Visão Geral -->
           <div>
-            <h3 class="text-lg font-semibold truncate mb-0.5">{item.title}</h3>
+            <h3 class="text-lg font-semibold break-words mb-0.5">{item.title}</h3>
             <a href={item.url} target="_blank" rel="noopener noreferrer" class="text-xs text-primary hover:underline break-all">{item.url}</a>
             <p class="text-xs text-muted-foreground mt-1">ID: {item.id}</p>
           </div>
