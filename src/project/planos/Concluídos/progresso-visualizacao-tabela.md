@@ -20,7 +20,7 @@ Este documento registra o progresso das melhorias planejadas para a visualizaç�
 - [✅] Substituir o item "Abrir" por "Visualizar" no Menu de ações de cada item da tabela;
 - [✅] Implementar filtragem, agrupamento e ordenação às colunas "Agendado para" e "Status";
 - [✅] Fazer com que ao clicar no botão que exibe o status de cada item da coluna "Status", seja exibido um AlertDialog perguntando se o usuário quer marcar o item como concluído (apenas se ainda não tiver sido marcado como concluído).
-- [ ] Adicionar um botão de filtragem à coluna "Item", para que os itens sejam filtrados por domínio.
+- [✅] Adicionar um botão de filtragem à coluna "Item", para que os itens sejam filtrados por domínio.
 
 ## Checklist de Funcionalidades
 

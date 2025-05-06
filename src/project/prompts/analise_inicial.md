@@ -12,7 +12,15 @@ Analise o projeto para entender sua estrutura, propósito e tecnologias utilizad
    - Padrões de codificação adotados
 
 2. Leia detalhadamente os arquivos:
-   - src/project/planos/progresso-visualizacao-tabela.md
+   - src/options/Options.svelte
+   - src/options/views/SavedItemsView.svelte
+   - src/options/views/table/SavedItemsTableView.svelte
+   - src/options/views/table/DataTable.svelte
+   - src/options/views/table/columns.ts
+   - src/storage.ts
+   - src/types.ts
+   - src/app.d.ts
+   
 
 3. Com base nessa análise:
    - Apresente um resumo do estado atual do projeto

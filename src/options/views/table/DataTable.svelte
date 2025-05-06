@@ -47,10 +47,39 @@
   import BulkTagAssignDialog from './BulkTagAssignDialog.svelte';
   import ExpandedRowView from './ExpandedRowView.svelte';
   import DomainFilterDialog from '../../components/DomainFilterDialog.svelte';
+  import { Loader2 } from '@lucide/svelte';
 
   let { columns = [], data = [] } = $props();
   $inspect("DataTable data prop", data);
   $inspect("data",data)
+
+  let isLoadingInitialData = $state(true);
+
+  $effect(() => {
+    // Se data não for undefined e tiver mudado de vazio para não vazio, ou se já tiver dados
+    if (data !== undefined) {
+      // Se data já tem itens, ou se era undefined/vazio e agora tem itens
+      if (data.length > 0) {
+        isLoadingInitialData = false;
+      } else if (isLoadingInitialData && data.length === 0) {
+        // data é um array vazio, e ainda estamos no estado de carregamento inicial.
+        // Para evitar um spinner infinito se os dados estiverem realmente vazios,
+        // definimos isLoadingInitialData para false após um pequeno delay.
+        // Isso dá tempo para os dados assíncronos chegarem.
+        // Se após o delay, data ainda estiver vazio, assumimos que não há dados.
+        const timer = setTimeout(() => {
+          // Re-verificamos data.length aqui porque o valor de data pode ter mudado
+          // desde que o $effect foi executado pela última vez.
+          if (isLoadingInitialData && data && data.length === 0) {
+            isLoadingInitialData = false;
+          }
+        }, 1000); // Delay de 1 segundo. Ajuste conforme necessário.
+        return () => clearTimeout(timer); // Cleanup do timer
+      }
+      // Se !isLoadingInitialData e data.length === 0, significa que o carregamento terminou e não há dados.
+    }
+    // Se data for undefined, isLoadingInitialData permanece true.
+  });
 
   let typeFilter = $state('all');
 
@@ -871,7 +900,14 @@
           {:else}
             <Table.Row>
               <Table.Cell colspan={columns.length} class="h-24 text-center">
+                {#if isLoadingInitialData}
+                <div class="flex items-center justify-center p-10 text-lg">
+                  <Loader2 class="mr-2 h-6 w-6 animate-spin" />
+                  Carregando itens...
+                </div>
+              {:else}
                 Nenhum resultado.
+              {/if}
               </Table.Cell>
             </Table.Row>
           {/each}
@@ -881,6 +917,8 @@
   </div>
 
   <!-- Rodapé Dinâmico -->
+  {#if !isLoadingInitialData}
+
   <div class="flex items-center justify-between text-sm mt-4 shrink-0">
     <!-- Lado Esquerdo: Selecionados / Contagem Total -->
     <div class="flex-1 text-muted-foreground">
@@ -898,7 +936,7 @@
           {@const exibidoText = totalFilteredRows === 1 ? 'exibido' : 'exibidos'}
           {startItemIndex} - {endItemIndex} de {totalFilteredRows} {itemText} {exibidoText}.
         {:else}
-          Nenhum item encontrado.
+            Nenhum item encontrado.
         {/if}
       {/if}
     </div>
@@ -997,6 +1035,8 @@
       
     </div>
   </div>
+  {/if}
+
 
 </div> <!-- Fim do container flex principal -->
 
@@ -1077,3 +1117,4 @@
     onClose={handleCloseDomainFilter}
   />
 {/if}
+
