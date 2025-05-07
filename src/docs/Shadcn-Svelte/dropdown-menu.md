@@ -8,35 +8,6 @@ links:
   api: https://next.bits-ui.com/docs/components/dropdown-menu#api-reference
 ---
 
-<script>
-    import { ComponentPreview, PMAddComp, PMInstall, Step, Steps, InstallTabs } from '$lib/components/docs'
-</script>
-
-<ComponentPreview name="dropdown-menu-demo">
-
-<div></div>
-
-</ComponentPreview>
-
-## Installation
-
-<InstallTabs>
-{#snippet cli()}
-<PMAddComp name="dropdown-menu" />
-{/snippet}
-{#snippet manual()}
-<Steps>
-<Step>
-
-Install `bits-ui`:
-
-</Step>
-<PMInstall command="bits-ui -D" />
-<Step>Copy and paste the component source files linked at the top of this page into your project.</Step>
-</Steps>
-{/snippet}
-</InstallTabs>
-
 ## Usage
 
 ```svelte
@@ -63,19 +34,65 @@ Install `bits-ui`:
 
 ### Checkboxes
 
-<ComponentPreview name="dropdown-menu-checkboxes">
-
-<div></div>
-
-</ComponentPreview>
+```svelte
+<script lang="ts">
+ import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+ import { buttonVariants } from "$lib/components/ui/button/index.js";
+ 
+ let showStatusBar = $state(true);
+ let showActivityBar = $state(false);
+ let showPanel = $state(false);
+</script>
+ 
+<DropdownMenu.Root>
+ <DropdownMenu.Trigger class={buttonVariants({ variant: "outline" })}
+  >Open</DropdownMenu.Trigger
+ >
+ <DropdownMenu.Content class="w-56">
+  <DropdownMenu.Group>
+   <DropdownMenu.GroupHeading>Appearance</DropdownMenu.GroupHeading>
+   <DropdownMenu.Separator />
+   <DropdownMenu.CheckboxItem bind:checked={showStatusBar}>
+    Status Bar
+   </DropdownMenu.CheckboxItem>
+   <DropdownMenu.CheckboxItem bind:checked={showActivityBar} disabled>
+    Activity Bar
+   </DropdownMenu.CheckboxItem>
+   <DropdownMenu.CheckboxItem bind:checked={showPanel}
+    >Panel</DropdownMenu.CheckboxItem
+   >
+  </DropdownMenu.Group>
+ </DropdownMenu.Content>
+</DropdownMenu.Root>
+```
 
 ### Radio Group
 
-<ComponentPreview name="dropdown-menu-radio-group">
-
-<div></div>
-
-</ComponentPreview>
+```svelte
+<script lang="ts">
+ import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+ import { buttonVariants } from "$lib/components/ui/button/index.js";
+ 
+ let position = $state("bottom");
+</script>
+ 
+<DropdownMenu.Root>
+ <DropdownMenu.Trigger class={buttonVariants({ variant: "outline" })}
+  >Open</DropdownMenu.Trigger
+ >
+ <DropdownMenu.Content class="w-56">
+  <DropdownMenu.Group>
+   <DropdownMenu.GroupHeading>Panel Position</DropdownMenu.GroupHeading>
+   <DropdownMenu.Separator />
+   <DropdownMenu.RadioGroup bind:value={position}>
+    <DropdownMenu.RadioItem value="top">Top</DropdownMenu.RadioItem>
+    <DropdownMenu.RadioItem value="bottom">Bottom</DropdownMenu.RadioItem>
+    <DropdownMenu.RadioItem value="right">Right</DropdownMenu.RadioItem>
+   </DropdownMenu.RadioGroup>
+  </DropdownMenu.Group>
+ </DropdownMenu.Content>
+</DropdownMenu.Root>
+```
 
 ## Changelog
 

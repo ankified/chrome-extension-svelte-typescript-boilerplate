@@ -13,10 +13,7 @@ Analise o projeto para entender sua estrutura, propósito e tecnologias utilizad
 
 2. Leia detalhadamente os arquivos:
    - src/options/Options.svelte
-   - src/options/views/SavedItemsView.svelte
-   - src/options/views/table/SavedItemsTableView.svelte
-   - src/options/views/table/DataTable.svelte
-   - src/options/views/table/columns.ts
+   - src/lib/components/app-sidebar.svelte
    - src/storage.ts
    - src/types.ts
    - src/app.d.ts

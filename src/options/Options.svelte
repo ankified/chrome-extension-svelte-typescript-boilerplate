@@ -11,27 +11,66 @@
   import * as Sidebar from '../lib/components/ui/sidebar/index.js';
   import * as Breadcrumb from '../lib/components/ui/breadcrumb/index.js';
   import { Separator } from '../lib/components/ui/separator/index.js';
+  import { Root as ToggleGroup, Item as ToggleGroupItem } from "../lib/components/ui/toggle-group/index.js";
+  import List from "@lucide/svelte/icons/list";
+  import LayoutGrid from "@lucide/svelte/icons/layout-grid";
   // Definição das abas de navegação
-  const tabs = [
-    { id: 'saved', label: 'Itens Salvos', icon: 'bookmark' },
-    { id: 'notes', label: 'Notas', icon: 'note' },
-    { id: 'flashcards', label: 'Flashcards', icon: 'school' },
-    { id: 'settings', label: 'Configurações', icon: 'settings' }
-  ];
+  // const tabs = [
+  //   { id: 'saved', label: 'Itens Salvos', icon: 'bookmark' },
+  //   { id: 'notes', label: 'Notas', icon: 'note' },
+  //   { id: 'flashcards', label: 'Flashcards', icon: 'school' },
+  //   { id: 'settings', label: 'Configurações', icon: 'settings' }
+  // ];
   
-  // Agora o valor padrão é 'saved-cards'
-  let activeTab = $state('saved-table');
+  // activeTab agora será, por exemplo, 'home', 'saved-web', 'saved-local', 'kb-vademecum', etc.
+  let activeTab = $state('home');
+  let savedItemsViewMode = $state<'table' | 'cards'>('table');
+  
   let isFixingReferences = $state(false);
-  let fixResults = $state(null);
+  // let fixResults = $state(null); // Não parece estar sendo usado
   let fixingGroupRelations = $state(false);
   let lastFixResult = $state<string | null>(null);
   
-  const viewModeLabels: Record<string, string> = {
-    cards: 'Cartões',
-    table: 'Tabela',
-    kanban: 'Kanban',
-    flow: 'Fluxo',
+  // Mapeamento para o Breadcrumb
+  const tabLabels: Record<string, string> = {
+    'home': 'Início',
+    'kb-vademecum': 'Vade-mécum',
+    'kb-updates': 'Atualizações',
+    'kb-wiki': 'Wiki',
+    'saved-web': 'Web',
+    'saved-local': 'Local',
+    'project-kanban': 'Kanban',
+    'project-flow': 'Fluxo',
+    'project-schedule': 'Cronograma',
+    'personal-heuristics': 'Heurísticas',
+    'personal-notes-short': 'Notas curtas',
+    'personal-notes-annotations': 'Anotações',
+    'personal-flashcards': 'Flashcards',
+    'settings': 'Configurações',
+    'alerts': 'Alertas'
+    // Adicionar outros conforme necessário
   };
+
+  const parentTabLabels: Record<string, string> = {
+    'kb-vademecum': 'Base de conhecimento',
+    'kb-updates': 'Base de conhecimento',
+    'kb-wiki': 'Base de conhecimento',
+    'saved-web': 'Itens Salvos',
+    'saved-local': 'Itens Salvos',
+    'project-kanban': 'Projeto',
+    'project-flow': 'Projeto',
+    'project-schedule': 'Projeto',
+    'personal-notes-short': 'Notas',
+    'personal-notes-annotations': 'Notas',
+  };
+
+  $effect(() => {
+    // Quando activeTab for 'saved-web', definir modo de visualização para 'table'
+    if (activeTab === 'saved-web') {
+      savedItemsViewMode = 'table';
+    }
+    // Poderia adicionar lógica para 'saved-local' se precisar de um padrão diferente
+  });
   
   onMount(() => {
     // Tratamento para o erro "Extension context invalidated"
@@ -96,15 +135,8 @@
     activeTab = tabId;
   }
   
-  function getSavedViewMode(tab: string): 'cards' | 'table' | 'kanban' | 'flow' {
-    if (tab.startsWith('saved-')) {
-      const mode = tab.replace('saved-', '');
-      if (["cards", "table", "kanban", "flow"].includes(mode)) {
-        return mode as 'cards' | 'table' | 'kanban' | 'flow';
-      }
-    }
-    return 'cards';
-  }
+  // getSavedViewMode não é mais necessária
+  // function getSavedViewMode(tab: string): 'cards' | 'table' | 'kanban' | 'flow' { ... }
   
   // Função para corrigir as relações entre grupos e itens
   async function fixGroupRelations() {
@@ -143,51 +175,67 @@
       fixingGroupRelations = false;
     }
   }
+
+  function getItemCategory(currentTab: string): 'web' | 'local' | null {
+    if (currentTab === 'saved-web') return 'web';
+    if (currentTab === 'saved-local') return 'local';
+    return null;
+  }
 </script>
 
 <Sidebar.Provider>
   <AppSidebar {activeTab} onTabChange={changeTab} />
   <Sidebar.Inset class="!h-2 min-h-0 p-1 overflow-y-auto">
-    <header class="flex h-8 shrink-0 items-center gap-2">
-      <div class="flex items-center gap-2 px-4 py-4">
+    <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <div class="flex flex-1 items-center gap-2">
         <Sidebar.Trigger class="-ml-1" />
-        <Separator orientation="vertical" class="mr-2 h-4" />
+        <Separator orientation="vertical" class="mr-2 h-6" />
         <Breadcrumb.Root>
           <Breadcrumb.List>
-            {#if activeTab.startsWith('saved')}
+            {#if parentTabLabels[activeTab]}
               <Breadcrumb.Item>
-                <Breadcrumb.Link href="#">Itens Salvos</Breadcrumb.Link>
+                <Breadcrumb.Link href="#">{parentTabLabels[activeTab]}</Breadcrumb.Link>
               </Breadcrumb.Item>
               <Breadcrumb.Separator />
-              <Breadcrumb.Item>
-                <Breadcrumb.Page>{viewModeLabels[getSavedViewMode(activeTab)] ?? ''}</Breadcrumb.Page>
-              </Breadcrumb.Item>
-            {:else if activeTab === 'notes'}
-              <Breadcrumb.Item>
-                <Breadcrumb.Page>Notas</Breadcrumb.Page>
-              </Breadcrumb.Item>
-            {:else if activeTab === 'flashcards'}
-              <Breadcrumb.Item>
-                <Breadcrumb.Page>Flashcards</Breadcrumb.Page>
-              </Breadcrumb.Item>
-            {:else if activeTab === 'settings'}
-              <Breadcrumb.Item>
-                <Breadcrumb.Page>Configurações</Breadcrumb.Page>
-              </Breadcrumb.Item>
-          {/if}
+            {/if}
+            <Breadcrumb.Item>
+              <Breadcrumb.Page>{tabLabels[activeTab] ?? activeTab}</Breadcrumb.Page>
+            </Breadcrumb.Item>
           </Breadcrumb.List>
         </Breadcrumb.Root>
+
+        {#if activeTab === 'saved-web' || activeTab === 'saved-local'}
+          <div class="ml-auto flex items-center gap-2">
+            <ToggleGroup type="single" bind:value={savedItemsViewMode} size="sm">
+              <ToggleGroupItem value="table" aria-label="Visualização em Tabela">
+                <List class="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="cards" aria-label="Visualização em Cartões">
+                <LayoutGrid class="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        {/if}
       </div>
   </header>
-    <main class="flex-1 flex-grow !h-2 min-h-0 overflow-hidden p-0">
-      {#if activeTab.startsWith('saved')}
-        <SavedItemsView viewMode={getSavedViewMode(activeTab)} />
-      {:else if activeTab === 'notes'}
+    <main class="flex-1 flex-grow !h-2 min-h-0 overflow-hidden p-4">
+      {#if activeTab === 'saved-web' || activeTab === 'saved-local'}
+        {@const category = getItemCategory(activeTab)}
+        {#if category}
+          <SavedItemsView itemCategory={category} viewMode={savedItemsViewMode} />
+        {/if}
+      {:else if activeTab === 'notes' || activeTab === 'personal-notes-short' || activeTab === 'personal-notes-annotations'}
         <NotesView />
-      {:else if activeTab === 'flashcards'}
+      {:else if activeTab === 'flashcards' || activeTab === 'personal-flashcards'}
         <FlashcardsView />
       {:else if activeTab === 'settings'}
         <SettingsView />
+      {:else}
+         <!-- Renderizar algo para 'home', 'kb-...', 'project-...', 'personal-heuristics', 'alerts' -->
+         <!-- ou deixar em branco/mostrar uma mensagem de "Em desenvolvimento" -->
+         <div class="p-4 text-center text-muted-foreground">
+           Visualização para "{tabLabels[activeTab] ?? activeTab}" não implementada.
+         </div>
       {/if}
     </main>
   </Sidebar.Inset>

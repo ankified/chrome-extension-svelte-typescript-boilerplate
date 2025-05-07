@@ -665,7 +665,10 @@
       // ...
   }
 
-  let { viewMode = "table" } = $props();
+  let { 
+    itemCategory = null as 'web' | 'local' | null,
+    viewMode = 'table' as 'table' | 'cards'
+  } = $props();
 
 </script>
 
@@ -702,17 +705,8 @@
     />
   </div>
 
-  <!-- Kanban (Controla visibilidade com display) -->
-  <div style="display: {viewMode === 'kanban' ? 'block' : 'none'};" class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-    <p class="font-medium">Visualização Kanban</p>
-    <p class="text-sm">(Em desenvolvimento)</p>
-  </div>
+  <!-- Blocos Kanban e Fluxo REMOVIDOS -->
 
-  <!-- Fluxo (Controla visibilidade com display) -->
-  <div style="display: {viewMode === 'flow' ? 'block' : 'none'};" class="text-center py-10 text-gray-500 dark:text-gray-400 border rounded-lg dark:border-gray-700 flex-grow overflow-y-auto p-1">
-    <p class="font-medium">Visualização em Fluxo</p>
-    <p class="text-sm">(Em desenvolvimento)</p>
-  </div>
 </div>
 
 <div class="flex flex-col h-full min-h-0 p-1 md:p-2 space-y-0">
