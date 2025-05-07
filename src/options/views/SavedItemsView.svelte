@@ -1,4 +1,10 @@
 <script lang="ts">
+  // Props recebidas corretamente (devem ser as primeiras declarações)
+  let { 
+    itemCategory = null as 'web' | 'local' | null,
+    viewMode = 'table' as 'table' | 'cards'
+  } = $props();
+
   // Importações Essenciais
   import { savedItems, groups, knownTags } from "../../storage"; // ADICIONAR knownTags
   import { 
@@ -97,11 +103,23 @@
   // --- NOVO: Estado para Filtros Nomeados ---
   let namedFilterSets = $state<NamedFilterSet[]>([]);
 
-  // --- Dados Derivados ---
-  let availableTags = $derived($knownTags);
+  // --- Dados Derivados Corrigidos ---
+  let availableTags = $derived($knownTags); // Restaurado e usando valor da store
+
+  let baseFilteredItems = $derived(() => {
+    if (!itemCategory || !$savedItems) return $savedItems ?? []; // Usando $savedItems
+    if (itemCategory === 'web') {
+      return $savedItems.filter(item => item.url && !item.url.startsWith('local:')); 
+    }
+    if (itemCategory === 'local') {
+      return $savedItems.filter(item => !item.url || item.url.startsWith('local:')); 
+    }
+    return $savedItems ?? [];
+  });
+
   let filteredItems = $derived(
     filterItems(
-      $savedItems,
+      baseFilteredItems(),
       searchQuery,
       searchScope,
       includedTags,
@@ -116,9 +134,8 @@
   let sortedItems = $derived(sortItems(filteredItems, sortDescriptors));
 
   // --- Funções de Filtragem e Ordenação ---
-
   function filterItems(
-    items: SavedItem[] | undefined,
+    items: SavedItem[] | undefined, // Tipo OK
     query: string,
     scope: 'content' | 'tags' | 'groups',
     includedTagsParam: string[],
@@ -148,6 +165,7 @@
           matchesQuery = !!item.tags && item.tags.some(tag => typeof tag === 'string' && tag.toLowerCase().includes(lowerQuery));
         } else if (scope === 'groups') {
           matchesQuery = !!item.groupIds && item.groupIds.some(gId => {
+            // Usar $groups aqui para acessar o valor da store
             const groupName = $groups?.find(g => g.id === gId)?.name;
             return !!groupName && groupName.toLowerCase().includes(lowerQuery);
           });
@@ -664,11 +682,6 @@
       }
       // ...
   }
-
-  let { 
-    itemCategory = null as 'web' | 'local' | null,
-    viewMode = 'table' as 'table' | 'cards'
-  } = $props();
 
 </script>
 

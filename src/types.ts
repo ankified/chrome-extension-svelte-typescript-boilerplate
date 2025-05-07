@@ -98,3 +98,42 @@ export interface VisitItem {
   visitTime: number; // Timestamp em milissegundos desde a epoch
   transition: VisitTransition;
 } 
+
+// ---- TIPOS PARA NAVEGAÇÃO DA SIDEBAR ----
+export interface NavItem {
+  id: string;
+  label: string;
+  icon?: any; // Idealmente: typeof import('svelte').SvelteComponent;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  subItems?: NavItem[];
+  isGroupLabel?: boolean; 
+} 
+
+// ---- TIPOS PARA NOTAS E ANOTAÇÕES (Refatorado) ----
+
+// Interface para Notas Curtas (Sticky Notes / Post-its)
+export interface ShortNote {
+  id: string;
+  content: string;      // Conteúdo textual simples
+  dateCreated: number;
+  lastModified: number;
+  tags: string[];
+  color?: string;       // Cor de fundo
+  position?: { x: number, y: number }; // Posição (talvez para um quadro)
+  // Não tem itemId pois são notas independentes
+}
+
+// Interface para Anotações (Conteúdo rico - TipTap)
+export interface Annotation {
+  id: string;
+  title?: string;       // Título opcional para a anotação
+  content: string;      // Representação textual (para busca/preview)
+  contentJson?: string; // Conteúdo JSON do TipTap (ou outro formato rico)
+  dateCreated: number;
+  lastModified: number;
+  tags: string[];
+  color?: string;
+  itemId?: string;      // Pode ser ligada a um SavedItem
+  position?: { x: number, y: number }; // Posição (talvez para um quadro)
+} 

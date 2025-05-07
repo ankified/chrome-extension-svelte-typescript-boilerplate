@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import NotesView from './views/NotesView.svelte';
   import FlashcardsView from './views/FlashcardsView.svelte';
   import SettingsView from './views/SettingsView.svelte';
   import SavedItemsView from './views/SavedItemsView.svelte';
+  import ShortNotesView from './views/ShortNotesView.svelte';
+  import AnnotationsView from './views/AnnotationsView.svelte';
   import { fixReferences, verifyAndFixGroupRelations } from '../storage';
   import { toast } from "svelte-sonner";
   import { Toaster } from "../lib/components/ui/sonner/index.js";
@@ -224,8 +225,10 @@
         {#if category}
           <SavedItemsView itemCategory={category} viewMode={savedItemsViewMode} />
         {/if}
-      {:else if activeTab === 'notes' || activeTab === 'personal-notes-short' || activeTab === 'personal-notes-annotations'}
-        <NotesView />
+      {:else if activeTab === 'personal-notes-short'}
+        <ShortNotesView />
+      {:else if activeTab === 'personal-notes-annotations'}
+        <AnnotationsView />
       {:else if activeTab === 'flashcards' || activeTab === 'personal-flashcards'}
         <FlashcardsView />
       {:else if activeTab === 'settings'}

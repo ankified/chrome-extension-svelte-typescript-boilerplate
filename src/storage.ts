@@ -1,5 +1,5 @@
 import { writable, type Updater } from 'svelte/store';
-import type { SavedItem, Note, Flashcard, Group, ItemLink } from './types';
+import type { SavedItem, Note, Flashcard, Group, ItemLink, ShortNote, Annotation } from './types';
 
 /**
  * Creates a persistent Svelte store backed by Chrome's sync storage.
@@ -195,6 +195,8 @@ function get<T>(store: { subscribe: (callback: (value: T) => void) => any }): T 
 // Criar stores para cada tipo de dado
 export const savedItems = createPersistentStore<SavedItem[]>('savedItems', []);
 export const notes = createPersistentStore<Note[]>('notes', []);
+export const shortNotes = createPersistentStore<ShortNote[]>('shortNotes', []);
+export const annotations = createPersistentStore<Annotation[]>('annotations', []);
 export const flashcards = createPersistentStore<Flashcard[]>('flashcards', []);
 export const groups = createPersistentStore<Group[]>('groups', []);
 export const itemLinks = createPersistentStore<ItemLink[]>('itemLinks', []);
