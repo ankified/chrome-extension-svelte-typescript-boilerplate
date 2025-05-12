@@ -1,0 +1,47 @@
+# Visão geral:
+O projeto atual consiste em uma aplicação que está sendo construída com o propósito de permitir que o usuário:
+- Salve e gerencie fontes de informação da web ou do próprio computador, podendo atribuir a cada uma delas comentários, anotações curtas (e.g. post-its, sticky notes), notas longas (e.g. documentos em hypertext criados usando bibliotecas como o TipTap) e flashcards;
+- Crie vínculos entre itens salvos, notas, anotações, flashcards, etc., usando o padrão de triplets (e.g. A->exemplo_de->B);
+- Use algoritmos de Spaced Repetition System para agendamento de revisões de flashcards;
+- Registre heurísticas que ele usa para raciocinar a respeito de conjuntos informações, de modo a facilitar a memorização dessas heurísticas, pois muitas vezes o uso de flashcards está limitado a registrar uma ou poucas informações em cada cartão, ao passo que heurísitcas podem ser úteis quando o usuário precisa lembrar de um conjunto de informações estruturadas de uma forma específica;
+- Tenha acesso a uma base de conhecimento (knowledge base) que contempla informações relevantes, curadas e atualizadas, para que o usuário possa usar como referência ao criar suas notas, anotações, flashcards e heurísitcas. O usuário poderá, inclusive, criar vínculos e remições com o conteúdo dessa base de informações;
+- Organize as informações que ele criou (notas curtas, anotações, flashcards, heurísticas) e que coletou (páginas da web, arquivos do HD) em forma de Kanban, grafos de conhecimento (knowledge graphs) e cronogramas com agendamento de tarefas.
+- Tenha acesso a ferramentas de Inteligência Artificial, que serão úteis para participar na criação, edição, agendamento e revisão de notas, anotações, flashcards e heurísticas.
+- Tenha à sua disposição algoritmos baseados em grafos de semelhança para recomendação de conteúdo, pesquisa de informação, etc. 
+
+# Descrição geral de como a base de conhecimento (knowledge base) estará estruturada:
+O núcleo duro da base de conhecimento deverá consistir em Knowledge Graphs, que servirão para registro de forma estruturada do conhecimento pertinente à área de interesse (no caso, área jurídica), bem como em um vade-mecum com leis e jurisprudência interligadas e páginas do tipo "wiki", para consulta de conceitos relevantes.
+
+# Descrição geral de como a ferramenta de Inteligência Artificial deverá interagir com o usuário:
+- Casos de uso:
+1. O usuário abre um item salvo em suas fontes de informação (e.g. um documento em PDF) e ativa a ferramenta de IA. Ele poderá clicar em um botão para que a ferramenta escaneie o documento (ou uma certa quantidade de páginas, se o documento for muito extenso) e encontre trechos em que haja pertinência com informações contidas na base de conhecimento. Os trechos encontrados serão destacados (e.g. sublinhados) e surgirá um tooltip com mais informações quando o usuário passa o mouse sobre eles;
+
+2. O usuário abre um item salvo em suas fontes de informação (e.g. um documento em PDF) e ativa a ferramenta de IA. Ele solicita que a ferramenta de IA o auxilie na criação da heurística que servirá  como um mapa do seu entendimento sobre o conteúdo do documento. O usuário descreve em linguagem natural o seu raciocínio e a ferramenta de AI pode criar um novo painel (usando bibliotecas como Svelte-Flow ou SigmaJS) para registrar de forma estruturada o raciocínio que o usuário descreveu em linguagem natural. O usuário poderá pedir que a ferramenta de IA procure na base de conhecimento por informações relevantes para o raciocínio que ele está descrevendo. Poderá também pedir que a ferramenta de IA faça uso do Sistema de Repetição Espaçada para agendar datas de revisão dessa heurística.
+
+3. O Sistema de Repetição Espaçada agendou datas de revisão de informações (e.g. heurísticas, anotações, flashcards). A aplicação detectou que existem revisões agendadas para o dia corrente e envia um prompt em segundo plano para que a ferramenta de IA inicie uma conversa com o usuário sobre os temas a serem revisados, instando o usuário a explicar o que consegue lembrar. A ferramenta de IA deve comparar a explicação do usuário com a fonte (flashcard, heurística, anotação, etc.) e dar o feedback, fazendo perguntas sobre o que o usuário não descreveu corretamente ou esqueceu de descrever. Conforme o usuário apresente dificuldade para lembrar, ela pode dar dicas e, então, ela pode mostrar a fonte original.
+
+4. O usuário cadastra temas de interesse e ativa uma funcionalidade que faz com que a ferramenta de IA busque por publicações pertinentes na internet, em sites especializados, publicações acadêmicas, portais de jurisprudência, etc. Para isso, os algoritmos de recomendação poderão ser úteis.
+
+5. O usuário pode solicitar que a ferramenta da IA consulte os KanBans, fluxos e cronogramas bem como os modifique. A ferramenta de IA também pode se oferecer para fazer alterações, por exemplo, quando detectar que o usuário esqueceu de algum ponto específico de alguma heurística, ela pode se oferecer para criar uma entrada no Kanban ou agendar data e horário para que o usuário possa tomar alguma ação pertinente com relação a isso no cronograma. Além disso, ela pode inserir algum destaque visual na visualização da heurística, para que o usuário consiga identificar facilmente esses pontos de falha.
+ 
+# Breve descrição dos motivos para criar essa aplicação:
+Costumo pensar que o Direito pode ser descrito como um "Sistema Complexo Adaptativo", ou seja, um sistema que está em constante modificação e cuja compreensão demanda a análise conjunta de seus elementos fundamentais, isto é, as fontes do direito (lei, doutrina e jurisprudência), de modo a extrair as propriedades emergentes desse sistema. Por outro lado, as aplicações de gerenciamento de conhecimento atuais se baseiam no registro atomizado e não interligado de informações (e.g. Anki Flashcards) ou no registro textual e (potencialmente) interligado (e.g. Obsidian, LiquidText e Zotero). Penso que seria útil haver uma aplicação que admitisse o registro atomizado e interligado de informações, pois isso facilitaria a documentação de heurísticas úteis na exegese (a que eu me referi anteriormente como extração das propriedades emergentes do sistema), ao mesmo tempo em que tiraria proveito de técnicas comprovadamente eficazes de aprendizado como a repetição espaçada e a prática deliberada, tal como descritas por Anders Ericsson. Além disso, o fácil acesso a uma base de conhecimento atualizada e o uso de ferramentas de IA para mineração de dados, busca de informações relevantes, recomendação de temas relevantes, etc., economizaria tempo do usuário.
+
+# Aplicações que serviram de inspiração:
+- Microsoft PowerAutomate: Serve para criação de automações de processos (RPA), mineração de processos para extrair métricas e melhorar a eficiência. No nosso caso, os processos correspondem às heurísticas e a mineração corresponde à análise de quais elementos das heurísitcas estão mais sujeitos a esquecimento ou confusão, o que facilita a tomada de decisões do usuário como identificar o motivo do esquecimento ou da confusão, identificar se esses elementos estão presentes em mais de uma heurística e, em caso positivo, se o esquecimento e a confusão ocorrem em todas elas ou se têm chance de ocorrer mais em umas do que em outras, etc. O usuário também poderá se valer dessa ferramenta para avaliar e aperfeiçoar suas heurísticas.
+
+- Perplexity AI: Fornece opções de pesquisa profunda, usando IA, o que possibilita encontrar informações mais detalhadas, com citações, uso de modelos de raciocínio, etc. Há a possibilidade de uso da API para acessar essas funcionalidades, o que pode ser útil para integrar com a ferramenta de IA da aplicação;
+
+- Spotify: Faz uso de um sistema de metadados associado com algoritmos que analisam a proximidade de músicas com base no uso dos clientes (que eles chamam de "Collaborative Filtering"), o que alimenta um algoritmo de recomendação. (Ver https://medium.com/beyond-the-build/the-inner-workings-of-spotifys-ai-powered-music-recommendations-how-spotify-shapes-your-playlist-a10a9148ee8d). A forma como a equipe do Spotify consegue identificar a similaridade de músicas, identificar quais músicas são tipicamente demandadas em contextos específicos (e.g. músicas de natal) se assemelha bastante à minha ideia de heurísticas, ou seja, conjuntos de informações do sistema complexo adaptativo jurídico que devem ser analisadas em conjunto para a correta interpretação.
+
+- Ravel Law e Lex Machina (adquiridos por LexisNexis): Usam técnicas de jurimetria para identificar casos e conceitos jurídicos mais relevantes e mostrar visualmente em dashboards, grafos e outros elementos de UI. Ver https://www.lexisnexis.com/pdf/lexis-advance/Ravel-View-How-To-Literature.pdf
+
+- Anki Flashcards: Usa um sistema de repetição espaçada para agendar sessões de revisão de flashcards. Porém, no meu sistema, o instrumento principal de armazenamento de informações são as heurísticas e não os flashcards, ainda que o usuário possa fazer uso deles.
+
+- Zotero: Permite que o usuário gerencie arquivos em PDF e Epub, além de acrescentar notas curtas, anotações, mercações, etc.
+
+- LiquidText: Permite que o usuário anote e faça links entre documentos PDF ou trechos de um mesmo documento e os renderize em um canvas.
+
+- Annotate.TV: Permite que o usuário faça anotações em vídeos do Youtube.
+
+- Obsidian: Usa um sistema de links entre notas e anotações, além de outras funcionalidades.

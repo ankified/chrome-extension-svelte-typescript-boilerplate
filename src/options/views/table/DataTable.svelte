@@ -50,8 +50,8 @@
   import { Loader2 } from '@lucide/svelte';
 
   let { columns = [], data = [] } = $props();
-  $inspect("DataTable data prop", data);
-  $inspect("data",data)
+  $inspect("DataTable data prop: ", data);
+  $inspect("data: ", data)
 
   let isLoadingInitialData = $state(true);
 

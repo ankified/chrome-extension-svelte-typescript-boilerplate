@@ -56,7 +56,7 @@
 			collapsible: true,
 			defaultOpen: false,
 			subItems: [
-				{ id: "kb-vademecum", label: "Vade-mécum", icon: FileText },
+				{ id: "kb-vademecum", label: "Vade-mecum", icon: FileText },
 				{ id: "kb-updates", label: "Atualizações", icon: Rss },
 				{ id: "kb-wiki", label: "Wiki", icon: BookMarked },
 			],

@@ -688,9 +688,9 @@
 <!-- Container Principal para as Visualizações -->
 <div class="flex flex-col flex-grow h-full min-h-0 overflow-hidden p-0 pt-2">
   <!-- Tabela (Sempre no DOM, controla visibilidade com display) -->
-  <div style="display: {viewMode === 'table' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
+  <!-- <div style="display: {viewMode === 'table' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">
     <SavedItemsTableView data={sortedItems} />
-  </div>
+  </div> -->
 
   <!-- Cartões (Sempre no DOM, controla visibilidade com display) -->
   <div style="display: {viewMode === 'cards' ? 'flex' : 'none'};" class="flex-col flex-grow h-full min-h-0">

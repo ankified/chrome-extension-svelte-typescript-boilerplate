@@ -25,7 +25,7 @@
   
   // activeTab agora será, por exemplo, 'home', 'saved-web', 'saved-local', 'kb-vademecum', etc.
   let activeTab = $state('home');
-  let savedItemsViewMode = $state<'table' | 'cards'>('table');
+  let savedItemsViewMode = $state<'table' | 'cards'>('cards');
   
   let isFixingReferences = $state(false);
   // let fixResults = $state(null); // Não parece estar sendo usado
@@ -35,7 +35,7 @@
   // Mapeamento para o Breadcrumb
   const tabLabels: Record<string, string> = {
     'home': 'Início',
-    'kb-vademecum': 'Vade-mécum',
+    'kb-vademecum': 'Vade-mecum',
     'kb-updates': 'Atualizações',
     'kb-wiki': 'Wiki',
     'saved-web': 'Web',
@@ -68,7 +68,7 @@
   $effect(() => {
     // Quando activeTab for 'saved-web', definir modo de visualização para 'table'
     if (activeTab === 'saved-web') {
-      savedItemsViewMode = 'table';
+      savedItemsViewMode = 'cards';
     }
     // Poderia adicionar lógica para 'saved-local' se precisar de um padrão diferente
   });
@@ -98,8 +98,8 @@
       console.error('Erro ao acessar storage:', error);
     }
 
-    fixReferences();
-    verifyAndFixGroupRelations();
+    // fixReferences();
+    // verifyAndFixGroupRelations();
   });
   
   function runFixReferences() {

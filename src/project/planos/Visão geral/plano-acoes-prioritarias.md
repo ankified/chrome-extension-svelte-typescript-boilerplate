@@ -139,13 +139,14 @@ Este documento registra as correções, melhorias e novas implementações que d
 - **Solução implementada**: Estabelecidas dimensões fixas de 400px × 500px para o popup, com regras CSS para garantir largura e altura adequadas, controle de overflow para evitar barras de rolagem desnecessárias e aplicação de layout flexbox para garantir dimensionamento consistente dos contêineres. Foi implementada uma classe `content-container` para padronizar o comportamento das abas.
 - **Resultado**: Popup com tamanho consistente entre todas as abas, melhorando a experiência do usuário ao eliminar redimensionamentos indesejados durante a navegação entre diferentes seções.
 
-### - [ ] 6. Visualização Embarcada de Links
+### - [-] ⚠️ 6. Visualização Embarcada de Links
 
 - **Melhoria**: Na aba Itens Salvos do painel de Opções, exibir a página associada dentro de um Dialog com iframe ao clicar no link.
 - **Implementação**:
   - Criar um componente Dialog que contenha um iframe
   - Implementar manipulador de eventos para intercepção de cliques em links
   - Garantir que o iframe tenha tamanho adequado e controles para fechar
+- **Limitações**: Não é possível exibir páginas dentro de Dialogs devido a limitações de segurança do navegador, por isso a solução implementada é abrir o link em uma nova aba. Posteriormente, quando o app for migrado para o Tauri, devo testar a implementação de uma solução mais adequada.
 
 ### - [ ] 7. Visualização Rápida de Conteúdo Associado
 
@@ -171,15 +172,13 @@ Este documento registra as correções, melhorias e novas implementações que d
   - Exibir favicon, título e link para o item vinculado
   - Garantir visibilidade tanto no modo de visualização quanto de edição
 
-### - [ ] 10. Ferramentas na Sidebar
+### - [x] 10. Ferramentas na Sidebar
 
-- **Melhoria**: Criar uma seção colapsável de ferramentas na sidebar e mover os botões "Corrigir Referências" e "Mostrar Debug" para lá.
+- **Melhoria**: Mover os botões "Corrigir Referências" e "Mostrar Debug" para a página de configurações.
 - **Implementação**:
-  - Implementar uma seção colapsável na sidebar usando componentes do shadcn-svelte
-  - Realocar botões de utilidades para esta seção
-  - Adicionar ícones apropriados e tooltip para melhor usabilidade
+  - Mover os botões para a página de configurações.
 
-### - [ ] 11. Debug em Dialog
+### - [x] 11. Debug em Dialog
 
 - **Melhoria**: Fazer com que os dados exibidos ao clicar em "Mostrar Debug" sejam mostrados em um Dialog.
 - **Implementação**:
@@ -467,19 +466,17 @@ Este documento registra as correções, melhorias e novas implementações que d
 - ~~Resolver problemas de sincronização entre storage.local e componentes~~ (CONCLUÍDO em 2025-04-04)
 - ~~Estimar 3 dias para investigação e otimização~~
 
-### - [ ] Fase 2: Melhorias de UI/UX (Prioridade Média)
+### - [x] ✅ Fase 2: Melhorias de UI/UX (Prioridade Média)
 - ~~Implementar melhorias 2 (dropdowns) e 4 (sistema de tags)~~ (CONCLUÍDA em 2025-04-01)
 - ~~Implementar melhoria 3 (cards de URL/título)~~ (CONCLUÍDA em 2025-04-01/02)
 - ~~Implementar melhoria 1 (feedback de salvamento)~~ (CONCLUÍDA em 2025-04-02)
 - ~~Implementar melhoria 5 (dimensões do popup)~~ (CONCLUÍDA em 2025-04-01)
 - Estimar 5-7 dias para estas implementações
 
-### - [ ] Fase 3: Implementação de Visualizações de Itens Salvos (Prioridade Média-Alta)
+### - [x] ✅ Fase 3: Implementação de Visualizações de Itens Salvos (Prioridade Média-Alta)
 - ~~Implementar estrutura de Abas (`Tabs`) na `SavedItemsView`.~~ (CONCLUÍDO em 2025-04-05)
 - Implementar a **Visualização em Tabela** (`SavedItemsTableView`) com `DataTable`. (Estimar 3-4 dias)
 - ~~Refatorar a **Visualização em Cartões** (`SavedItemsCardView`).~~ (CONCLUÍDO em 2025-04-05)
-- Implementar a **Visualização em Kanban** (`SavedItemsKanbanView`). (Ver estimativa NI#2, ~5-7 dias)
-- Implementar a **Visualização em Fluxo** (`SavedItemsFlowView`) com `@xyflow/svelte`. (Estimar ~4-5 dias)
 - *Substitui parcialmente NI#2 (Kanban) e adiciona Tabela/Fluxo a esta fase.*
 
 ### - [ ] Fase 4: Melhorias de Visualização e Organização (Prioridade Média-Baixa)
@@ -491,12 +488,12 @@ Este documento registra as correções, melhorias e novas implementações que d
 - Estimar ~~10-15 dias~~ 13-19 dias para estas implementações (adicionado ~3-4 dias para MU#15-19)
 
 ### - [ ] Fase 5: Novas Features e Refinamentos (Prioridade Variável)
-- Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
-- ~~Implementar correções de sincronização de armazenamento (Prioridade Alta) - 3 dias~~ (CONCLUÍDO em 2025-04-04)
-- Implementar sidebar para painel de opções (Prioridade Média) - 3 dias
-- Implementar seletor de tema aprimorado (Prioridade Média) - 1 dia
-- Implementar dashboard de atividades (Prioridade Baixa) - 7-10 dias
-- Implementar recursos avançados (anotações de texto, vídeo, TipTap) - 15-20 dias
+- [ ] Implementar verificação de duplicatas (Prioridade Alta) - 2 dias
+- [x] Implementar correções de sincronização de armazenamento (Prioridade Alta) - 3 dias
+- [x] Implementar sidebar para painel de opções (Prioridade Média) - 3 dias
+- [ ] Implementar seletor de tema aprimorado (Prioridade Média) - 1 dia
+- [ ] Implementar dashboard de atividades (Prioridade Baixa) - 7-10 dias
+- [ ] Implementar recursos avançados (anotações de texto, vídeo, TipTap) - 15-20 dias
 
 ## Considerações Finais
 
