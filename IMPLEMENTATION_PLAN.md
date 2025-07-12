@@ -23,8 +23,8 @@ O objetivo é construir uma extensão para o Google Chrome que permita aos usuá
   - [x] Filtros por etiquetas, data de criação e existência de comentários.
   - [ ] Agrupamento da visualização por domínio, data de criação, etc.
 - **Integração com Google Drive**:
-  - [ ] Autenticação segura via OAuth 2.0.
-  - [ ] Backup (upload) e restauração (download) dos dados.
+  - [x] Autenticação segura via OAuth 2.0.
+  - [x] Backup (upload) e restauração (download) dos dados.
 
 ## Plano de Ação
 
@@ -43,6 +43,11 @@ A implementação será dividida nas seguintes tarefas:
 4.  **Funcionalidades de Background**
     -   [x] Implementar o sistema de lembretes (alarmes e notificações).
 5.  **Integração com Google Drive**
-    -   [ ] Implementar o fluxo de autenticação OAuth 2.0.
-    -   [ ] Desenvolver a lógica de backup e restauração.
-    -   [ ] Atualizar a página de Opções para gerenciar a conta do Google Drive. 
+    -   [x] Implementar o fluxo de autenticação OAuth 2.0.
+    -   [x] Desenvolver a lógica de backup e restauração.
+    -   [x] Atualizar a página de Opções para gerenciar a conta do Google Drive.
+6.  **Integração com Microsoft OneDrive (Opcional)**
+    -   [ ] Configurar a aplicação no Portal do Azure e obter as credenciais.
+    -   [ ] Atualizar a UI de Opções para permitir a escolha entre Google Drive e OneDrive.
+    -   [ ] Implementar o fluxo de autenticação OAuth 2.0 para contas Microsoft.
+    -   [ ] Desenvolver a lógica de backup e restauração usando a API Microsoft Graph. 
