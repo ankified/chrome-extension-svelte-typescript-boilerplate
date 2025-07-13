@@ -47,7 +47,7 @@ function launchWebAuthFlow(interactive: boolean): Promise<string> {
 			'Para o fluxo de autenticação da web, certifique-se de que este URI de redirecionamento está adicionado às suas credenciais de OAuth 2.0 do tipo "Aplicação Web" na Google Cloud Console:',
 			redirectUri
 		);
-		const scopes = 'https://www.googleapis.com/auth/drive.file';
+		const scopes = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 		let authUrl = `https://accounts.google.com/o/oauth2/v2/auth`;
 		authUrl += `?client_id=${WEB_APP_CLIENT_ID}`;
 		authUrl += `&response_type=token`;

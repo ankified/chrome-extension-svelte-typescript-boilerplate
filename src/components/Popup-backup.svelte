@@ -33,7 +33,6 @@
 	let tags = $state<string[]>([]);
 	let newTag = $state('');
 	let title = $state('');
-	let favicon = $state<string | null>(null);
 	let reminder = $state<DateValue | undefined>(undefined);
 	let selectedGroup = $state<string | undefined>(undefined);
 	let isLoggedIn = $state(false);
@@ -41,12 +40,6 @@
 	
 	// Use the reactive store for sync status
 	const syncStatus = $derived($syncStatusStore);
-
-	// Avatar display logic
-	const avatarInfo = $derived({
-		showImage: isLoggedIn && user?.picture && user.picture.length > 0,
-		fallbackText: (isLoggedIn && user?.email) ? user.email[0].toUpperCase() : 'U'
-	});
 
 	const groupTriggerContent = $derived(
 		groups.find((g) => g.value === selectedGroup)?.label ?? 'Select a group'
@@ -56,48 +49,25 @@
 		// Check login status on mount
 		checkLoginStatus();
 
-		// Get current tab info including favicon
+		// Get current tab info
 		chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
 			if (tab) {
 				url = tab.url || '';
 				title = tab.title || '';
-				favicon = tab.favIconUrl || null;
-				console.log('Tab info loaded:', { 
-					url: tab.url, 
-					title: tab.title, 
-					favicon: tab.favIconUrl 
-				});
 			}
 		});
 	});
 
 	async function checkLoginStatus() {
-		console.log('=== checkLoginStatus called ===');
 		try {
 			const token = await getAuthToken(false);
-			console.log('Token from getAuthToken:', !!token);
-			
 			if (token) {
-				console.log('Token found, setting logged in and fetching user info');
 				isLoggedIn = true;
-				await fetchUserInfo(token);
-				console.log('User info fetched successfully');
-			} else {
-				console.log('No token found, setting logged out');
-				isLoggedIn = false;
-				user = null;
+				fetchUserInfo(token);
 			}
 		} catch (error) {
-			console.error('Error in checkLoginStatus:', error);
 			isLoggedIn = false;
-			user = null;
 		}
-		
-		console.log('Final state after checkLoginStatus:', {
-			isLoggedIn,
-			userEmail: user?.email,
-			hasPicture: !!user?.picture
-		});
 	}
 
 	async function openOptionsPage() {
@@ -113,77 +83,27 @@
 	}
 
 	async function fetchUserInfo(token: string) {
-		console.log('=== fetchUserInfo called ===');
-		console.log('Token present:', !!token);
-		console.log('Token length:', token ? token.length : 0);
-		console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'No token');
-		
 		try {
 			const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-				headers: { 
-					'Authorization': `Bearer ${token}`,
-					'Accept': 'application/json'
-				}
+				headers: { Authorization: `Bearer ${token}` }
 			});
-			
-			console.log('Response status:', response.status);
-			console.log('Response ok:', response.ok);
-			console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-			
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error('API Error Response:', errorText);
-				throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-			}
-			
+			if (!response.ok) throw new Error('Failed to fetch user info');
 			const data = await response.json();
-			console.log('Raw API response:', data);
-			
-			// Ensure we have valid data
-			if (!data.email) {
-				throw new Error('No email received from Google API');
-			}
-			
-			user = { 
-				email: data.email, 
-				picture: data.picture || null
-			};
-			
-			console.log('✅ User state set successfully:', {
-				email: user.email,
-				picture: user.picture ? 'Picture URL present' : 'No picture',
-				pictureLength: user.picture ? user.picture.length : 0
-			});
-			
+			user = { email: data.email, picture: data.picture };
 		} catch (error) {
-			console.error('❌ Failed to fetch user info:', error);
-			// Reset user state on error
-			user = null;
-			isLoggedIn = false;
-			throw error; // Re-throw to handle in calling function
+			console.error('Failed to fetch user info:', error);
+			// Don't set sync status to error here - login status and sync status are separate
 		}
 	}
 
 	async function handleLogin() {
-		console.log('=== handleLogin called ===');
 		try {
 			const token = await getAuthToken(true);
-			console.log('Token obtained from interactive login:', !!token);
-			
 			isLoggedIn = true;
 			await fetchUserInfo(token);
-			
-			console.log('Login successful, final state:', {
-				isLoggedIn,
-				userEmail: user?.email,
-				hasPicture: !!user?.picture
-			});
-			
 			toast.success('Logged in successfully!');
 		} catch (error: any) {
 			console.error('Login failed:', error);
-			isLoggedIn = false;
-			user = null;
 			toast.error('Login failed', { description: error.message });
 		}
 	}
@@ -264,7 +184,6 @@
 			await addBookmark('root', {
 				url,
 				title,
-				faviconUrl: favicon || undefined,
 				comment,
 				tags, // Already an array
 				reminder: reminder ? reminder.toDate(Intl.DateTimeFormat().resolvedOptions().timeZone).getTime() : undefined
@@ -299,17 +218,11 @@
 					<DropdownMenu.Trigger>
 						<Button variant="ghost" class="relative h-8 w-8 rounded-full">
 							<Avatar.Root>
-								{#if avatarInfo.showImage}
-									<Avatar.Image src={user?.picture} alt={user?.email} />
+								{#if isLoggedIn && user?.picture}
+									<Avatar.Image src={user.picture} alt={user.email} />
 								{/if}
-								<Avatar.Fallback>{avatarInfo.fallbackText}</Avatar.Fallback>
+								<Avatar.Fallback>{user?.email?.[0].toUpperCase() ?? 'U'}</Avatar.Fallback>
 							</Avatar.Root>
-							<!-- Debug indicator -->
-							{#if isLoggedIn}
-								<div class="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">
-									✓
-								</div>
-							{/if}
 						</Button>
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="w-56" align="start">
@@ -325,11 +238,11 @@
 						{/if}
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
-				<Badge variant={syncStatus.status === 'error' ? 'destructive' : 'secondary'}>
-					{#if syncStatus.status === 'syncing'}
+				<Badge variant={syncStatus === 'error' ? 'destructive' : 'secondary'}>
+					{#if syncStatus === 'syncing'}
 						Syncing...
 					{:else}
-						{syncStatus.status}
+						{syncStatus}
 					{/if}
 				</Badge>
 			</div>
@@ -343,7 +256,7 @@
 				<ModeToggle />
 			</div>
 		</header>
-		
+
 		<div class="grid gap-4">
 			<!-- Section for Group Selector -->
 			<div class="grid gap-2">
@@ -368,36 +281,8 @@
 			<!-- Section for Item Preview (Placeholder) -->
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center gap-4 space-y-0 pb-2">
-					<!-- Favicon display -->
-					<div class="h-8 w-8 rounded-md flex items-center justify-center overflow-hidden bg-muted">
-						{#if favicon}
-							<img 
-								src={favicon} 
-								alt="Favicon" 
-								class="h-full w-full object-contain"
-								onerror={(e) => {
-									console.log('Favicon failed to load:', favicon);
-									const target = e.target as HTMLImageElement;
-									if (target) {
-										target.style.display = 'none';
-										const nextSibling = target.nextElementSibling as HTMLElement;
-										if (nextSibling) {
-											nextSibling.style.display = 'flex';
-										}
-									}
-								}}
-							/>
-							<!-- Fallback icon (hidden by default) -->
-							<div class="h-4 w-4 bg-muted-foreground rounded-sm hidden items-center justify-center">
-								<span class="text-xs text-muted">🌐</span>
-							</div>
-						{:else}
-							<!-- Default fallback when no favicon -->
-							<div class="h-4 w-4 bg-muted-foreground rounded-sm flex items-center justify-center">
-								<span class="text-xs text-muted">🌐</span>
-							</div>
-						{/if}
-					</div>
+					<!-- Favicon placeholder -->
+					<div class="h-8 w-8 bg-muted rounded-md"></div>
 					<div class="grid gap-1">
 						<Card.Title class="text-sm font-medium leading-none">{title || 'Page Title'}</Card.Title>
 						<Card.Description class="text-xs text-muted-foreground">{url || 'Page URL'}</Card.Description>

@@ -1,4 +1,4 @@
-import { appDataStore } from './storage';
+import { appDataStore, setSyncStatus } from './storage';
 import { getAuthToken, uploadBackup } from './gdrive';
 import { debounce } from './utils';
 
@@ -6,11 +6,15 @@ let isFirstChange = true;
 
 const debouncedUpload = debounce(async (token: string, data: any) => {
     console.log('Debounced backup triggered.');
+    await setSyncStatus('syncing');
+    
     try {
         await uploadBackup(token, data);
+        await setSyncStatus('synced');
         console.log('Auto-backup successful.');
     } catch (e) {
         console.error('Auto-backup failed:', e);
+        await setSyncStatus('error', e instanceof Error ? e.message : 'Unknown error');
     }
 }, 5000); // Debounce for 5 seconds
 

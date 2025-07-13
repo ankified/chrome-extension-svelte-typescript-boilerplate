@@ -1,6 +1,20 @@
 import type { Folder, BookmarkItem, Tag, AccessRecord } from '$lib/types';
 
 /**
+ * Represents the sync status of the application.
+ */
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+/**
+ * Represents the sync state information.
+ */
+export interface SyncState {
+  status: SyncStatus;
+  lastSyncTime?: number;
+  lastErrorMessage?: string;
+}
+
+/**
  * The main data structure for the application's storage.
  */
 export interface AppData {
@@ -10,6 +24,7 @@ export interface AppData {
 }
 
 const STORAGE_KEY = 'appData';
+const SYNC_STATUS_KEY = 'syncStatus';
 
 /**
  * The default state of the application data.
@@ -231,6 +246,52 @@ export async function deleteBookmark(id: string): Promise<void> {
     appData.folders = removeBookmarkById(appData.folders, id) as Folder[];
     await setAppData(appData);
 }
+
+// --- Sync Status Management ---
+
+/**
+ * Gets the current sync status from storage.
+ */
+export async function getSyncStatus(): Promise<SyncState> {
+  const result = await chrome.storage.local.get(SYNC_STATUS_KEY);
+  return result[SYNC_STATUS_KEY] || { status: 'idle' };
+}
+
+/**
+ * Sets the sync status in storage.
+ */
+export async function setSyncStatus(status: SyncStatus, errorMessage?: string): Promise<void> {
+  const syncState: SyncState = {
+    status,
+    lastSyncTime: status === 'synced' ? Date.now() : undefined,
+    lastErrorMessage: status === 'error' ? errorMessage : undefined
+  };
+  await chrome.storage.local.set({ [SYNC_STATUS_KEY]: syncState });
+}
+
+/**
+ * A readable Svelte store for sync status that stays in sync with chrome.storage.local.
+ */
+export const syncStatusStore = readable<SyncState>({ status: 'idle' }, (set) => {
+  // Get the initial value from storage
+  getSyncStatus().then(set).catch(err => {
+    console.error("Failed to initialize syncStatusStore:", err);
+    set({ status: 'error', lastErrorMessage: 'Failed to initialize sync status' });
+  });
+
+  // Set up a listener for changes
+  const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+    if (areaName === 'local' && changes[SYNC_STATUS_KEY]) {
+      set(changes[SYNC_STATUS_KEY].newValue as SyncState);
+    }
+  };
+
+  chrome.storage.onChanged.addListener(listener);
+
+  return () => {
+    chrome.storage.onChanged.removeListener(listener);
+  };
+});
 
 // --- Reactive Svelte Store ---
 import { readable } from 'svelte/store';
