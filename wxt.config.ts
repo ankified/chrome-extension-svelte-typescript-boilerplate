@@ -6,10 +6,17 @@ import path from 'path';
 export default defineConfig({
   modules: ['@wxt-dev/module-svelte'],
   srcDir: 'src',
-  vite: () => ({
+  vite: (configEnv) => ({
     resolve: {
       alias: {
         $lib: path.resolve(__dirname, './src/lib'),
+      },
+    },
+    css: {
+      postcss: {
+        plugins: [
+          require('@tailwindcss/postcss')(),
+        ],
       },
     },
   }),
