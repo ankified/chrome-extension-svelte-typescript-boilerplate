@@ -3,7 +3,7 @@ import type { Folder, BookmarkItem, Tag, AccessRecord } from '$lib/types';
 /**
  * Represents the sync status of the application.
  */
-export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'unauthenticated';
 
 /**
  * Represents the sync state information.

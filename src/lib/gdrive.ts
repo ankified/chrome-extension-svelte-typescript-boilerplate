@@ -16,6 +16,15 @@ const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
 const FILE_NAME = 'chrome-extension-svelte-typescript-boilerplate-backup.json';
 const MANUAL_TOKEN_STORAGE_KEY = 'gdrive_manual_token';
 
+/**
+ * Custom error class for authentication failures.
+ */
+export class AuthError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'AuthError';
+	}
+}
 
 /**
  * Checks if the current browser is Google Chrome.
@@ -147,6 +156,9 @@ async function findBackupFile(token: string): Promise<any | null> {
         headers,
     });
     if (!response.ok) {
+		if (response.status === 401) {
+			throw new AuthError('Authentication failed. Please log in again.');
+		}
         const errorDetails = await response.text();
         console.error('Google API Error on findBackupFile:', errorDetails);
         throw new Error('Failed to search for backup file: ' + response.statusText);
@@ -194,6 +206,9 @@ export async function uploadBackup(token: string, data: any): Promise<void> {
     });
 
     if (!response.ok) {
+		if (response.status === 401) {
+			throw new AuthError('Authentication failed. Please log in again.');
+		}
         const errorDetails = await response.text();
         console.error('Google API Error on uploadBackup:', errorDetails);
         throw new Error('Failed to upload backup: ' + response.statusText);
@@ -217,6 +232,9 @@ export async function downloadBackup(token: string): Promise<any | null> {
     });
 
     if (!response.ok) {
+		if (response.status === 401) {
+			throw new AuthError('Authentication failed. Please log in again.');
+		}
         const errorDetails = await response.text();
         console.error('Google API Error on downloadBackup:', errorDetails);
         throw new Error('Failed to download backup: ' + response.statusText);

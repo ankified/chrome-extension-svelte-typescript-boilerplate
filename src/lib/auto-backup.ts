@@ -1,5 +1,5 @@
 import { appDataStore, setSyncStatus } from './storage';
-import { getAuthToken, uploadBackup } from './gdrive';
+import { getAuthToken, uploadBackup, AuthError } from './gdrive';
 import { debounce } from './utils';
 
 let isFirstChange = true;
@@ -14,7 +14,11 @@ const debouncedUpload = debounce(async (token: string, data: any) => {
         console.log('Auto-backup successful.');
     } catch (e) {
         console.error('Auto-backup failed:', e);
-        await setSyncStatus('error', e instanceof Error ? e.message : 'Unknown error');
+        if (e instanceof AuthError) {
+            await setSyncStatus('unauthenticated', e.message);
+        } else {
+            await setSyncStatus('error', e instanceof Error ? e.message : 'Unknown error');
+        }
     }
 }, 5000); // Debounce for 5 seconds
 
@@ -32,9 +36,13 @@ async function handleDataChange(data: any) {
             if (token) {
                 console.log('Data changed, scheduling auto-backup...');
                 debouncedUpload(token, data);
+            } else {
+                // No token, which means we are logged out.
+                await setSyncStatus('unauthenticated', 'User is not logged in.');
             }
         } catch (error) {
-            // No token found, do nothing.
+            // This can happen if getAuthToken fails (e.g. not logged in on non-chrome)
+            await setSyncStatus('unauthenticated', 'User is not logged in.');
         }
     }
 }
