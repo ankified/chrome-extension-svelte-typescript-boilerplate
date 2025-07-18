@@ -20,6 +20,20 @@
     "unlimitedStorage",
     "scripting"
   ],
+  "commands": {
+    "open-bookmark-dialog": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K"
+      },
+      "description": "Abrir dialog para novo bookmark"
+    },
+    "wxt:reload-extension": {
+      "description": "Reload the extension during development",
+      "suggested_key": {
+        "default": "Alt+R"
+      }
+    }
+  },
   "host_permissions": [
     "<all_urls>",
     "http://localhost/*"
@@ -35,6 +49,16 @@
     "default_title": "Popup",
     "default_popup": "popup.html"
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "/dialog-iframe.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "oauth2": {
     "client_id": "399897809633-9se6bq4s3n2sa8snc50f8fa5523v1c2u.apps.googleusercontent.com",
     "scopes": [
@@ -42,14 +66,6 @@
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile"
     ]
-  },
-  "commands": {
-    "wxt:reload-extension": {
-      "description": "Reload the extension during development",
-      "suggested_key": {
-        "default": "Alt+R"
-      }
-    }
   },
   "background": {
     "service_worker": "background.js"

@@ -1,6 +1,6 @@
 import { mount } from "svelte";
 import Options from "../../components/Options.svelte";
-import "../content/styles.css";
+import "../../app.css";
 
 // Options
 // https://developer.chrome.com/docs/extensions/mv3/options/

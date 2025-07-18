@@ -1,6 +1,6 @@
 import { mount } from "svelte";
 import SidePanel from "../../components/SidePanel.svelte";
-import "../content/styles.css";
+import "../../app.css";
 
 
 // Side panel

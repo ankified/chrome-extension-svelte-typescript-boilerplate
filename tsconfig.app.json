@@ -23,8 +23,10 @@
         "baseUrl": ".",
         "paths": {
           "$lib": ["./src/lib"],
-          "$lib/*": ["./src/lib/*"]
+          "$lib/*": ["./src/lib/*"],
+          "#imports": ["../.wxt/types/imports.d.ts"]
         }
     },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "src/lib/**/*.ts", "src/lib/**/*.svelte"]
+  "include": ["src/**/*.ts", "src/**/*.svelte"],
+  "exclude": ["node_modules"]
 }

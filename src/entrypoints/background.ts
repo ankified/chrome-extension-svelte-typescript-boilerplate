@@ -5,12 +5,8 @@ import { findBookmarkById, getAppData, findBookmarkByUrl, setAppData } from "../
 import '$lib/auto-backup';
 
 export default defineBackground(() => {
-    console.log("Background script loaded.");
-
     // Listener for when an alarm goes off
     chrome.alarms.onAlarm.addListener(async (alarm) => {
-        console.log("Alarm fired:", alarm);
-
         if (alarm.name.startsWith("reminder-")) {
             const bookmarkId = alarm.name.replace("reminder-", "");
             
@@ -49,6 +45,23 @@ export default defineBackground(() => {
         }
     });
 
+    // Listener for keyboard shortcut
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command === 'open-bookmark-dialog') {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id && tab.url) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'openBookmarkDialog',
+          data: {
+            title: tab.title || 'No title',
+            url: tab.url,
+            favicon: tab.favIconUrl || null,
+          },
+        });
+      }
+    }
+  });
+
     // Listener for when a user visits a page
     chrome.history.onVisited.addListener(async (historyItem) => {
         if (historyItem.url) {
@@ -56,9 +69,8 @@ export default defineBackground(() => {
             const bookmark = findBookmarkByUrl(appData.folders, historyItem.url);
 
             if (bookmark) {
-                console.log(`Updating history for bookmarked item: ${bookmark.title}`);
                 const visits = await chrome.history.getVisits({ url: historyItem.url });
-                bookmark.accessHistory = visits.map(visit => ({
+                bookmark.accessHistory = visits.map((visit: chrome.history.VisitItem) => ({
                     timestamp: visit.visitTime!
                 }));
                 await setAppData(appData);
