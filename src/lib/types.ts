@@ -4,6 +4,7 @@
 export interface Tag {
   id: string;
   name: string;
+  createdAt: number;
   color?: string; // Optional: for color-coding tags
 }
 

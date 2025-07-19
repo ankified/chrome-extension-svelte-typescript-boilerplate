@@ -1,5 +1,5 @@
 import { mount } from 'svelte';
-import BookmarkDialog from '~/components/BookmarkDialog/index.svelte';
+import BookmarkDialog from '../../components/BookmarkDialog/index.svelte';
 import '~/app.css';
 
 window.addEventListener('message', (event) => {

@@ -177,6 +177,29 @@ export async function addTag(newTag: Omit<Tag, 'id'>): Promise<Tag> {
     return createdTag;
 }
 
+/**
+ * Creates a new global tag.
+ * @param newTag The tag object to create.
+ * @returns The newly created tag.
+ */
+export async function createTag(newTag: Partial<Tag>): Promise<Tag> {
+    const data = await getAppData();
+    
+    // Check if a tag with the same name already exists
+    if (data.tags.some(t => t.name.toLowerCase() === newTag.name?.toLowerCase())) {
+        throw new Error(`Tag "${newTag.name}" already exists.`);
+    }
+
+    const tag: Tag = {
+        id: `tag-${Date.now()}`,
+        name: newTag.name!,
+        createdAt: Date.now()
+    };
+    data.tags.push(tag);
+    await setAppData(data);
+    return tag;
+}
+
 // --- Helper functions to find items ---
 
 export function findBookmarkById(nodes: (Folder | BookmarkItem)[], id: string): BookmarkItem | null {
