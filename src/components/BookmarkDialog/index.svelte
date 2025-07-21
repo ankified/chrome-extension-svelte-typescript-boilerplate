@@ -65,9 +65,6 @@
 
   // --- State for View Bookmarks Tab ---
 	let detailsSheetOpen = $state(false);
-	let selectedItem = $state<BookmarkItem | null>(null);
-	let isEditingDetails = $state(false);
-	let editableTags = $state('');
 
   const groupTriggerContent = $derived(
     ($appDataStore ? $appDataStore.folders.find((f: Folder) => f.id === selectedFolderId)?.name : undefined) ??
@@ -96,7 +93,7 @@
 
     const now = today(getLocalTimeZone());
     const comparison = reminderDate.compare(now);
-    let newSlots;
+    let newSlots: string[] = [];
 
     if (comparison < 0) { // Past
       newSlots = [];
@@ -114,10 +111,6 @@
     }
     
     availableTimeSlots = newSlots;
-
-    if (reminderTime && !availableTimeSlots.includes(reminderTime)) {
-      reminderTime = null;
-    }
   });
 
   async function loadFolders() {
@@ -145,7 +138,10 @@
 	}
 
   async function handleSave() {
+    console.log('handleSave');
 		if (!url || !title) {
+      console.log('url', url);
+      console.log('title', title);
 			toast.error("URL and Title are required.");
 			return;
 		}
@@ -156,6 +152,7 @@
 				const localDateTimeString = `${reminderDate.year}-${String(reminderDate.month).padStart(2, '0')}-${String(reminderDate.day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 				const localDate = new Date(localDateTimeString);
 				reminderTimestamp = localDate.getTime();
+        console.log('reminderTimestamp', reminderTimestamp);
 			}
 			await addBookmark(selectedFolderId, {
 				url,
@@ -166,6 +163,7 @@
 				reminder: reminderTimestamp
 			});
       toast.success("Bookmark saved!");
+      console.log('bookmark saved');
 			onClose();
 		} catch (error: any) {
 			console.error("Failed to save bookmark:", error);
@@ -220,37 +218,7 @@
 	}
 
   // --- Logic for View Bookmarks Tab ---
-  function handleViewDetails(item: BookmarkItem) {
-		const clonedItem = JSON.parse(JSON.stringify(item));
-		selectedItem = clonedItem;
-		editableTags = clonedItem.tags?.join(', ') ?? '';
-		detailsSheetOpen = true;
-    isEditingDetails = false;
-	}
 
-	async function handleUpdateDetails() {
-		if (!selectedItem) return;
-		selectedItem.tags = editableTags.split(',').map((t) => t.trim()).filter(Boolean);
-		try {
-			await updateBookmark(selectedItem);
-			isEditingDetails = false;
-		} catch (e) {
-			console.error('Failed to update bookmark:', e);
-		}
-	}
-
-	async function handleDeleteDetails() {
-		if (!selectedItem) return;
-		if (confirm('Are you sure you want to delete this item?')) {
-			try {
-				await deleteBookmark(selectedItem.id);
-				detailsSheetOpen = false;
-				selectedItem = null;
-			} catch (e) {
-				console.error('Failed to delete bookmark:', e);
-			}
-		}
-	}
 </script>
 
 <Dialog bind:open onOpenChange={(v) => !v && onClose()}>
@@ -381,7 +349,7 @@
                                     <Button
                                       variant={reminderTime === time ? 'default' : 'outline'}
                                       class="w-full shadow-none text-xs py-1"
-                                      onclick={() => (reminderTime = time)}
+                                      onclick={(e) => { e.stopPropagation(); reminderTime = time; }}
                                     >
                                       {time}
                                     </Button>
@@ -458,70 +426,12 @@
 
         <Tabs.Content value="view" class="flex-1 overflow-y-auto p-6">
           <!-- View Bookmarks List -->
-          <BookmarkList onviewdetails={handleViewDetails} />
+          <BookmarkList />
         </Tabs.Content>
-
-       {#if currentTab === 'add'}
-         <div class="p-6 pt-2 border-t">
-           <Button onclick={handleSave} class="w-full">Save Bookmark</Button>
-          </div>
-       {/if}
       </Tabs.Root>
 
-      <!-- Details Sheet for selected bookmark -->
-      {#if selectedItem}
-        <Sheet.Root
-          bind:open={detailsSheetOpen}
-          onOpenChange={(isOpen) => { if (!isOpen) isEditingDetails = false; }}
-        >
-          <Sheet.Content class="w-[400px] sm:w-[540px]">
-            <Sheet.Header>
-              {#if isEditingDetails}
-                <Input bind:value={selectedItem.title} class="text-lg font-semibold" />
-              {:else}
-                <Sheet.Title>{selectedItem.title}</Sheet.Title>
-              {/if}
-              <Sheet.Description>
-                <a href={selectedItem.url} target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline truncate block">
-                  {selectedItem.url}
-                </a>
-              </Sheet.Description>
-            </Sheet.Header>
-            <div class="grid gap-4 py-4">
-              <!-- Details form fields -->
-              <div class="grid gap-2">
-                <h4 class="font-semibold">Comment</h4>
-                {#if isEditingDetails}
-                  <Textarea bind:value={selectedItem.comment} placeholder="Add a comment..." />
-                {:else}
-                  <p class="text-sm text-muted-foreground">{selectedItem.comment || 'No comment.'}</p>
-                {/if}
-              </div>
-              <div class="grid gap-2">
-                <h4 class="font-semibold">Tags</h4>
-                {#if isEditingDetails}
-                  <Input bind:value={editableTags} placeholder="design, code..." />
-                {:else}
-                  <p class="text-sm text-muted-foreground">{selectedItem.tags?.join(', ') || 'No tags.'}</p>
-                {/if}
-              </div>
-            </div>
-            <Sheet.Footer class="flex justify-between">
-              <div>
-                 <Button variant="destructive" onclick={handleDeleteDetails}>Delete</Button>
-              </div>
-              <div class="flex gap-2">
-                {#if isEditingDetails}
-                 <Button variant="secondary" onclick={() => isEditingDetails = false}>Cancel</Button>
-                 <Button onclick={handleUpdateDetails}>Save</Button>
-                {:else}
-                 <Button variant="secondary" onclick={() => isEditingDetails = true}>Edit</Button>
-                 <Button onclick={() => detailsSheetOpen = false}>Close</Button>
-                {/if}
-              </div>
-            </Sheet.Footer>
-          </Sheet.Content>
-        </Sheet.Root>
-      {/if}
+      <div class="p-6 pt-2 border-t">
+        <Button onclick={handleSave} class="w-full" disabled={currentTab !== 'add'}>Save Bookmark</Button>
+      </div>
   </DialogContent>
 </Dialog>

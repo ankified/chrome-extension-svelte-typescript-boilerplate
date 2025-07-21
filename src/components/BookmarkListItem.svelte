@@ -8,18 +8,18 @@
 	let {
 		item,
 		isSelected = false,
-		onSelect
+		onclick
 	}: {
 		item: BookmarkItem;
 		isSelected?: boolean;
-		onSelect: () => void;
+		onclick?: (event: MouseEvent) => void;
 	} = $props();
 </script>
 
 <Button
 	variant={isSelected ? 'secondary' : 'ghost'}
 	class="w-full h-12 justify-start items-center text-left"
-	onclick={onSelect}
+	{onclick}
 >
 	<div class="flex items-center gap-3 w-full">
 		{#if item.faviconUrl}
@@ -37,13 +37,19 @@
 		</div>
 		<div class="flex items-center gap-2 text-muted-foreground ml-auto flex-shrink-0">
 			{#if item.tags && item.tags.length > 0}
-				<Tags class="h-4 w-4" title="Has tags" />
+				<span title="Has tags">
+					<Tags class="h-4 w-4" />
+				</span>
 			{/if}
 			{#if item.reminder}
-				<Calendar class="h-4 w-4" title="Has a reminder" />
+				<span title="Has a reminder">
+					<Calendar class="h-4 w-4" />
+				</span>
 			{/if}
 			{#if item.comment}
-				<MessageSquare class="h-4 w-4" title="Has a comment" />
+				<span title="Has a comment">
+					<MessageSquare class="h-4 w-4" />
+				</span>
 			{/if}
 		</div>
 	</div>

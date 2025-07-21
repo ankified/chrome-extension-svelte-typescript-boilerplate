@@ -50,7 +50,38 @@ const defaultData: AppData = {
 export async function getAppData(): Promise<AppData> {
   const result = await chrome.storage.local.get(STORAGE_KEY);
   if (result[STORAGE_KEY]) {
-    return result[STORAGE_KEY] as AppData;
+    const appData = result[STORAGE_KEY] as AppData;
+    // Data migration/sanitization logic
+    function sanitizeNodes(nodes: (Folder | BookmarkItem)[]) {
+      if (!Array.isArray(nodes)) {
+        return; // Not an array, nothing to sanitize
+      }
+      for (const node of nodes) {
+        if (!node) continue; // Skip null/undefined entries
+
+        if ('children' in node) {
+          // It's a folder, recurse
+          sanitizeNodes(node.children);
+        } else {
+          // It's a bookmark
+          if (node.tags && typeof node.tags === 'object' && !Array.isArray(node.tags)) {
+            node.tags = Object.values(node.tags);
+          }
+        }
+      }
+    }
+
+    // More robust check: ensure folders is an array AND the root folder exists.
+    if (!Array.isArray(appData.folders) || !appData.folders.some(f => 'children' in f && f.id === 'root')) {
+        // If folders array is missing, not an array, or doesn't have a root folder,
+        // we reset it to the default. This is a bit destructive if there are other
+        // top-level folders, but the root folder is essential.
+        appData.folders = defaultData.folders;
+    }
+    
+    sanitizeNodes(appData.folders);
+    
+    return appData;
   } else {
     // Initialize storage with default data if it's the first run
     await setAppData(defaultData);
@@ -98,14 +129,17 @@ export async function addFolder(parentFolderId: string, newFolder: Omit<Folder, 
 }
 
 // Helper function to find a folder recursively
-function findFolderById(folders: Folder[], id: string): Folder | null {
-    for (const folder of folders) {
-        if (folder.id === id) {
-            return folder;
-        }
-        const found = findFolderById(folder.children.filter(c => 'children' in c) as Folder[], id);
-        if (found) {
-            return found;
+function findFolderById(nodes: (Folder | BookmarkItem)[], id: string): Folder | null {
+    for (const node of nodes) {
+        if ('children' in node) { // It's a Folder
+            if (node.id === id) {
+                return node;
+            }
+            // Recurse into the children of this folder
+            const found = findFolderById(node.children, id);
+            if (found) {
+                return found;
+            }
         }
     }
     return null;

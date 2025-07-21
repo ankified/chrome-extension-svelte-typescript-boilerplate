@@ -13,14 +13,12 @@
 	import BookmarkListItem from './BookmarkListItem.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
-	let { onviewdetails }: { onviewdetails: (item: BookmarkItem) => void } = $props();
-
 	let searchTerm = $state('');
 	let sheetOpen = $state(false);
 	let selectedTags = $state(new Set<string>());
 	let selectedFolderId = $state('root'); // Start at the root
 	let selectedItemId = $state<string | null>(null);
-
+	
 	// Recursive function to filter nodes based on search and tags
 	function filterNodes(
 		nodes: (Folder | BookmarkItem)[],
@@ -88,24 +86,11 @@
 		selectedFolder ? filterNodes(selectedFolder.children, searchTerm, selectedTags) : []
 	);
 
-	const selectedItem = $derived(() => {
-		if (!selectedItemId) return null;
-		
-		function findItem(nodes: (Folder | BookmarkItem)[]): BookmarkItem | null {
-			for (const node of nodes) {
-				if (!('children' in node) && node.id === selectedItemId) {
-					return node;
-				}
-				if ('children' in node) {
-					const found = findItem(node.children);
-					if (found) return found;
-				}
-			}
-			return null;
-		}
-
-		return $appDataStore ? findItem($appDataStore.folders) : null;
-	});
+	const selectedItem = $derived(
+		displayedItems.find(
+			(item) => !('children' in item) && item.id === selectedItemId
+		) ?? null
+	);
 
 	const totalItemCount = $derived($appDataStore ? countItems($appDataStore.folders) : 0);
 	const selectedFolderItemCount = $derived(selectedFolder ? countItems(selectedFolder.children) : 0);
@@ -164,7 +149,7 @@
 				</div>
 			</Resizable.Pane>
 			<Resizable.Handle withHandle />
-			<Resizable.Pane defaultSize={45} minSize={30}>
+			<Resizable.Pane defaultSize={75} minSize={30}>
 				<ScrollArea class="h-full">
 					<div class="flex h-full flex-col p-2">
 						{#if displayedItems.length > 0}
@@ -175,7 +160,7 @@
 									<BookmarkListItem 
 										item={node} 
 										isSelected={selectedItemId === node.id}
-										onSelect={() => selectedItemId = node.id} 
+										onclick={() => selectedItemId = node.id} 
 									/>
 								{/if}
 							{/each}
@@ -188,16 +173,12 @@
 				</ScrollArea>
 			</Resizable.Pane>
 			<Resizable.Handle withHandle />
-			<Resizable.Pane defaultSize={25} minSize={20}>
+			<Resizable.Pane defaultSize={30} minSize={20}>
 				<ScrollArea class="h-full">
 					<div class="p-2">
-						<div class="p-2 border bg-muted rounded mb-4 text-xs font-mono">
-							<h3 class="font-bold mb-1">Debug Info</h3>
-							<p class="truncate">ID: {selectedItemId ?? 'null'}</p>
-							<p class="truncate">Title: {selectedItem?.title ?? 'null'}</p>
-							<p>Type: {selectedItem ? ('children' in selectedItem ? 'Folder' : 'Bookmark') : 'null'}</p>
-						</div>
-						<ItemDetails item={selectedItem} />
+						{#if selectedItem && !('children' in selectedItem)}
+							<ItemDetails item={selectedItem} />
+						{/if}
 					</div>
 				</ScrollArea>
 			</Resizable.Pane>

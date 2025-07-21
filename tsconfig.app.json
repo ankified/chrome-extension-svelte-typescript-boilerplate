@@ -24,7 +24,7 @@
         "paths": {
           "$lib": ["./src/lib"],
           "$lib/*": ["./src/lib/*"],
-          "#imports": ["../.wxt/types/imports.d.ts"]
+          "#imports": ["./.wxt/types/imports.d.ts"]
         }
     },
   "include": ["src/**/*.ts", "src/**/*.svelte"],

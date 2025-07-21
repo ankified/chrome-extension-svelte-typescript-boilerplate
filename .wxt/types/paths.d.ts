@@ -22,7 +22,6 @@ declare module "wxt/browser" {
     | "/off-icon-48.png"
     | "/options.html"
     | "/popup.html"
-    | "/sidepanel.html"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>
   export interface WxtRuntime {
     getURL(path: PublicPath): string;
