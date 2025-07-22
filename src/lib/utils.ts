@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { Folder, BookmarkItem } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -25,6 +26,20 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
             func.apply(context, args);
         }, wait);
     };
+}
+
+/**
+ * Recursively extracts only the folders from a node tree, preserving the hierarchy.
+ * @param nodes An array of Folders and/or BookmarkItems.
+ * @returns An array of Folders with their nested folder structures.
+ */
+export function getFolderTree(nodes: (Folder | BookmarkItem)[]): Folder[] {
+	return nodes
+		.filter((node): node is Folder => 'children' in node)
+		.map(folder => ({
+			...folder,
+			children: getFolderTree(folder.children)
+		}));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

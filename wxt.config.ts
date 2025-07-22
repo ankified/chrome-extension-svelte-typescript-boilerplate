@@ -6,12 +6,11 @@ import path from 'path';
 export default defineConfig({
   modules: ['@wxt-dev/module-svelte'],
   srcDir: 'src',
+  alias: {
+    $lib: path.resolve(__dirname, './src/lib'),
+  },
   vite: (configEnv) => ({
-    resolve: {
-      alias: {
-        $lib: path.resolve(__dirname, './src/lib'),
-      },
-    },
+    // The resolve alias is now handled by the top-level `alias` option
     css: {
       postcss: {
         plugins: [

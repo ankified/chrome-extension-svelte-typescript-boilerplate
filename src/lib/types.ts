@@ -16,6 +16,24 @@ export interface AccessRecord {
 }
 
 /**
+ * The main data structure for the application's storage.
+ */
+export interface AppData {
+  workspaces: Workspace[];
+  tags: Tag[];
+}
+
+/**
+ * Represents a workspace, which is a top-level container for folders.
+ */
+export interface Workspace {
+  id: string;
+  name: string;
+  children: Folder[];
+  createdAt: number;
+}
+
+/**
  * Represents a saved bookmark item.
  */
 export interface BookmarkItem {

@@ -33,7 +33,7 @@
 	import { toast } from 'svelte-sonner';
   import type { DateValue } from "@internationalized/date";
   import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
-	import type { Folder } from '$lib/types';
+	import type { Folder, Workspace } from '$lib/types';
 
 	let url = $state('');
 	let comment = $state('');
@@ -50,8 +50,9 @@
 
 	// State for dynamic folders
 	let folders = $state<Folder[]>([]);
-	let selectedFolderId = $state<string>('root'); // Default to root
+	let selectedFolderId = $state<string>('default'); // Default to the first folder of the default workspace
 	let newFolderName = $state('');
+	let activeWorkspaceId = $state<string | null>(null);
 
 	
 	// Use the reactive store for sync status
@@ -103,26 +104,31 @@
 			}
 		});
 
-		// Fetch folders
+		// Fetch folders from the first workspace
 		loadFolders();
 	});
 
 	async function loadFolders() {
 		const data = await getAppData();
-		// We only care about top-level folders, which are children of 'root'
-		const rootFolder = data.folders.find(f => f.id === 'root');
-		if (rootFolder) {
+		if (data.workspaces.length > 0) {
+			const firstWorkspace = data.workspaces[0];
+			activeWorkspaceId = firstWorkspace.id;
 			// Filter to only include folders, not bookmark items
-			folders = rootFolder.children.filter(
+			folders = firstWorkspace.children.filter(
 				(child): child is Folder => 'children' in child
 			);
+			// Set a default selected folder if not already set or invalid
+			if (!folders.some(f => f.id === selectedFolderId)) {
+				selectedFolderId = firstWorkspace.children.find((c): c is Folder => 'children' in c)?.id ?? 'default';
+			}
 		}
 	}
 
 	async function handleCreateFolder() {
-		if (!newFolderName.trim()) return;
+		if (!newFolderName.trim() || !activeWorkspaceId) return;
 		try {
-			const newFolder = await addFolder('root', { name: newFolderName.trim() });
+			// Assume we are adding to the root of the active workspace for simplicity in popup
+			const newFolder = await addFolder(activeWorkspaceId, activeWorkspaceId, { name: newFolderName.trim() });
 			toast.success(`Folder "${newFolder.name}" created.`);
 			newFolderName = '';
 			await loadFolders(); // Refresh folder list
@@ -317,9 +323,9 @@
 	}
 
 	async function handleSave() {
-		if (!url || !title) {
+		if (!url || !title || !activeWorkspaceId) {
 			// TODO: Show an error to the user
-			console.error("URL and Title are required.");
+			console.error("URL, Title, and Workspace ID are required.");
 			return;
 		}
 
@@ -339,7 +345,7 @@
 				reminderTimestamp = localDate.getTime();
 			}
 
-			await addBookmark(selectedFolderId, {
+			await addBookmark(activeWorkspaceId, selectedFolderId, {
 				url,
 				title,
 				faviconUrl: favicon || undefined,
@@ -535,7 +541,6 @@
 					<Select.Content>
 						<Select.Group>
 							<Select.Label>Folders</Select.Label>
-							<Select.Item value="root" label="Root">Root</Select.Item>
 							{#each folders as folder (folder.id)}
 								<Select.Item value={folder.id} label={folder.name}>
 									{folder.name}
@@ -585,7 +590,7 @@
 						<div class="w-full min-w-0">
 							<Carousel.Root class="w-full">
 								<Carousel.Content class="-ml-1">
-									{#each tags as tag}
+									{#each tags as tag (tag)}
 										<Carousel.Item class="basis-auto pl-1">
 											<Badge variant="secondary" class="flex items-center gap-1 pr-1">
 												{tag}

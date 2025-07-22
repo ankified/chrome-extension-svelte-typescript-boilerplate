@@ -24,7 +24,7 @@
 	import { toast } from 'svelte-sonner';
   import type { DateValue } from "@internationalized/date";
   import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
-	import type { BookmarkItem, Folder, Tag } from '$lib/types';
+	import type { BookmarkItem, Folder, Tag, Workspace } from '$lib/types';
   import {
 		addBookmark,
 		appDataStore,
@@ -37,6 +37,9 @@
   import BookmarkList from '../BookmarkList.svelte';
   import * as Sheet from '$lib/components/ui/sheet';
   import * as Carousel from '$lib/components/ui/carousel';
+	import FolderSelectionDialog from '../FolderSelectionDialog.svelte';
+	import ReminderDialog from '../ReminderDialog.svelte';
+	import TagsDialog from '../TagsDialog.svelte';
 
   let { 
     open = false, 
@@ -47,6 +50,7 @@
   } = $props();
 
   let currentTab = $state('add');
+	let activeWorkspaceId = $state<string | null>(null);
 
   // --- State for Add Bookmark Tab ---
 	let url = $state(initialUrl);
@@ -59,16 +63,46 @@
 	let reminderTime = $state<string | null>(null);
 	let isEditingTitle = $state(false);
 	let titleBeforeEdit = $state('');
-	let folders = $state<Folder[]>([]);
-	let selectedFolderId = $state<string>('root'); 
+	let selectedFolderId = $state<string | null>(null);
 	let newFolderName = $state('');
 
   // --- State for View Bookmarks Tab ---
 	let detailsSheetOpen = $state(false);
 
+	// --- State for Dialogs ---
+	let isFolderSelectionOpen = $state(false);
+	let isReminderOpen = $state(false);
+	let isTagsOpen = $state(false);
+	
+	const selectedWorkspace = $derived(
+		$appDataStore?.workspaces.find((ws) => ws.id === activeWorkspaceId)
+	);
+
+	function findFolder(nodes: (Folder | BookmarkItem)[], id: string): Folder | null {
+		for (const node of nodes) {
+			if ('children' in node) {
+				// It's a Folder
+				if (node.id === id) {
+					return node;
+				}
+				// Recurse into the children of this folder
+				const found = findFolder(node.children, id);
+				if (found) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
+
+  const selectedFolder = $derived(
+		selectedWorkspace && selectedFolderId
+			? findFolder(selectedWorkspace.children, selectedFolderId)
+			: null
+	);
+
   const groupTriggerContent = $derived(
-    ($appDataStore ? $appDataStore.folders.find((f: Folder) => f.id === selectedFolderId)?.name : undefined) ??
-    (folders.find((g) => g.id === selectedFolderId)?.name) ?? 
+    selectedFolder?.name ?? 
     'Select a folder'
 	);
 
@@ -82,7 +116,7 @@
   let availableTimeSlots = $state(timeSlots);
 
   $effect(() => {
-    loadFolders();
+    loadInitialWorkspace();
   });
 
   $effect(() => {
@@ -113,23 +147,24 @@
     availableTimeSlots = newSlots;
   });
 
-  async function loadFolders() {
+  async function loadInitialWorkspace() {
 		const data = await getAppData();
-		const rootFolder = data.folders.find(f => f.id === 'root');
-		if (rootFolder) {
-			folders = rootFolder.children.filter(
-				(child): child is Folder => 'children' in child
-			);
+		if (data.workspaces.length > 0) {
+			const firstWorkspace = data.workspaces[0];
+			activeWorkspaceId = firstWorkspace.id;
+			if (!selectedFolderId) {
+				selectedFolderId = firstWorkspace.id; // Default to root of the workspace
+			}
 		}
 	}
 
   async function handleCreateFolder() {
-		if (!newFolderName.trim()) return;
+		if (!newFolderName.trim() || !activeWorkspaceId) return;
 		try {
-			const newFolder = await addFolder('root', { name: newFolderName.trim() });
+			const newFolder = await addFolder(activeWorkspaceId, activeWorkspaceId, { name: newFolderName.trim() });
 			toast.success(`Folder "${newFolder.name}" created.`);
 			newFolderName = '';
-			await loadFolders();
+			await loadInitialWorkspace(); // Reload folders to include the new one
 			selectedFolderId = newFolder.id;
 		} catch (error: any) {
 			console.error("Failed to create folder:", error);
@@ -138,11 +173,8 @@
 	}
 
   async function handleSave() {
-    console.log('handleSave');
-		if (!url || !title) {
-      console.log('url', url);
-      console.log('title', title);
-			toast.error("URL and Title are required.");
+    if (!url || !title || !activeWorkspaceId || !selectedFolderId) {
+			toast.error("URL, Title, Workspace, and Folder are required.");
 			return;
 		}
 		try {
@@ -152,9 +184,8 @@
 				const localDateTimeString = `${reminderDate.year}-${String(reminderDate.month).padStart(2, '0')}-${String(reminderDate.day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 				const localDate = new Date(localDateTimeString);
 				reminderTimestamp = localDate.getTime();
-        console.log('reminderTimestamp', reminderTimestamp);
 			}
-			await addBookmark(selectedFolderId, {
+			await addBookmark(activeWorkspaceId, selectedFolderId, {
 				url,
 				title,
 				faviconUrl: favicon || undefined,
@@ -163,7 +194,6 @@
 				reminder: reminderTimestamp
 			});
       toast.success("Bookmark saved!");
-      console.log('bookmark saved');
 			onClose();
 		} catch (error: any) {
 			console.error("Failed to save bookmark:", error);
@@ -237,7 +267,7 @@
           <!-- Add Bookmark Form -->
           <div class="grid gap-4">
             <!-- Item Preview -->
-            <Card.Root>
+            <Card.Root class="overflow-hidden">
               <Card.Header class="flex flex-row items-center gap-4 space-y-0 pb-2">
                 <div class="h-8 w-8 rounded-md flex items-center justify-center overflow-hidden bg-muted flex-shrink-0">
                   {#if favicon}
@@ -248,7 +278,7 @@
                     </div>
                   {/if}
                 </div>
-                <div class="grid gap-1 flex-1 min-w-0">
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
                   {#if isEditingTitle}
                     <div class="flex items-center gap-1">
                       <Input id="title-editor" bind:value={title} class="h-7 text-sm" onkeydown={(e) => { if (e.key === 'Enter') isEditingTitle = false; else if (e.key === 'Escape') { title = titleBeforeEdit; isEditingTitle = false; } }} />
@@ -258,7 +288,7 @@
                     </div>
                   {:else}
                     <div class="flex items-center justify-between gap-2">
-                      <Card.Title class="text-sm font-medium leading-none truncate" title={title || 'Page Title'}>{title || 'Page Title'}</Card.Title>
+                      <Card.Title class="text-sm font-medium leading-none truncate min-w-0" title={title || 'Page Title'}>{title || 'Page Title'}</Card.Title>
                       <Button variant="ghost" size="icon" class="w-7 h-7 flex-shrink-0" onclick={() => { titleBeforeEdit = title; isEditingTitle = true; }} aria-label="Edit Title">
                         <Pencil class="h-4 w-4" />
                       </Button>
@@ -277,124 +307,40 @@
 
             <!-- ACTION BAR -->
             <div class="grid grid-cols-3 gap-2 pt-2">
-              <!-- Tags Popover -->
-              <Popover.Root>
-                <Popover.Trigger>
-                  <Button variant="outline" size="sm" class="w-full">
-                    <Tags class="mr-2 h-4 w-4" />
-                    Tags ({tags.length})
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Content class="w-[250px]">
-                  <div class="grid gap-4">
-                      <h4 class="font-medium leading-none">Select Tags</h4>
-                      <div class="flex flex-col gap-2 max-h-48 overflow-y-auto">
-                          {#if $appDataStore && $appDataStore.tags.length > 0}
-                              {#each $appDataStore.tags as tag (tag.id)}
-                                  <div class="flex items-center gap-2">
-                                      <Checkbox id={`tag-${tag.id}`} checked={tags.includes(tag.id)} onCheckedChange={() => handleToggleTag(tag.id)} />
-                                      <Label for={`tag-${tag.id}`} class="font-normal">{tag.name}</Label>
-                                  </div>
-                              {/each}
-                          {:else}
-                              <p class="text-sm text-muted-foreground">No tags exist.</p>
-                          {/if}
-                      </div>
-                      <div class="flex items-center gap-2 border-t pt-2">
-                          <Input placeholder="New tag..." bind:value={newTag} onkeydown={(e) => e.key === 'Enter' && handleCreateAndSelectTag()} />
-                          <Button onclick={handleCreateAndSelectTag}>Create</Button>
-                      </div>
-                  </div>
-                </Popover.Content>
-              </Popover.Root>
+              <!-- Tags Button -->
+							<Button variant="outline" size="sm" class="w-full" onclick={() => (isTagsOpen = true)}>
+								<Tags class="mr-2 h-4 w-4" />
+								Tags ({tags.length})
+							</Button>
               
-              <!-- Reminder Popover -->
-              <Popover.Root>
-                <Popover.Trigger>
-                  <Button variant="outline" size="sm" class="w-full justify-start">
-                      <CalendarIcon class="mr-2 h-4 w-4" />
-                      {#if reminderDate && reminderTime}
-                        {reminderDate.toDate(getLocalTimeZone()).toLocaleDateString()}
-                        <span class="flex items-center ml-2">
-                          <button aria-label="Decrement minute" onclick={(e) => { e.stopPropagation(); decrementMinute(); }} class="p-1 hover:bg-accent rounded">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><path d="M5 12h14"/></svg>
-                          </button>
-                          <span class="mx-1 text-xs">{reminderTime}</span>
-                          <button aria-label="Increment minute" onclick={(e) => { e.stopPropagation(); incrementMinute(); }} class="p-1 hover:bg-accent rounded">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                          </button>
-                        </span>
-                      {:else}
-                        Set a date and time
-                      {/if}
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Content class="w-auto p-0">
-                    <Card.Root class="gap-0 p-0">
-                        <Card.Content class="relative p-0 md:pr-32 flex flex-col md:flex-row">
-                            <div class="p-4 flex-1">
-                                <Calendar
-                                    type="single"
-                                    bind:value={reminderDate}
-                                    class="bg-transparent p-0 [--cell-size:--spacing(8)] md:[--cell-size:--spacing(10)] [&_[data-outside-month]]:hidden"
-                                    weekdayFormat="short"
-                                />
-                            </div>
-                            <div
-                              class="no-scrollbar inset-y-0 right-0 flex max-h-64 w-full scroll-pb-4 flex-col gap-2 overflow-y-auto border-t p-4 md:absolute md:max-h-none md:w-32 md:border-l md:border-t-0 md:gap-2 md:p-4"
-                            >
-                              {#if reminderDate}
-                                <div class="grid gap-2">
-                                  {#each availableTimeSlots as time (time)}
-                                    <Button
-                                      variant={reminderTime === time ? 'default' : 'outline'}
-                                      class="w-full shadow-none text-xs py-1"
-                                      onclick={(e) => { e.stopPropagation(); reminderTime = time; }}
-                                    >
-                                      {time}
-                                    </Button>
-                                  {/each}
-                                </div>
-                                {#if availableTimeSlots.length === 0}
-                                  <div class="flex h-full items-center justify-center">
-                                    <p class="text-xs text-muted-foreground text-center">Nenhum horário disponível.</p>
-                                  </div>
-                                {/if}
-                              {:else}
-                                <div class="flex h-full items-center justify-center">
-                                  <p class="text-xs text-muted-foreground text-center">Selecione uma data para ver os horários.</p>
-                                </div>
-                              {/if}
-                            </div>
-                        </Card.Content>
-                    </Card.Root>
-                </Popover.Content>
-              </Popover.Root>
+              <!-- Reminder Button -->
+							<Button variant="outline" size="sm" class="w-full justify-start" onclick={() => (isReminderOpen = true)}>
+								<CalendarIcon class="mr-2 h-4 w-4" />
+								{#if reminderDate && reminderTime}
+									{reminderDate.toDate(getLocalTimeZone()).toLocaleDateString()}
+									<span class="flex items-center ml-2">
+										<button aria-label="Decrement minute" onclick={(e) => { e.stopPropagation(); decrementMinute(); }} class="p-1 hover:bg-accent rounded">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><path d="M5 12h14"/></svg>
+										</button>
+										<span class="mx-1 text-xs">{reminderTime}</span>
+										<button aria-label="Increment minute" onclick={(e) => { e.stopPropagation(); incrementMinute(); }} class="p-1 hover:bg-accent rounded">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3 w-3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+										</button>
+									</span>
+								{:else}
+									Set a date and time
+								{/if}
+							</Button>
 
-              <!-- Folder Popover -->
-              <Popover.Root>
-                <Popover.Trigger>
-                  <Button variant="outline" size="sm" class="w-full truncate">
-                    <FolderIcon class="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span class="truncate">{groupTriggerContent}</span>
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Content class="w-[250px]">
-                  <div class="grid gap-4">
-                    <h4 class="font-medium leading-none">Select Folder</h4>
-                    <div class="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                      <Button variant={selectedFolderId === 'root' ? 'secondary' : 'ghost'} onclick={() => (selectedFolderId = 'root')} class="w-full justify-start">Root</Button>
-                        {#each folders as folder (folder.id)}
-                         <Button variant={selectedFolderId === folder.id ? 'secondary' : 'ghost'} onclick={() => (selectedFolderId = folder.id)} class="w-full justify-start">{folder.name}</Button>
-                        {/each}
-                      </div>
-                    <div class="flex items-center gap-2 border-t pt-2">
-                      <Input placeholder="New folder..." bind:value={newFolderName} onkeydown={(e) => e.key === 'Enter' && handleCreateFolder()} />
-                      <Button onclick={handleCreateFolder}>Create</Button>
-                    </div>
-                  </div>
-                </Popover.Content>
-              </Popover.Root>
+              <!-- Folder Selection Button -->
+							<Button variant="outline" size="sm" class="w-full truncate" onclick={() => (isFolderSelectionOpen = true)}>
+								<FolderIcon class="mr-2 h-4 w-4 flex-shrink-0" />
+								<span class="truncate">
+									{selectedWorkspace
+										? `${selectedWorkspace.name} / ${selectedFolder?.name ?? 'Select Folder'}`
+										: 'Select Folder'}
+								</span>
+							</Button>
             </div>
 
             <!-- TAGS CAROUSEL -->
@@ -430,8 +376,41 @@
         </Tabs.Content>
       </Tabs.Root>
 
-      <div class="p-6 pt-2 border-t">
-        <Button onclick={handleSave} class="w-full" disabled={currentTab !== 'add'}>Save Bookmark</Button>
-      </div>
+      {#if currentTab === 'add'}
+        <div class="p-6 pt-2 border-t">
+          <Button onclick={handleSave} class="w-full">Save Bookmark</Button>
+        </div>
+      {/if}
   </DialogContent>
 </Dialog>
+
+<FolderSelectionDialog
+	bind:open={isFolderSelectionOpen}
+	initialWorkspaceId={activeWorkspaceId}
+	initialFolderId={selectedFolderId}
+	onSelect={(workspaceId: string, folderId: string) => {
+		activeWorkspaceId = workspaceId;
+		selectedFolderId = folderId;
+	}}
+	onClose={() => (isFolderSelectionOpen = false)}
+/>
+
+<ReminderDialog
+	bind:open={isReminderOpen}
+	initialDate={reminderDate}
+	initialTime={reminderTime}
+	onSave={(d: CalendarDate | undefined, t: string | null) => {
+		reminderDate = d;
+		reminderTime = t;
+	}}
+	onClose={() => (isReminderOpen = false)}
+/>
+
+<TagsDialog
+	bind:open={isTagsOpen}
+	initialSelectedIds={tags}
+	onSave={(newSelectedIds: string[]) => {
+		tags = newSelectedIds;
+	}}
+	onClose={() => (isTagsOpen = false)}
+/>

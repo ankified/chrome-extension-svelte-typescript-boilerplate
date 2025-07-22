@@ -1,4 +1,4 @@
-import type { Folder, BookmarkItem, Tag, AccessRecord } from '$lib/types';
+import type { Folder, BookmarkItem, Tag, AccessRecord, Workspace, AppData } from '$lib/types';
 
 /**
  * Represents the sync status of the application.
@@ -14,15 +14,6 @@ export interface SyncState {
   lastErrorMessage?: string;
 }
 
-/**
- * The main data structure for the application's storage.
- */
-export interface AppData {
-  folders: Folder[];
-  tags: Tag[];
-  // Bookmarks will be nested within folders, but we can have a flat list for easy access if needed.
-}
-
 const STORAGE_KEY = 'appData';
 const SYNC_STATUS_KEY = 'syncStatus';
 
@@ -30,10 +21,10 @@ const SYNC_STATUS_KEY = 'syncStatus';
  * The default state of the application data.
  */
 const defaultData: AppData = {
-  folders: [
+  workspaces: [
     {
-      id: 'root',
-      name: 'Root',
+      id: 'default',
+      name: 'Default Workspace',
       children: [],
       createdAt: Date.now(),
     }
@@ -49,6 +40,7 @@ const defaultData: AppData = {
  */
 export async function getAppData(): Promise<AppData> {
   const result = await chrome.storage.local.get(STORAGE_KEY);
+
   if (result[STORAGE_KEY]) {
     const appData = result[STORAGE_KEY] as AppData;
     // Data migration/sanitization logic
@@ -71,16 +63,16 @@ export async function getAppData(): Promise<AppData> {
       }
     }
 
-    // More robust check: ensure folders is an array AND the root folder exists.
-    if (!Array.isArray(appData.folders) || !appData.folders.some(f => 'children' in f && f.id === 'root')) {
-        // If folders array is missing, not an array, or doesn't have a root folder,
-        // we reset it to the default. This is a bit destructive if there are other
-        // top-level folders, but the root folder is essential.
-        appData.folders = defaultData.folders;
+    // More robust check: ensure workspaces array exists and has a default workspace.
+    if (!Array.isArray(appData.workspaces) || appData.workspaces.length === 0) {
+        appData.workspaces = defaultData.workspaces;
     }
-    
-    sanitizeNodes(appData.folders);
-    
+
+    // Sanitize nodes within each workspace
+    for (const workspace of appData.workspaces) {
+      sanitizeNodes(workspace.children);
+    }
+
     return appData;
   } else {
     // Initialize storage with default data if it's the first run
@@ -106,9 +98,13 @@ export async function setAppData(data: AppData): Promise<void> {
  * @param parentFolderId The ID of the parent folder.
  * @param newFolder The folder object to add.
  */
-export async function addFolder(parentFolderId: string, newFolder: Omit<Folder, 'id' | 'children' | 'createdAt'>): Promise<Folder> {
+export async function addFolder(workspaceId: string, parentFolderId: string, newFolder: Omit<Folder, 'id' | 'children' | 'createdAt'>): Promise<Folder> {
     const appData = await getAppData();
-    
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+
     const createdFolder: Folder = {
         ...newFolder,
         id: crypto.randomUUID(),
@@ -116,16 +112,59 @@ export async function addFolder(parentFolderId: string, newFolder: Omit<Folder, 
         createdAt: Date.now()
     };
 
-    // This is a simplified search. A recursive search would be better.
-    const parent = findFolderById(appData.folders, parentFolderId);
-
-    if (parent) {
-        parent.children.push(createdFolder);
-        await setAppData(appData);
-        return createdFolder;
+    if (parentFolderId === workspace.id) { // Adding to the root of the workspace
+        workspace.children.push(createdFolder);
     } else {
-        throw new Error(`Parent folder with id ${parentFolderId} not found.`);
+        const parent = findFolderById(workspace.children, parentFolderId);
+        if (parent) {
+            parent.children.push(createdFolder);
+        } else {
+            throw new Error(`Parent folder with id ${parentFolderId} not found in workspace ${workspaceId}.`);
+        }
     }
+
+    await setAppData(appData);
+    return createdFolder;
+}
+
+export async function updateFolder(workspaceId: string, folderId: string, newName: string): Promise<Folder> {
+    const appData = await getAppData();
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+    const folder = findFolderById(workspace.children, folderId);
+
+    if (folder) {
+        folder.name = newName;
+        await setAppData(appData);
+        return folder;
+    } else {
+        throw new Error(`Folder with id ${folderId} not found.`);
+    }
+}
+
+function removeFolderById(nodes: (Folder | BookmarkItem)[], id: string): (Folder | BookmarkItem)[] {
+    return nodes.filter(node => {
+        if ('children' in node) { // It's a folder
+            if (node.id === id) {
+                return false; // Remove this folder
+            }
+            // Recurse on children
+            node.children = removeFolderById(node.children, id);
+        }
+        return true; // Keep the node (either a bookmark or a folder that didn't match)
+    });
+}
+
+export async function deleteFolder(workspaceId: string, folderId: string): Promise<void> {
+    const appData = await getAppData();
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+    workspace.children = removeFolderById(workspace.children, folderId) as Folder[];
+    await setAppData(appData);
 }
 
 // Helper function to find a folder recursively
@@ -152,8 +191,12 @@ function findFolderById(nodes: (Folder | BookmarkItem)[], id: string): Folder | 
  * @param parentFolderId The ID of the parent folder.
  * @param newBookmark The bookmark object to add.
  */
-export async function addBookmark(parentFolderId: string, newBookmark: Omit<BookmarkItem, 'id' | 'createdAt' | 'accessHistory'>): Promise<BookmarkItem> {
+export async function addBookmark(workspaceId: string, parentFolderId: string, newBookmark: Omit<BookmarkItem, 'id' | 'createdAt' | 'accessHistory'>): Promise<BookmarkItem> {
     const appData = await getAppData();
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
 
     // Get history for the URL
     const visits = await chrome.history.getVisits({ url: newBookmark.url });
@@ -168,7 +211,7 @@ export async function addBookmark(parentFolderId: string, newBookmark: Omit<Book
         accessHistory: accessHistory,
     };
 
-    const parent = findFolderById(appData.folders, parentFolderId);
+    const parent = findFolderById(workspace.children, parentFolderId);
 
     if (parent) {
         parent.children.push(createdBookmark);
@@ -218,7 +261,7 @@ export async function addTag(newTag: Omit<Tag, 'id'>): Promise<Tag> {
  */
 export async function createTag(newTag: Partial<Tag>): Promise<Tag> {
     const data = await getAppData();
-    
+
     // Check if a tag with the same name already exists
     if (data.tags.some(t => t.name.toLowerCase() === newTag.name?.toLowerCase())) {
         throw new Error(`Tag "${newTag.name}" already exists.`);
@@ -271,12 +314,14 @@ export function findBookmarkByUrl(nodes: (Folder | BookmarkItem)[], url: string)
 
 // --- Update functions ---
 
-export async function updateBookmark(updatedBookmark: BookmarkItem): Promise<BookmarkItem> {
+export async function updateBookmark(workspaceId: string, updatedBookmark: BookmarkItem): Promise<BookmarkItem> {
     const appData = await getAppData();
-    
-    // We need to find the original bookmark to update it.
-    // This is not efficient, a flat map would be better for performance on large datasets.
-    const bookmark = findBookmarkById(appData.folders, updatedBookmark.id);
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+
+    const bookmark = findBookmarkById(workspace.children, updatedBookmark.id);
 
     if (bookmark) {
         Object.assign(bookmark, updatedBookmark);
@@ -294,13 +339,54 @@ function removeBookmarkById(nodes: (Folder | BookmarkItem)[], id: string): (Fold
             return true; // Keep the folder
         }
         // It's a bookmark, filter it out if IDs match
-        return node.id !== id; 
+        return node.id !== id;
     });
 }
 
-export async function deleteBookmark(id: string): Promise<void> {
+export async function deleteBookmark(workspaceId: string, id: string): Promise<void> {
     const appData = await getAppData();
-    appData.folders = removeBookmarkById(appData.folders, id) as Folder[];
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (!workspace) {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+    workspace.children = removeBookmarkById(workspace.children, id) as Folder[];
+    await setAppData(appData);
+}
+
+// --- Workspace Management ---
+
+export async function addWorkspace(name: string): Promise<Workspace> {
+    const appData = await getAppData();
+    const newWorkspace: Workspace = {
+        id: crypto.randomUUID(),
+        name,
+        children: [],
+        createdAt: Date.now()
+    };
+    appData.workspaces.push(newWorkspace);
+    await setAppData(appData);
+    return newWorkspace;
+}
+
+export async function updateWorkspace(workspaceId: string, newName: string): Promise<Workspace> {
+    const appData = await getAppData();
+    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
+    if (workspace) {
+        workspace.name = newName;
+        await setAppData(appData);
+        return workspace;
+    } else {
+        throw new Error(`Workspace with id ${workspaceId} not found.`);
+    }
+}
+
+export async function deleteWorkspace(workspaceId: string): Promise<void> {
+    const appData = await getAppData();
+    // Prevent deleting the last workspace
+    if (appData.workspaces.length <= 1) {
+        throw new Error("Cannot delete the last workspace.");
+    }
+    appData.workspaces = appData.workspaces.filter(ws => ws.id !== workspaceId);
     await setAppData(appData);
 }
 
@@ -365,7 +451,7 @@ export const appDataStore = readable<AppData | null>(null, (set) => {
     }).catch(err => {
         console.error("Failed to initialize appDataStore:", err);
         // Optionally set a default value or an error state
-        set(defaultData); 
+        set(defaultData);
     });
 
     // 2. Set up a listener for any subsequent changes in storage.

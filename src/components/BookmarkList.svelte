@@ -1,23 +1,99 @@
 <script lang="ts">
-	import { appDataStore } from '$lib/storage';
+	import { 
+		addFolder, 
+		appDataStore, 
+		addWorkspace,
+		updateWorkspace,
+		deleteWorkspace
+	} from '$lib/storage';
 	import { Input } from '$lib/components/ui/input';
 	import * as Sheet from '$lib/components/ui/sheet';
-	import type { BookmarkItem, Folder } from '$lib/types';
+	import type { BookmarkItem, Folder, Workspace } from '$lib/types';
     import { Button } from '$lib/components/ui/button';
     import { Checkbox } from '$lib/components/ui/checkbox';
     import { Label } from '$lib/components/ui/label';
 	import * as Resizable from '$lib/components/ui/resizable';
 	import FolderTreeView from './FolderTreeView.svelte';
 	import ItemDetails from './ItemDetails.svelte';
-	import FolderListItem from './FolderListItem.svelte';
 	import BookmarkListItem from './BookmarkListItem.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import FolderPlus from 'lucide-svelte/icons/folder-plus';
+	import MoreHorizontal from 'lucide-svelte/icons/more-horizontal';
+	import { toast } from 'svelte-sonner';
+	import * as Select from "$lib/components/ui/select";
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 
 	let searchTerm = $state('');
 	let sheetOpen = $state(false);
 	let selectedTags = $state(new Set<string>());
-	let selectedFolderId = $state('root'); // Start at the root
+	let activeWorkspaceId = $state<string | null>(null);
+	let selectedFolderId = $state<string | null>(null); // Can be null if no workspace is selected
 	let selectedItemId = $state<string | null>(null);
+	
+	// When app data loads, ensure we have an active workspace
+	$effect(() => {
+		if ($appDataStore && !activeWorkspaceId) {
+			activeWorkspaceId = $appDataStore.workspaces[0]?.id;
+		}
+	});
+	
+	// When active workspace changes, select the first folder by default
+	$effect(() => {
+		if (activeWorkspace) {
+			selectedFolderId = activeWorkspace.children[0]?.id ?? null;
+		}
+	});
+
+	async function handleAddNewWorkspace() {
+		const name = prompt("Enter the name for the new workspace:");
+		if (name && name.trim()) {
+			try {
+				const newWorkspace = await addWorkspace(name.trim());
+				activeWorkspaceId = newWorkspace.id;
+				toast.success(`Workspace "${name}" created.`);
+			} catch (error: any) {
+				toast.error("Failed to create workspace", { description: error.message });
+			}
+		}
+	}
+
+	async function handleRenameWorkspace() {
+		if (!activeWorkspace) return;
+		const newName = prompt("Enter the new name for the workspace:", activeWorkspace.name);
+		if (newName && newName.trim()) {
+			try {
+				await updateWorkspace(activeWorkspace.id, newName.trim());
+				toast.success(`Workspace renamed to "${newName}".`);
+			} catch (error: any) {
+				toast.error("Failed to rename workspace", { description: error.message });
+			}
+		}
+	}
+
+	async function handleDeleteWorkspace() {
+		if (!activeWorkspace) return;
+		if (confirm(`Are you sure you want to delete the workspace "${activeWorkspace.name}"? This cannot be undone.`)) {
+			try {
+				await deleteWorkspace(activeWorkspace.id);
+				activeWorkspaceId = $appDataStore?.workspaces[0]?.id ?? null;
+				toast.success(`Workspace "${activeWorkspace.name}" deleted.`);
+			} catch (error: any) {
+				toast.error("Failed to delete workspace", { description: error.message });
+			}
+		}
+	}
+
+	async function handleAddNewFolder() {
+		if (!activeWorkspaceId) return;
+		try {
+			// This now adds a folder to the root of the active workspace
+			const newFolder = await addFolder(activeWorkspaceId, activeWorkspaceId, { name: 'New Folder' });
+			selectedFolderId = newFolder.id; // Auto-select the new folder
+			toast.success('New folder created.');
+		} catch (error: any) {
+			toast.error('Failed to create new folder', { description: error.message });
+		}
+	}
 	
 	// Recursive function to filter nodes based on search and tags
 	function filterNodes(
@@ -76,10 +152,15 @@
 			}));
 	}
 
-	const folderTree = $derived($appDataStore ? getFolderTree($appDataStore.folders) : []);
+	const workspaces = $derived($appDataStore?.workspaces ?? []);
+	const activeWorkspace = $derived(workspaces.find(ws => ws.id === activeWorkspaceId));
+
+	const folderTree = $derived(activeWorkspace ? getFolderTree(activeWorkspace.children) : []);
 	
 	const selectedFolder = $derived(
-		$appDataStore ? findFolder($appDataStore.folders, selectedFolderId) : null
+		activeWorkspace && selectedFolderId
+			? findFolder(activeWorkspace.children, selectedFolderId)
+			: null
 	);
 
 	const displayedItems = $derived(
@@ -92,7 +173,7 @@
 		) ?? null
 	);
 
-	const totalItemCount = $derived($appDataStore ? countItems($appDataStore.folders) : 0);
+	const totalItemCount = $derived(activeWorkspace ? countItems(activeWorkspace.children) : 0);
 	const selectedFolderItemCount = $derived(selectedFolder ? countItems(selectedFolder.children) : 0);
 
 	function countItems(nodes: (Folder | BookmarkItem)[]): number {
@@ -130,21 +211,61 @@
 	<div class="flex-1 overflow-hidden p-1">
 		<Resizable.PaneGroup direction="horizontal" class="h-full w-full rounded-lg border">
 			<Resizable.Pane defaultSize={25} minSize={20}>
-				<div class="flex h-full items-start justify-center p-2 overflow-y-auto">
-					<div class="flex flex-col w-full">
-						<Button
-							variant={selectedFolderId === 'root' ? 'secondary' : 'ghost'}
-							class="w-full justify-start h-8"
-							onclick={() => selectedFolderId = 'root'}
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
-							Root
-						</Button>
-						<FolderTreeView 
-							folders={folderTree} 
-							{selectedFolderId} 
-							onSelect={(id) => selectedFolderId = id}
-						/>
+				<div class="flex h-full items-start p-2 overflow-y-auto">
+					<div class="flex flex-col w-full gap-2">
+						<!-- Workspace Selector -->
+						<div class="flex items-center gap-1">
+							<Select.Root
+								type="single"
+								value={activeWorkspaceId ?? undefined}
+								onValueChange={(value) => { if (value) activeWorkspaceId = value; }}
+							>
+								<Select.Trigger class="flex-1">
+									{activeWorkspace?.name ?? '...'}
+								</Select.Trigger>
+								<Select.Content>
+									{#each workspaces as workspace (workspace.id)}
+										<Select.Item value={workspace.id}>{workspace.name}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+							<DropdownMenu.Root>
+								<DropdownMenu.Trigger>
+									<Button variant="ghost" size="icon" class="h-9 w-9">
+										<MoreHorizontal class="h-4 w-4" />
+									</Button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Content>
+									<DropdownMenu.Item onclick={handleAddNewWorkspace}>New Workspace</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={handleRenameWorkspace} disabled={!activeWorkspace}>Rename Workspace</DropdownMenu.Item>
+									<DropdownMenu.Item onclick={handleDeleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1}>Delete Workspace</DropdownMenu.Item>
+									<DropdownMenu.Separator />
+									<DropdownMenu.Item onclick={handleAddNewFolder} disabled={!activeWorkspace}>
+										New Folder
+									</DropdownMenu.Item>
+								</DropdownMenu.Content>
+							</DropdownMenu.Root>
+						</div>
+
+						<!-- Folders -->
+						{#if activeWorkspace}
+							{#if folderTree.length > 0}
+								<FolderTreeView 
+									folders={folderTree} 
+									selectedFolderId={selectedFolderId ?? ''}
+									onSelect={(id: string) => selectedFolderId = id}
+									workspaceId={activeWorkspaceId!}
+								/>
+							{:else}
+								<div class="text-center text-sm text-muted-foreground p-4 flex flex-col items-center gap-2 border rounded-md">
+									<p>No folders in this workspace.</p>
+									<Button variant="outline" size="sm" onclick={handleAddNewFolder}>
+										<FolderPlus class="mr-2 h-4 w-4" />
+										Create Folder
+									</Button>
+								</div>
+							{/if}
+						{/if}
 					</div>
 				</div>
 			</Resizable.Pane>
@@ -154,9 +275,7 @@
 					<div class="flex h-full flex-col p-2">
 						{#if displayedItems.length > 0}
 							{#each displayedItems as node (node.id)}
-								{#if 'children' in node}
-									<FolderListItem folder={node} onSelect={(id) => selectedFolderId = id} />
-								{:else}
+								{#if !('children' in node)}
 									<BookmarkListItem 
 										item={node} 
 										isSelected={selectedItemId === node.id}

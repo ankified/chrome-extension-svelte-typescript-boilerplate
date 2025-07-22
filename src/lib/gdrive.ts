@@ -7,14 +7,23 @@ import type { Folder, BookmarkItem, Tag, AccessRecord } from '$lib/types';
 // This is the Client ID for the "Web Application" type credential in Google Cloud Console.
 // It is used as a fallback for browsers that do not support chrome.identity.getAuthToken (e.g., Brave).
 const WEB_APP_CLIENT_ID = '519729309511-jbfv8f1cs08fm1t74fb2evtt12hnbank.apps.googleusercontent.com';
+// This client secret is for the "Web Application" credential.
+// IMPORTANT: In a real-world scenario, this should NOT be stored in the client-side code.
+// This is included for demonstration purposes in this boilerplate.
+// A backend server should be used to handle the token exchange securely.
+const WEB_APP_CLIENT_SECRET = import.meta.env.VITE_GDRIVE_CLIENT_SECRET;
 
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-
-const BOUNDARY = '-------314159265358979323846';
-const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
+const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
+const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 const FILE_NAME = 'chrome-extension-svelte-typescript-boilerplate-backup.json';
-const MANUAL_TOKEN_STORAGE_KEY = 'gdrive_manual_token';
+const BOUNDARY = '-------314159265358979323846';
+
+// --- Storage Keys ---
+const REFRESH_TOKEN_KEY = 'gdrive_refresh_token';
+const ACCESS_TOKEN_KEY = 'gdrive_access_token';
+const TOKEN_EXPIRY_KEY = 'gdrive_token_expiry';
+
 
 /**
  * Custom error class for authentication failures.
@@ -36,10 +45,50 @@ async function isChromeBrowser(): Promise<boolean> {
 	if (navigator.brave && (await navigator.brave.isBrave())) {
 		return false;
 	}
-	// This is not a foolproof way to detect Chrome, but it's a common method.
-	// It checks for the presence of 'Chrome' and the absence of 'Edg' (for Edge) in the user agent string.
-	// It's a reasonable heuristic for distinguishing Chrome from other Chromium-based browsers.
 	return navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Edg');
+}
+
+async function refreshAccessToken(): Promise<string> {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(REFRESH_TOKEN_KEY, async (result) => {
+            const refreshToken = result[REFRESH_TOKEN_KEY];
+            if (!refreshToken) {
+                return reject(new Error("No refresh token available."));
+            }
+
+            try {
+                const response = await fetch(TOKEN_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        client_id: WEB_APP_CLIENT_ID,
+                        client_secret: WEB_APP_CLIENT_SECRET,
+                        refresh_token: refreshToken,
+                        grant_type: 'refresh_token',
+                    }),
+                });
+
+                const tokenData = await response.json();
+                if (!response.ok) {
+                    throw new Error(tokenData.error_description || 'Failed to refresh token');
+                }
+
+                const newAccessToken = tokenData.access_token;
+                const newExpiry = Date.now() + (tokenData.expires_in * 1000);
+
+                chrome.storage.local.set({
+                    [ACCESS_TOKEN_KEY]: newAccessToken,
+                    [TOKEN_EXPIRY_KEY]: newExpiry,
+                }, () => resolve(newAccessToken));
+
+            } catch (error) {
+                console.error("Error refreshing access token:", error);
+                reject(error);
+            }
+        });
+    });
 }
 
 function launchWebAuthFlow(interactive: boolean): Promise<string> {
@@ -49,6 +98,11 @@ function launchWebAuthFlow(interactive: boolean): Promise<string> {
 				new Error('Please provide the Web Application Client ID in src/lib/gdrive.ts')
 			);
 		}
+		if (!WEB_APP_CLIENT_SECRET || WEB_APP_CLIENT_SECRET.startsWith('COLE_O_SEU_CLIENT_SECRET')) {
+			return reject(
+				new Error('Please provide the Web Application Client Secret in the .env file (VITE_GDRIVE_CLIENT_SECRET)')
+			);
+		}
 
 		const extensionId = chrome.runtime.id;
 		const redirectUri = `https://${extensionId}.chromiumapp.org`;
@@ -56,32 +110,73 @@ function launchWebAuthFlow(interactive: boolean): Promise<string> {
 			'Para o fluxo de autenticação da web, certifique-se de que este URI de redirecionamento está adicionado às suas credenciais de OAuth 2.0 do tipo "Aplicação Web" na Google Cloud Console:',
 			redirectUri
 		);
+		
 		const scopes = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 		let authUrl = `https://accounts.google.com/o/oauth2/v2/auth`;
 		authUrl += `?client_id=${WEB_APP_CLIENT_ID}`;
-		authUrl += `&response_type=token`;
+		authUrl += `&response_type=code`; // Request an authorization code
+		authUrl += `&access_type=offline`; // Request a refresh token
 		authUrl += `&redirect_uri=${encodeURIComponent(redirectUri)}`;
 		authUrl += `&scope=${encodeURIComponent(scopes)}`;
 
 		chrome.identity.launchWebAuthFlow({ url: authUrl, interactive }, (responseUrl) => {
 			if (chrome.runtime.lastError) {
-				return reject(chrome.runtime.lastError);
+				return reject(new Error(chrome.runtime.lastError.message));
 			}
-			if (responseUrl) {
-				const url = new URL(responseUrl);
-				const params = new URLSearchParams(url.hash.substring(1)); // Remove the '#'
-				const accessToken = params.get('access_token');
-				if (accessToken) {
-					chrome.storage.local.set({ [MANUAL_TOKEN_STORAGE_KEY]: accessToken }, () => {
-						// The listener above will automatically update the store
-						resolve(accessToken);
-					});
-				} else {
-					reject(new Error('Authentication failed: Access token not found in response.'));
+			if (!responseUrl) {
+				return reject(new Error('Authentication failed: No response URL.'));
+			}
+
+			const url = new URL(responseUrl);
+			const authCode = url.searchParams.get('code');
+
+			if (!authCode) {
+				return reject(new Error('Authentication failed: Authorization code not found.'));
+			}
+
+			// Exchange authorization code for tokens
+			fetch(TOKEN_ENDPOINT, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: new URLSearchParams({
+					code: authCode,
+					client_id: WEB_APP_CLIENT_ID,
+					client_secret: WEB_APP_CLIENT_SECRET,
+					redirect_uri: redirectUri,
+					grant_type: 'authorization_code',
+				}),
+			})
+			.then(response => response.json())
+			.then(tokenData => {
+				if (tokenData.error) {
+					throw new Error(tokenData.error_description || 'Token exchange failed');
 				}
-			} else {
-				reject(new Error('Authentication failed: No response URL.'));
-			}
+
+				const accessToken = tokenData.access_token;
+				const refreshToken = tokenData.refresh_token; // May only be sent on the first authorization
+				const expiresIn = tokenData.expires_in;
+
+				const storageData: { [key: string]: any } = {
+					[ACCESS_TOKEN_KEY]: accessToken,
+					[TOKEN_EXPIRY_KEY]: Date.now() + expiresIn * 1000,
+				};
+
+				// The refresh token is only sent the first time the user authorizes.
+				// We should only store it if we receive a new one.
+				if (refreshToken) {
+					storageData[REFRESH_TOKEN_KEY] = refreshToken;
+				}
+
+				chrome.storage.local.set(storageData, () => {
+					resolve(accessToken);
+				});
+			})
+			.catch(err => {
+				console.error("Token exchange error:", err);
+				reject(err);
+			});
 		});
 	});
 }
@@ -106,16 +201,31 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
 			});
 		});
 	} else {
-		console.log('Detected a non-Chrome browser, using chrome.identity.launchWebAuthFlow.');
+		console.log('Detected a non-Chrome browser, using custom OAuth flow.');
 		if (interactive) {
 			return launchWebAuthFlow(interactive);
 		}
-		// Try to get from storage if not interactive
+		
+		// Non-interactive flow for non-Chrome browsers
 		return new Promise((resolve, reject) => {
-			chrome.storage.local.get(MANUAL_TOKEN_STORAGE_KEY, (result) => {
-				if (result[MANUAL_TOKEN_STORAGE_KEY]) {
-					resolve(result[MANUAL_TOKEN_STORAGE_KEY]);
+			chrome.storage.local.get([ACCESS_TOKEN_KEY, TOKEN_EXPIRY_KEY, REFRESH_TOKEN_KEY], async (result) => {
+				const accessToken = result[ACCESS_TOKEN_KEY];
+				const expiry = result[TOKEN_EXPIRY_KEY];
+				const refreshToken = result[REFRESH_TOKEN_KEY];
+
+				if (accessToken && expiry && Date.now() < expiry) {
+					// We have a valid access token
+					resolve(accessToken);
+				} else if (refreshToken) {
+					// Access token is expired or missing, but we have a refresh token
+					try {
+						const newAccessToken = await refreshAccessToken();
+						resolve(newAccessToken);
+					} catch (error) {
+						reject(error);
+					}
 				} else {
+					// No valid tokens at all
 					reject(new Error('Not logged in.'));
 				}
 			});
@@ -129,12 +239,13 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
  * @returns A promise that resolves when the token is removed.
  */
 export function removeCachedAuthToken(token: string): Promise<void> {
-    return new Promise((resolve) => {
-        chrome.identity.removeCachedAuthToken({ token }, () => {
-			chrome.storage.local.remove(MANUAL_TOKEN_STORAGE_KEY, () => {
-				resolve();
-			});
-        });
+    return new Promise(async (resolve) => {
+		const isChrome = await isChromeBrowser();
+		if (isChrome) {
+			chrome.identity.removeCachedAuthToken({ token }, resolve);
+		} else {
+			chrome.storage.local.remove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY], resolve);
+		}
     });
 }
 

@@ -33,7 +33,16 @@
 		{/if}
 		<div class="flex-1 min-w-0">
 			<p class="truncate font-medium">{item.title}</p>
-			<p class="truncate text-xs text-muted-foreground">{item.url}</p>
+			<a
+				href={item.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="truncate text-xs text-muted-foreground hover:underline"
+				onclick={(e) => e.stopPropagation()}
+				title={item.url}
+			>
+				{item.url}
+			</a>
 		</div>
 		<div class="flex items-center gap-2 text-muted-foreground ml-auto flex-shrink-0">
 			{#if item.tags && item.tags.length > 0}
