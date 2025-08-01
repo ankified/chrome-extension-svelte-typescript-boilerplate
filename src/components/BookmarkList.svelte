@@ -252,9 +252,9 @@
 							{#if folderTree.length > 0}
 								<FolderTreeView 
 									folders={folderTree} 
-									selectedFolderId={selectedFolderId ?? ''}
-									onSelect={(id: string) => selectedFolderId = id}
+									bind:selectedFolderId
 									workspaceId={activeWorkspaceId!}
+									editingFolderId={null}
 								/>
 							{:else}
 								<div class="text-center text-sm text-muted-foreground p-4 flex flex-col items-center gap-2 border rounded-md">

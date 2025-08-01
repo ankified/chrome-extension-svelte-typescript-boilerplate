@@ -123,8 +123,8 @@
 					>
 						<Pencil class="h-4 w-4" />
 					</Button>
-<Button
-    variant="ghost"
+					<Button
+						variant="ghost"
 						size="icon"
 						class="h-7 w-7"
 						onclick={() => handleDeleteFolder(folder.id)}
