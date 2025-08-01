@@ -42,12 +42,6 @@ export default defineConfig({
         '128': 'icon-128.png'
       }
     },
-    web_accessible_resources: [
-      {
-        resources: ['/dialog-iframe.html'],
-        matches: ['<all_urls>'],
-      },
-    ],
     oauth2: {
       client_id: '399897809633-9se6bq4s3n2sa8snc50f8fa5523v1c2u.apps.googleusercontent.com',
       scopes: [

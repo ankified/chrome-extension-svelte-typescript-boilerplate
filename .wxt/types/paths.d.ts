@@ -7,7 +7,6 @@ declare module "wxt/browser" {
     | "/"
     | "/background.js"
     | "/content-scripts/bookmark-dialog.js"
-    | "/dialog-iframe.html"
     | "/err-icon-128.png"
     | "/err-icon-16.png"
     | "/err-icon-32.png"
