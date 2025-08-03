@@ -1,0 +1,91 @@
+/*
+  Use the :host pseudo-class to style the root of the Shadow DOM.
+  This is the most robust way to set inheritable base styles and prevent
+  style contamination from the host page.
+*/
+:host {
+    /* Resetting typography */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    font-size: 16px;
+    line-height: 1.5;
+    color: #111827; /* Cor do texto padrão (Tailwind gray-900) */
+    text-align: left;
+    
+    /* More robust resets */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  /*
+    This ensures that dark mode settings from the host do not bleed in,
+    and we control the theme explicitly via mode-watcher, which adds a .dark class.
+  */
+  :host(.dark) {
+    color: #f9fafb; /* Cor do texto padrão para modo escuro (Tailwind gray-50) */
+  }
+  
+  /* A more traditional reset for all elements inside the shadow DOM */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1.5;
+    border-width: 0;
+    border-style: solid;
+    border-color: #e5e7eb; /* Tailwind gray-200 */
+  }
+  
+  /* Border color for dark mode */
+  :host(.dark) *,
+  :host(.dark) *::before,
+  :host(.dark) *::after {
+    border-color: #374151; /* Tailwind gray-700 */
+  }
+  
+  /* WXT creates an html/body structure, a transparent background is a good safety measure. */
+  html, body {
+      height: 100%;
+      background-color: transparent;
+  }
+
+/* 
+  Este arquivo contém classes de utilitário para redefinir estilos
+  e garantir uma aparência consistente nos scripts de conteúdo,
+  evitando problemas com unidades `rem` que herdam o `font-size` da página hospedeira.
+*/
+
+/* 
+  Define o `font-size` base para 16px dentro do nosso contêiner de UI.
+  Isso ajuda a estabilizar outras unidades relativas, embora o uso de `px`
+  seja preferido para consistência total.
+*/
+:host {
+  font-size: 16px;
+}
+
+/* 
+  Redefinições de padding e margin com valores em pixels.
+  Exemplo: .px-p-4 irá aplicar 1rem (16px) de padding.
+*/
+.cs-p-1 { padding: 4px; }
+.cs-p-2 { padding: 8px; }
+.cs-p-4 { padding: 16px; }
+.cs-p-6 { padding: 24px; }
+
+.cs-m-1 { margin: 4px; }
+.cs-m-2 { margin: 8px; }
+.cs-m-4 { margin: 16px; }
+
+.cs-w-96 { width: 384px; } /* Corresponde a w-96 do Tailwind */
+.cs-h-full { height: 100%; }
+.cs-w-full { width: 100%; }
+
+/* Redefinições de gap */
+.cs-gap-2 { gap: 8px; }
+.cs-gap-4 { gap: 16px; }
+
+/* Adicione outras classes de redefinição conforme necessário */

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -18,6 +17,7 @@
 	import FolderTreeView from './FolderTreeView.svelte';
 	import { getFolderTree } from '$lib/utils';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import CustomDialog from './CustomDialog.svelte';
 
 	type $$Props = {
 		open?: boolean;
@@ -134,91 +134,87 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(v) => !v && onClose()}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>Select a Folder</Dialog.Title>
-		</Dialog.Header>
+<CustomDialog bind:open {onClose}>
+	{#snippet title()}
+		<h2 class="text-lg font-semibold leading-none tracking-tight">Select a Folder</h2>
+	{/snippet}
 
-		<div class="flex flex-col gap-4 py-4">
-			<!-- Workspace Selector -->
-			<div class="flex items-center gap-1">
-				<Select.Root
-					type="single"
-					value={activeWorkspaceId}
-					onValueChange={(v) => {
-						if (v) {
-							activeWorkspaceId = v;
-						}
-						selectedFolderId = null;
-					}}
-				>
-					<Select.Trigger class="flex-1">
-						{activeWorkspace?.name ?? 'Select a workspace'}
-					</Select.Trigger>
-					<Select.Content>
-						{#each workspaces as workspace (workspace.id)}
-							<Select.Item value={workspace.id}>{workspace.name}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						<Button variant="ghost" size="icon" class="h-9 w-9">
-							<MoreHorizontal class="h-4 w-4" />
-						</Button>
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content>
-						<DropdownMenu.Item onclick={handleAddNewWorkspace}>New Workspace</DropdownMenu.Item>
-						<DropdownMenu.Item onclick={handleRenameWorkspace} disabled={!activeWorkspace}
-							>Rename Workspace</DropdownMenu.Item
-						>
-						<DropdownMenu.Item
-							onclick={handleDeleteWorkspace}
-							disabled={!activeWorkspace || workspaces.length <= 1}>Delete Workspace</DropdownMenu.Item
-						>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			</div>
+	{#snippet footer()}
+		<Button variant="outline" onclick={onClose}>Cancel</Button>
+		<Button onclick={handleConfirmSelection}>Confirm</Button>
+	{/snippet}
 
-			<!-- Folders -->
-			<ScrollArea class="border rounded-md min-h-[250px] max-h-[40vh]">
-				<div class="p-2">
-					{#if activeWorkspace}
-						{#if folderTree.length > 0}
-							<FolderTreeView
-								folders={folderTree}
-								bind:selectedFolderId
-								bind:editingFolderId
-								workspaceId={activeWorkspaceId}
-							/>
-						{:else}
-							<div
-								class="text-center text-sm text-muted-foreground p-4 flex flex-col items-center justify-center h-full gap-2"
-							>
-								<p>No folders in this workspace.</p>
-							</div>
-						{/if}
-						<Button variant="ghost" size="sm" class="w-full justify-start mt-2" onclick={handleAddNewFolder}>
-							<FolderPlus class="mr-2 h-4 w-4" />
-							Create New Folder
-						</Button>
+	<div class="flex flex-col gap-4 py-4">
+		<!-- Workspace Selector -->
+		<div class="flex items-center gap-1">
+			<Select.Root
+				type="single"
+				value={activeWorkspaceId}
+				onValueChange={(v) => {
+					if (v) {
+						activeWorkspaceId = v;
+					}
+					selectedFolderId = null;
+				}}
+			>
+				<Select.Trigger class="flex-1">
+					{activeWorkspace?.name ?? 'Select a workspace'}
+				</Select.Trigger>
+				<Select.Content>
+					{#each workspaces as workspace (workspace.id)}
+						<Select.Item value={workspace.id}>{workspace.name}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					<Button variant="ghost" size="icon" class="h-9 w-9">
+						<MoreHorizontal class="h-4 w-4" />
+					</Button>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content>
+					<DropdownMenu.Item onclick={handleAddNewWorkspace}>New Workspace</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={handleRenameWorkspace} disabled={!activeWorkspace}
+						>Rename Workspace</DropdownMenu.Item
+					>
+					<DropdownMenu.Item
+						onclick={handleDeleteWorkspace}
+						disabled={!activeWorkspace || workspaces.length <= 1}>Delete Workspace</DropdownMenu.Item
+					>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
+
+		<!-- Folders -->
+		<ScrollArea class="border rounded-md min-h-[250px] max-h-[40vh]">
+			<div class="p-2">
+				{#if activeWorkspace}
+					{#if folderTree.length > 0}
+						<FolderTreeView
+							folders={folderTree}
+							bind:selectedFolderId
+							bind:editingFolderId
+							workspaceId={activeWorkspaceId}
+						/>
 					{:else}
 						<div
 							class="text-center text-sm text-muted-foreground p-4 flex flex-col items-center justify-center h-full gap-2"
 						>
-							<p>Select a workspace to see its folders.</p>
+							<p>No folders in this workspace.</p>
 						</div>
 					{/if}
-				</div>
-			</ScrollArea>
-		</div>
-
-		<Dialog.Footer>
-			<Dialog.Close>
-				<Button variant="outline">Cancel</Button>
-			</Dialog.Close>
-			<Button onclick={handleConfirmSelection}>Confirm</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root> 
+					<Button variant="ghost" size="sm" class="w-full justify-start mt-2" onclick={handleAddNewFolder}>
+						<FolderPlus class="mr-2 h-4 w-4" />
+						Create New Folder
+					</Button>
+				{:else}
+					<div
+						class="text-center text-sm text-muted-foreground p-4 flex flex-col items-center justify-center h-full gap-2"
+					>
+						<p>Select a workspace to see its folders.</p>
+					</div>
+				{/if}
+			</div>
+		</ScrollArea>
+	</div>
+</CustomDialog> 

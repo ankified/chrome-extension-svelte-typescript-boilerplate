@@ -1,7 +1,7 @@
+import '../app.css';
 import { defineContentScript, createShadowRootUi } from '#imports';
 import { mount, unmount } from 'svelte';
 import BookmarkDialog from '~/components/BookmarkDialog/index.svelte';
-import '~/app.css';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -16,6 +16,8 @@ export default defineContentScript({
         const ui = await createShadowRootUi(ctx, {
           name: 'bookmark-dialog-ui',
           position: 'inline',
+          anchor: 'body',
+          append: 'first',
           onMount: (container) => {
             // Mount the component and assign the instance to our `app` variable.
             app = mount(BookmarkDialog, {

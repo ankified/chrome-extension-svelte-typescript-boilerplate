@@ -271,7 +271,7 @@
 			</Resizable.Pane>
 			<Resizable.Handle withHandle />
 			<Resizable.Pane defaultSize={75} minSize={30}>
-				<ScrollArea class="h-full">
+				<ScrollArea class="h-full w-full">
 					<div class="flex h-full flex-col p-2">
 						{#if displayedItems.length > 0}
 							{#each displayedItems as node (node.id)}

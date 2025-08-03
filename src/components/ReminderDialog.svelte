@@ -1,9 +1,9 @@
 <script lang="ts">
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import * as Card from '$lib/components/ui/card';
 	import { getLocalTimeZone, today, type CalendarDate } from '@internationalized/date';
+	import CustomDialog from './CustomDialog.svelte';
 
 	type $$Props = {
 		open?: boolean;
@@ -78,51 +78,50 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(v) => !v && onClose()}>
-	<Dialog.Content class="sm:max-w-fit p-0">
-		<Card.Root class="gap-0 p-0">
-			<Card.Content class="relative p-0 md:pr-32 flex flex-col md:flex-row">
-				<div class="p-4 flex-1">
-					<Calendar
-						type="single"
-						bind:value={date}
-						class="bg-transparent p-0 [--cell-size:--spacing(8)] md:[--cell-size:--spacing(10)] [&_[data-outside-month]]:hidden"
-						weekdayFormat="short"
-					/>
-				</div>
-				<div
-					class="no-scrollbar inset-y-0 right-0 flex max-h-64 w-full scroll-pb-4 flex-col gap-2 overflow-y-auto border-t p-4 md:absolute md:max-h-none md:w-32 md:border-l md:border-t-0 md:gap-2 md:p-4"
-				>
-					{#if date}
-						<div class="grid gap-2">
-							{#each availableTimeSlots as slot (slot)}
-								<Button
-									variant={time === slot ? 'default' : 'outline'}
-									class="w-full shadow-none text-xs py-1"
-									onclick={() => (time = slot)}
-								>
-									{slot}
-								</Button>
-							{/each}
-						</div>
-						{#if availableTimeSlots.length === 0}
-							<div class="flex h-full items-center justify-center">
-								<p class="text-xs text-muted-foreground text-center">Nenhum horário disponível.</p>
-							</div>
-						{/if}
-					{:else}
+<CustomDialog bind:open {onClose}>
+	{#snippet footer()}
+		<Button variant="outline" onclick={onClose}>Cancel</Button>
+		<Button onclick={handleSave}>Save</Button>
+	{/snippet}
+
+	<Card.Root class="gap-0 p-0 border-none shadow-none">
+		<Card.Content class="relative p-0 md:pr-32 flex flex-col md:flex-row">
+			<div class="p-4 flex-1">
+				<Calendar
+					type="single"
+					bind:value={date}
+					class="bg-transparent p-0 [--cell-size:--spacing(8)] md:[--cell-size:--spacing(10)] [&_[data-outside-month]]:hidden"
+					weekdayFormat="short"
+				/>
+			</div>
+			<div
+				class="no-scrollbar inset-y-0 right-0 flex max-h-64 w-full scroll-pb-4 flex-col gap-2 overflow-y-auto border-t p-4 md:absolute md:max-h-none md:w-32 md:border-l md:border-t-0 md:gap-2 md:p-4"
+			>
+				{#if date}
+					<div class="grid gap-2">
+						{#each availableTimeSlots as slot (slot)}
+							<Button
+								variant={time === slot ? 'default' : 'outline'}
+								class="w-full shadow-none text-xs py-1"
+								onclick={() => (time = slot)}
+							>
+								{slot}
+							</Button>
+						{/each}
+					</div>
+					{#if availableTimeSlots.length === 0}
 						<div class="flex h-full items-center justify-center">
-							<p class="text-xs text-muted-foreground text-center">
-								Selecione uma data para ver os horários.
-							</p>
+							<p class="text-xs text-muted-foreground text-center">Nenhum horário disponível.</p>
 						</div>
 					{/if}
-				</div>
-			</Card.Content>
-		</Card.Root>
-		<Dialog.Footer class="p-4 border-t">
-			<Button variant="outline" onclick={onClose}>Cancel</Button>
-			<Button onclick={handleSave}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root> 
+				{:else}
+					<div class="flex h-full items-center justify-center">
+						<p class="text-xs text-muted-foreground text-center">
+							Selecione uma data para ver os horários.
+						</p>
+					</div>
+				{/if}
+			</div>
+		</Card.Content>
+	</Card.Root>
+</CustomDialog> 
