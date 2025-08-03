@@ -191,43 +191,40 @@ function findFolderById(nodes: (Folder | BookmarkItem)[], id: string): Folder | 
  * @param parentFolderId The ID of the parent folder.
  * @param newBookmark The bookmark object to add.
  */
-export async function addBookmark(workspaceId: string, parentFolderId: string, newBookmark: Omit<BookmarkItem, 'id' | 'createdAt' | 'accessHistory'>): Promise<BookmarkItem> {
-    const appData = await getAppData();
-    const workspace = appData.workspaces.find(ws => ws.id === workspaceId);
-    if (!workspace) {
-        throw new Error(`Workspace with id ${workspaceId} not found.`);
-    }
+export async function addBookmark(
+	workspaceId: string,
+	parentFolderId: string,
+	newBookmark: Omit<BookmarkItem, 'id' | 'createdAt'>
+): Promise<BookmarkItem> {
+	const appData = await getAppData();
+	const workspace = appData.workspaces.find((ws) => ws.id === workspaceId);
+	if (!workspace) {
+		throw new Error(`Workspace with id ${workspaceId} not found.`);
+	}
 
-    // Get history for the URL
-    const visits = await chrome.history.getVisits({ url: newBookmark.url });
-    const accessHistory: AccessRecord[] = visits.map(visit => ({
-        timestamp: visit.visitTime!
-    }));
+	const createdBookmark: BookmarkItem = {
+		...newBookmark,
+		id: crypto.randomUUID(),
+		createdAt: Date.now()
+	};
 
-    const createdBookmark: BookmarkItem = {
-        ...newBookmark,
-        id: crypto.randomUUID(),
-        createdAt: Date.now(),
-        accessHistory: accessHistory,
-    };
+	const parent = findFolderById(workspace.children, parentFolderId);
 
-    const parent = findFolderById(workspace.children, parentFolderId);
+	if (parent) {
+		parent.children.push(createdBookmark);
 
-    if (parent) {
-        parent.children.push(createdBookmark);
+		// If a reminder is set, create a Chrome alarm
+		if (createdBookmark.reminder) {
+			chrome.alarms.create(`reminder-${createdBookmark.id}`, {
+				when: createdBookmark.reminder
+			});
+		}
 
-        // If a reminder is set, create a Chrome alarm
-        if (createdBookmark.reminder) {
-            chrome.alarms.create(`reminder-${createdBookmark.id}`, {
-                when: createdBookmark.reminder,
-            });
-        }
-
-        await setAppData(appData);
-        return createdBookmark;
-    } else {
-        throw new Error(`Parent folder with id ${parentFolderId} not found.`);
-    }
+		await setAppData(appData);
+		return createdBookmark;
+	} else {
+		throw new Error(`Parent folder with id ${parentFolderId} not found.`);
+	}
 }
 
 // --- CRUD Operations for Tags ---

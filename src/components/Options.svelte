@@ -121,7 +121,7 @@
 	</Card.Root>
 </div>
 
-<style>
+<!-- <style>
     .container {
         min-width: 250px;
     }
@@ -140,4 +140,4 @@
     button:focus {
         background-color: #27ae60;
     }
-</style>
+</style> -->

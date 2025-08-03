@@ -199,7 +199,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full bg-green-300 border border-green-500">
 	<!-- Top Section -->
 	<div class="flex gap-2 p-1">
 		<Input placeholder="Search..." class="flex-grow" bind:value={searchTerm} />
@@ -208,8 +208,8 @@
 	</div>
 
 	<!-- Middle Section -->
-	<div class="flex-1 overflow-hidden p-1">
-		<Resizable.PaneGroup direction="horizontal" class="h-full w-full rounded-lg border">
+	<div class="flex-1 overflow-hidden p-1 border border-blue-500">
+		<Resizable.PaneGroup direction="horizontal" class="h-full w-full rounded-lg border border-red-500">
 			<Resizable.Pane defaultSize={25} minSize={20}>
 				<div class="flex h-full items-start p-2 overflow-y-auto">
 					<div class="flex flex-col w-full gap-2">
@@ -235,7 +235,7 @@
 										<MoreHorizontal class="h-4 w-4" />
 									</Button>
 								</DropdownMenu.Trigger>
-								<DropdownMenu.Content>
+								<DropdownMenu.Content class="!min-w-[32px]">
 									<DropdownMenu.Item onclick={handleAddNewWorkspace}>New Workspace</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={handleRenameWorkspace} disabled={!activeWorkspace}>Rename Workspace</DropdownMenu.Item>
 									<DropdownMenu.Item onclick={handleDeleteWorkspace} disabled={!activeWorkspace || workspaces.length <= 1}>Delete Workspace</DropdownMenu.Item>

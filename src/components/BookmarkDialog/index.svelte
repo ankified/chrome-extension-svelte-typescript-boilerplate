@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-  // import '../../reset.css'; // Importa os estilos de redefinição
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -17,7 +16,7 @@
 	import { toast } from 'svelte-sonner';
 	import type { DateValue } from "@internationalized/date";
 	import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
-	import type { BookmarkItem, Folder } from '$lib/types';
+	import type { BookmarkItem, Folder, AccessRecord, ExtensionMessage } from '$lib/types';
 	import {
 		addBookmark,
 		appDataStore,
@@ -174,13 +173,25 @@
 				const localDate = new Date(localDateTimeString);
 				reminderTimestamp = localDate.getTime();
 			}
+
+			// Get history from the background script
+			const visits: chrome.history.VisitItem[] = await chrome.runtime.sendMessage({
+				action: 'getHistory',
+				data: { url }
+			} as ExtensionMessage);
+
+			const accessHistory: AccessRecord[] = visits.map(visit => ({
+				timestamp: visit.visitTime!
+			}));
+
 			await addBookmark(activeWorkspaceId, selectedFolderId, {
 				url,
 				title,
 				faviconUrl: favicon || undefined,
 				comment,
 				tags,
-				reminder: reminderTimestamp
+				reminder: reminderTimestamp,
+				accessHistory,
 			});
 			toast.success("Bookmark saved!");
 			onClose();
@@ -237,11 +248,11 @@
 	}
 </script>
 
-<CustomDialog bind:open={isOpen} {onClose}>
+<CustomDialog bind:open={isOpen} {onClose} className={`${currentTab === 'add' ? 'w-[60%] h-[90%]' : 'w-[90%] h-[90%]'}`}>
 	<Tabs.Root
 		value={currentTab}
 		onValueChange={(v) => v && (currentTab = v)}
-		class="flex flex-col h-full w-full"
+		class="flex flex-col h-full w-full bg-yellow-300 border border-yellow-500"
 	>
 		<Card.Header class="p-6 pb-0">
 			<Card.Title>

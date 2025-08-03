@@ -7,7 +7,7 @@ import {
     syncStatusStore, 
     type SyncStatus
 } from "../lib/storage";
-import type { AppData } from '$lib/types';
+import type { AppData, ExtensionMessage } from '$lib/types';
 
 // Import the auto-backup module to initialize it.
 import '$lib/auto-backup';
@@ -119,6 +119,18 @@ export default defineBackground(() => {
           },
         });
       }
+    }
+  });
+
+  chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
+    if (message.action === 'getHistory') {
+      chrome.history.getVisits({ url: message.data.url }).then(visits => {
+        sendResponse(visits);
+      }).catch(error => {
+        console.error("Failed to get history:", error);
+        sendResponse([]); // Send an empty array or an error object
+      });
+      return true; // Indicates that the response is sent asynchronously
     }
   });
 

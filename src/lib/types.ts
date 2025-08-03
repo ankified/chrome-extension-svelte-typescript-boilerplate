@@ -56,4 +56,21 @@ export interface Folder {
   name:string;
   children: (BookmarkItem | Folder)[];
   createdAt: number; // Unix timestamp
-} 
+}
+
+/**
+ * Defines the structure for messages used in chrome.runtime.sendMessage.
+ */
+export type ExtensionMessage = {
+  action: 'openBookmarkDialog';
+  data: {
+    title: string;
+    url: string;
+    favicon: string | null;
+  };
+} | {
+  action: 'getHistory';
+  data: {
+    url: string;
+  };
+};

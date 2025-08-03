@@ -18,10 +18,10 @@
 
 <Button
 	variant={isSelected ? 'secondary' : 'ghost'}
-	class="w-full h-12 justify-start items-center text-left"
+	class="w-full h-12 justify-start items-center text-left !bg-pink-500 border border-pink-500"
 	{onclick}
 >
-	<div class="flex items-center gap-3 w-full">
+	<div class="flex items-center gap-3 w-full overflow-hidden">
 		{#if item.faviconUrl}
 			<img src={item.faviconUrl} alt="Favicon" class="w-5 h-5 object-contain flex-shrink-0" />
 		{:else}
@@ -37,7 +37,7 @@
 				href={item.url}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="truncate text-xs text-muted-foreground hover:underline"
+				class="block truncate text-xs text-muted-foreground hover:underline"
 				onclick={(e) => e.stopPropagation()}
 				title={item.url}
 			>
