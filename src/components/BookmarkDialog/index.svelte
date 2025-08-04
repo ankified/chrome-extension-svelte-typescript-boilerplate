@@ -252,7 +252,7 @@
 	<Tabs.Root
 		value={currentTab}
 		onValueChange={(v) => v && (currentTab = v)}
-		class="flex flex-col h-full w-full bg-yellow-300 border border-yellow-500"
+		class="flex flex-col h-full w-full"
 	>
 		<Card.Header class="p-6 pb-0">
 			<Card.Title>
@@ -263,10 +263,10 @@
 			</Card.Title>
 		</Card.Header>
 
-		<Tabs.Content value="add" class="flex-1 overflow-y-auto cs-p-6 w-full">
-			<div class="grid cs-gap-4">
+		<Tabs.Content value="add" class="flex-1 overflow-y-auto p-6 w-full">
+			<div class="grid gap-4">
 				<Card.Root class="overflow-hidden">
-					<Card.Header class="flex flex-row items-center cs-gap-4 space-y-0 pb-2">
+					<Card.Header class="flex flex-row items-center gap-4 space-y-0 pb-2">
 						<div
 							class="h-8 w-8 rounded-md flex items-center justify-center overflow-hidden bg-muted flex-shrink-0"
 						>
@@ -343,12 +343,12 @@
 					</Card.Header>
 				</Card.Root>
 
-				<div class="grid cs-gap-2">
+				<div class="grid gap-2">
 					<Label for="comment">Comment</Label>
 					<Textarea id="comment" placeholder="Add a comment..." bind:value={comment} />
 				</div>
 
-				<div class="grid grid-cols-3 cs-gap-2 pt-2">
+				<div class="grid grid-cols-3 gap-2 pt-2">
 					<Button variant="outline" size="sm" class="w-full" onclick={() => (isTagsOpen = true)}>
 						<Tags class="mr-2 h-4 w-4" />
 						Tags ({tags.length})
@@ -457,16 +457,17 @@
 			</div>
 		</Tabs.Content>
 
-		<Tabs.Content value="view" class="flex-1 overflow-y-auto cs-p-6 w-full">
+		<Tabs.Content value="view" class="flex-1 overflow-y-auto p-6 w-full">
 			<BookmarkList />
 		</Tabs.Content>
+		<div class="p-2 border-t flex justify-end gap-2">
+			<Button variant="outline" onclick={() => (isOpen = false)} class="w-16">{currentTab === 'add' ? 'Cancelar' : 'Fechar'}</Button>
+			{#if currentTab === 'add'}
+				<Button onclick={handleSave} class="w-16">Salvar</Button> 
+			{/if}
+		</div>
 	</Tabs.Root>
 
-	{#if currentTab === 'add'}
-		<div class="cs-p-6 pt-2 border-t">
-			<Button onclick={handleSave} class="w-full">Save Bookmark</Button>
-		</div>
-	{/if}
 </CustomDialog>
 
 <FolderSelectionDialog

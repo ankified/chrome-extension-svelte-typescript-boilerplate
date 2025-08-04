@@ -19,7 +19,7 @@
 		children,
 		title = undefined,
 		footer = undefined,
-		className = ''
+		className = '',
 	} = $props();
 
 	// svelte-ignore non_reactive_update
@@ -76,7 +76,7 @@
 				</div>
 			{/if}
 
-			<div class="text-sm text-muted-foreground">
+			<div class="text-sm text-muted-foreground overflow-hidden">
 				{@render children()}
 			</div>
 

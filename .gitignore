@@ -23,9 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 .output
-.output/*
 
 # Private keys and secrets
 client secret extension/
 chrome-mv3.pem
 .env
+.output/chrome-mv3-dev/background.js
+.output/chrome-mv3-dev/content-scripts/bookmark-dialog.css
+.output/chrome-mv3-dev/content-scripts/bookmark-dialog.js

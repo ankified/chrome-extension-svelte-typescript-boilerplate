@@ -22,6 +22,8 @@
 	import { toast } from 'svelte-sonner';
 	import * as Select from "$lib/components/ui/select";
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Popover from '$lib/components/ui/popover';
+	import CustomDialog from './CustomDialog.svelte';
 
 	let searchTerm = $state('');
 	let sheetOpen = $state(false);
@@ -29,6 +31,8 @@
 	let activeWorkspaceId = $state<string | null>(null);
 	let selectedFolderId = $state<string | null>(null); // Can be null if no workspace is selected
 	let selectedItemId = $state<string | null>(null);
+
+	let popoverOpen = $derived(sheetOpen);
 	
 	// When app data loads, ensure we have an active workspace
 	$effect(() => {
@@ -153,6 +157,7 @@
 	}
 
 	const workspaces = $derived($appDataStore?.workspaces ?? []);
+	
 	const activeWorkspace = $derived(workspaces.find(ws => ws.id === activeWorkspaceId));
 
 	const folderTree = $derived(activeWorkspace ? getFolderTree(activeWorkspace.children) : []);
@@ -197,19 +202,60 @@
 		}
         selectedTags = newSelectedTags;
 	}
+
+	function resetFilters() {
+		selectedTags = new Set();
+		searchTerm = '';
+	}
 </script>
 
-<div class="flex flex-col h-full bg-green-300 border border-green-500">
+<div class="flex flex-col h-full">
 	<!-- Top Section -->
 	<div class="flex gap-2 p-1">
 		<Input placeholder="Search..." class="flex-grow" bind:value={searchTerm} />
-		<Button variant="outline" onclick={() => (sheetOpen = true)}>Filters</Button>
+		
+				<Button variant="outline" onclick={() => popoverOpen = true}>Filters</Button>
+		
+				<CustomDialog bind:open={popoverOpen}>
+					
+				
+				<div class="grid gap-4 py-4">
+					<div class="flex flex-col gap-2">
+						<h3 class="font-semibold">Filter by Tag</h3>
+						{#if $appDataStore && $appDataStore.tags.length > 0}
+							{#each $appDataStore.tags as tag}
+								<div class="flex items-center gap-2">
+									<Checkbox
+										id={`filter-tag-${tag.id}`}
+										onclick={() => toggleTag(tag.id)}
+										checked={selectedTags.has(tag.id)}
+									/>
+									<Label for={`filter-tag-${tag.id}`} class="font-normal">{tag.name}</Label>
+								</div>
+							{/each}
+						{:else}
+							<p class="text-sm text-muted-foreground">No tags found.</p>
+						{/if}
+					</div>
+				</div>
+				
+					
+						<Button type="submit" onclick={() => {
+							popoverOpen = false;
+						}}>Apply Filters</Button>
+						<Button type="button" onclick={() => {
+							popoverOpen = false;
+							resetFilters();
+						}}>Reset</Button>
+					
+				</CustomDialog>
+				
 		<Button variant="outline">Group By</Button>
 	</div>
 
 	<!-- Middle Section -->
-	<div class="flex-1 overflow-hidden p-1 border border-blue-500">
-		<Resizable.PaneGroup direction="horizontal" class="h-full w-full rounded-lg border border-red-500">
+	<div class="flex-1 overflow-hidden p-1">
+		<Resizable.PaneGroup direction="horizontal" class="h-full w-full rounded-lg">
 			<Resizable.Pane defaultSize={25} minSize={20}>
 				<div class="flex h-full items-start p-2 overflow-y-auto">
 					<div class="flex flex-col w-full gap-2">
@@ -311,35 +357,3 @@
 </div>
 
 
-<Sheet.Root bind:open={sheetOpen}>
-	<Sheet.Content>
-		<Sheet.Header>
-			<Sheet.Title>Filter Options</Sheet.Title>
-			<Sheet.Description>Select filters to refine your search results.</Sheet.Description>
-		</Sheet.Header>
-		<div class="grid gap-4 py-4">
-			<div class="flex flex-col gap-2">
-				<h3 class="font-semibold">Filter by Tag</h3>
-				{#if $appDataStore && $appDataStore.tags.length > 0}
-					{#each $appDataStore.tags as tag}
-						<div class="flex items-center gap-2">
-							<Checkbox
-								id={`filter-tag-${tag.id}`}
-								onclick={() => toggleTag(tag.id)}
-								checked={selectedTags.has(tag.id)}
-							/>
-							<Label for={`filter-tag-${tag.id}`} class="font-normal">{tag.name}</Label>
-						</div>
-					{/each}
-				{:else}
-					<p class="text-sm text-muted-foreground">No tags found.</p>
-				{/if}
-			</div>
-		</div>
-		<Sheet.Footer>
-			<Sheet.Close>
-				<Button type="submit">Apply Filters</Button>
-			</Sheet.Close>
-		</Sheet.Footer>
-	</Sheet.Content>
-</Sheet.Root> 

@@ -78,61 +78,63 @@
 				autofocus
 			/>
 		{:else}
-			<Button
-				variant={selectedFolderId === folder.id ? 'secondary' : 'ghost'}
-				class="w-full justify-start h-8 text-left flex-1"
-				onclick={() => (selectedFolderId = folder.id)}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="24"
-					height="24"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class="mr-2 h-4 w-4 flex-shrink-0"
-					><path
-						d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"
-					/></svg
-				>
-				<span class="truncate flex-1 text-md">{folder.name}</span>
-			</Button>
-			<div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+			<div class="flex flex-col items-center gap-2">
 				<Button
-					variant="ghost"
-					size="icon"
-					class="h-7 w-7"
-					onclick={() => handleAddNewFolder(folder.id)}
-					title="Add subfolder"
+					variant={selectedFolderId === folder.id ? 'secondary' : 'ghost'}
+					class="w-full justify-start h-8 text-left flex-1"
+					onclick={() => (selectedFolderId = folder.id)}
 				>
-					<FolderPlus class="h-4 w-4" />
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="24"
+						height="24"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="mr-2 h-4 w-4 flex-shrink-0"
+						><path
+							d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"
+						/></svg
+					>
+					<span class="truncate flex-1 text-md">{folder.name}</span>
 				</Button>
-				{#if folder.id !== 'root'}
+				<div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
 					<Button
 						variant="ghost"
 						size="icon"
 						class="h-7 w-7"
-						onclick={() => {
-							editingFolderId = folder.id;
-							editingName = folder.name;
-						}}
-						title="Rename folder"
+						onclick={() => handleAddNewFolder(folder.id)}
+						title="Add subfolder"
 					>
-						<Pencil class="h-4 w-4" />
+						<FolderPlus class="h-4 w-4" />
 					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						class="h-7 w-7"
-						onclick={() => handleDeleteFolder(folder.id)}
-						title="Delete folder"
-					>
-						<Trash2 class="h-4 w-4" />
-					</Button>
-				{/if}
+					{#if folder.id !== 'root'}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="h-7 w-7"
+							onclick={() => {
+								editingFolderId = folder.id;
+								editingName = folder.name;
+							}}
+							title="Rename folder"
+						>
+							<Pencil class="h-4 w-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							class="h-7 w-7"
+							onclick={() => handleDeleteFolder(folder.id)}
+							title="Delete folder"
+						>
+							<Trash2 class="h-4 w-4" />
+						</Button>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</div>

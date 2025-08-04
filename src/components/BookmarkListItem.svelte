@@ -18,7 +18,7 @@
 
 <Button
 	variant={isSelected ? 'secondary' : 'ghost'}
-	class="w-full h-12 justify-start items-center text-left !bg-pink-500 border border-pink-500"
+	class="w-full h-12 justify-start items-center text-left"
 	{onclick}
 >
 	<div class="flex items-center gap-3 w-full overflow-hidden">
